@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Toast from '../components/Toast';
+import Toast from "@/components/Toast";
 
 export default function PartnerAccountPage() {
   const [partner, setPartner] = useState<any>(null);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Toast from '../components/Toast';
+import Toast from "@/components/Toast";
 import { usePartnerMode } from "@/lib/context/PartnerModeContext";
 import { useParams } from "next/navigation";
 
