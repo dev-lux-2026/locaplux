@@ -1,0 +1,18 @@
+{
+  "slogan": "Achetez mieux, vivez mieux.",
+  "becomePartner": "Devenir partenaire",
+
+  "logoutMessage": "Vous êtes maintenant déconnecté",
+  "unauthorizedMessage": "Accès réservé à l’administration",
+
+  "notifications": "Notifications",
+  "noNotifications": "Aucune notification.",
+  "newOrder": "Nouvelle commande",
+  "seeAllNotifications": "Voir toutes les notifications",
+
+  "profile": "Profil",
+  "orders": "Mes commandes",
+  "partnerDashboard": "Dashboard partenaire",
+  "adminDashboard": "Dashboard admin",
+  "logout": "Déconnexion"
+}

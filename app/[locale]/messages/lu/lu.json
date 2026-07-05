@@ -1,0 +1,48 @@
+{
+  "Home": {
+    "profileIncomplete": "Äre Profil ass nach net komplett.",
+    "completeNow": "Elo ausfëllen",
+
+    "heroTitle": "Déi Premium Marketplace fir Lëtzebuerg & Groussregioun",
+    "heroSubtitle": "Kaaft, verkaaft, entdeckt. Eng elegant, sécher a lokal Erfahrung.",
+    "exploreProducts": "Produkter entdecken",
+
+    "categories": "Kategorien",
+    "popularProducts": "Beléifte Produkter",
+    "newProducts": "Nei Produkter",
+
+    "advSecurityTitle": "Sécherheet",
+    "advSecurityText": "Sécher Bezuelungen, verifizéiert Partner, geschützt Transaktiounen.",
+
+    "advLocalTitle": "Lokal & Premium",
+    "advLocalText": "Eng Auswiel u vertrauenswürdege Verkeefer an der Groussregioun.",
+
+    "advSupportTitle": "Mënschleche Support",
+    "advSupportText": "Séier an personaliséiert Hëllef wann néideg.",
+
+    "partnerTitle": "Gitt Locaplux‑Partner",
+    "partnerSubtitle": "Maacht mat an entwéckelt Äre Betrib op enger Premium‑Marketplace.",
+    "partnerCTA": "Verkeefer‑Kont erstellen",
+
+    "rights": "All Rechter virbehalen."
+  },
+
+  "Header": {
+    "slogan": "Kaaft besser, liewt besser.",
+    "becomePartner": "Partner ginn",
+
+    "logoutMessage": "Dir sidd elo ausgeloggt",
+    "unauthorizedMessage": "Zougang nëmme fir d’Administratioun",
+
+    "notifications": "Notifikatiounen",
+    "noNotifications": "Keng Notifikatiounen.",
+    "newOrder": "Nei Bestellung",
+    "seeAllNotifications": "All Notifikatiounen gesinn",
+
+    "profile": "Profil",
+    "orders": "Meng Bestellungen",
+    "partnerDashboard": "Partner‑Dashboard",
+    "adminDashboard": "Admin‑Dashboard",
+    "logout": "Ausloggen"
+  }
+}

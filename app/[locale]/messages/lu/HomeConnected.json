@@ -1,0 +1,21 @@
+{
+  "HomeConnected": {
+    "welcome": "Wëllkomm",
+    "intro": "Locaplux ass d’Plaz wou gutt Offeren séier verschwannen. Ausstellungsstécker, Restposten, lescht Exemplairen, offiziell Liquidatiounen: hei ass all Artikel eng richteg Geleeënheet, dacks eenzegaarteg, heiansdo nëmmen eemol verfügbar. Eis verifizéiert Partner — Marken, Geschäfter an professionell Verkeefer — publizéieren hir lescht Stécker zum beschte Präis, éier se fir ëmmer verschwannen. Wann Dir gären clever akaaft a näischt verpasse wëllt… sidd Dir hei genee richteg.",
+
+    "suggestion": {
+      "fashion": "Moud & Accessoiren",
+      "home": "Doheem & Dekoratioun",
+      "tech": "High-Tech & Gadgeten",
+      "collection": "Sammlerstécker",
+      "brands": "Markeliquidatiounen",
+      "stock": "Exklusiv Stockverkaaf"
+    },
+
+    "search": {
+      "label": "Sicht no enger Mark, enger Kategorie oder engem rare Stéck…",
+      "placeholder": "Z.B.: limitéiert Sneakers, Designersofa, Sammlerauer…",
+      "button": "Sichen"
+    }
+  }
+}

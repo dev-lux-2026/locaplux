@@ -1,0 +1,21 @@
+{
+  "HomeConnected": {
+    "welcome": "Bienvenue",
+    "intro": "Locaplux, c’est l’endroit où les bonnes affaires disparaissent vite. Produits d’exposition, fins de stock, dernières pièces, liquidations officielles : ici, chaque article est une opportunité réelle, souvent unique, parfois disponible en un seul exemplaire. Nos partenaires vérifiés — marques, boutiques et vendeurs professionnels — publient leurs dernières pièces au meilleur prix, avant qu’elles ne disparaissent définitivement. Si vous aimez acheter malin et ne rien rater… vous êtes au bon endroit.",
+
+    "suggestion": {
+      "fashion": "Mode & accessoires",
+      "home": "Maison & déco",
+      "tech": "High-tech & gadgets",
+      "collection": "Pièces de collection",
+      "brands": "Liquidations de marques",
+      "stock": "Vides-stocks exclusifs"
+    },
+
+    "search": {
+      "label": "Recherchez une marque, une catégorie ou une pièce rare…",
+      "placeholder": "Ex : sneakers édition limitée, canapé design, montre de collection…",
+      "button": "Rechercher"
+    }
+  }
+}

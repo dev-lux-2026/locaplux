@@ -1,0 +1,22 @@
+{
+  "slogan": "Buy better, live better.",
+  "becomePartner": "Become a partner",
+
+  "logoutMessage": "You are now logged out",
+  "unauthorizedMessage": "Access restricted to administration",
+
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications.",
+    "newOrder": "New order",
+    "seeAll": "See all notifications"
+  },
+
+  "menu": {
+    "profile": "Profile",
+    "orders": "My orders",
+    "partnerDashboard": "Partner dashboard",
+    "adminDashboard": "Admin dashboard",
+    "logout": "Logout"
+  }
+}

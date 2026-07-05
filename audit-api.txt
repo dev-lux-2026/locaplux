@@ -1,0 +1,4433 @@
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\banner\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { deleteFromSupabase, uploadToSupabase } from "@/lib/upload";
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const formData = await req.formData();
+  const file = formData.get("file") as File | null;
+
+  if (!file) {
+    return NextResponse.json({ error: "Missing file" }, { status: 400 });
+  }
+
+  const uploadedUrl = await uploadToSupabase(
+    file,
+    `banners/${session.user.id}`
+  );
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { bannerUrl: uploadedUrl },
+  });
+
+  return NextResponse.json({ success: true, url: uploadedUrl });
+}
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Supprimer du storage
+  await deleteFromSupabase(`banners/${session.user.id}`);
+
+  // Reset Prisma
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { bannerUrl: null },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\delete\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export async function POST() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  try {
+    // Suppression des données personnelles
+    await prisma.message.deleteMany({ where: { userId } });
+    await prisma.question.deleteMany({ where: { userId } });
+    await prisma.wishlist.deleteMany({ where: { userId } });
+    await prisma.address.deleteMany({ where: { userId } });
+
+    // Anonymisation du compte (obligation légale pour les commandes)
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: "Utilisateur supprimé",
+        email: `deleted_${userId}@locaplux.com`,
+        password: null,
+        phone: null,
+        deletedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\export\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  // Récupération des données utilisateur
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      orders: true,
+      messages: true,
+      questions: true,
+      wishlist: true,
+      addresses: true,
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+  }
+
+  // Structure d’export
+  const exportData = {
+    generatedAt: new Date().toISOString(),
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt,
+    },
+    orders: user.orders,
+    messages: user.messages,
+    questions: user.questions,
+    wishlist: user.wishlist,
+    addresses: user.addresses,
+  };
+
+  const json = JSON.stringify(exportData, null, 2);
+
+  return new NextResponse(json, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Disposition": `attachment; filename="locaplux-export-${userId}.json"`,
+    },
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\orders\[id]\page.tsx =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\analytics\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { subDays } from "date-fns";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+
+  const range = searchParams.get("range") ?? "30d";
+  const inactive = Number(searchParams.get("inactive") ?? 30);
+
+  const now = new Date();
+  let start: Date;
+
+  switch (range) {
+    case "24h":
+      start = subDays(now, 1);
+      break;
+    case "7d":
+      start = subDays(now, 7);
+      break;
+    case "30d":
+      start = subDays(now, 30);
+      break;
+    case "6m":
+      start = subDays(now, 180);
+      break;
+    case "12m":
+      start = subDays(now, 365);
+      break;
+    default:
+      start = subDays(now, 30);
+  }
+
+  // KPIs
+  const orders = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { total: true },
+  });
+
+  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const ordersCount = orders.length;
+  const avgOrder = ordersCount > 0 ? revenue / ordersCount : 0;
+
+  const previousStart = subDays(start, start.getTime() - now.getTime());
+
+  const previousOrders = await prisma.order.findMany({
+    where: { createdAt: { gte: previousStart, lt: start }, status: "PAID" },
+    select: { total: true },
+  });
+
+  const previousRevenue = previousOrders.reduce((s, o) => s + o.total, 0);
+
+  const growth =
+    previousRevenue === 0
+      ? 100
+      : ((revenue - previousRevenue) / previousRevenue) * 100;
+
+  const inactiveDate = subDays(now, inactive);
+
+  const activePartners = await prisma.partner.count({
+    where: { lastActivityAt: { gte: inactiveDate } },
+  });
+
+  const inactivePartners = await prisma.partner.count({
+    where: { lastActivityAt: { lt: inactiveDate } },
+  });
+
+  const activeProducts = await prisma.product.count({
+    where: { isActive: true },
+  });
+
+  const inactiveProducts = await prisma.product.count({
+    where: { isActive: false },
+  });
+
+  // SalesPerDay
+  const salesRaw = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { total: true, createdAt: true },
+  });
+
+  const salesMap = new Map<string, number>();
+  for (const o of salesRaw) {
+    const d = o.createdAt.toISOString().split("T")[0];
+    salesMap.set(d, (salesMap.get(d) ?? 0) + o.total);
+  }
+
+  const salesPerDay = Array.from(salesMap.entries())
+    .map(([date, value]) => ({ date, value }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // OrdersPerDay
+  const ordersRaw = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { createdAt: true },
+  });
+
+  const ordersMap = new Map<string, number>();
+  for (const o of ordersRaw) {
+    const d = o.createdAt.toISOString().split("T")[0];
+    ordersMap.set(d, (ordersMap.get(d) ?? 0) + 1);
+  }
+
+  const ordersPerDay = Array.from(ordersMap.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // SalesByCategory
+  const categorySalesRaw = await prisma.orderItem.findMany({
+    where: {
+      order: { createdAt: { gte: start }, status: "PAID" },
+    },
+    select: {
+      total: true,
+      product: { select: { category: { select: { name: true } } } },
+    },
+  });
+
+  const categoryMap = new Map<string, number>();
+  for (const item of categorySalesRaw) {
+    const cat = item.product.category?.name ?? "Autres";
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + item.total);
+  }
+
+  const salesByCategory = Array.from(categoryMap.entries())
+    .map(([category, value]) => ({ category, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // SalesByPartner
+  const partnerSalesRaw = await prisma.orderItem.findMany({
+    where: {
+      order: { createdAt: { gte: start }, status: "PAID" },
+    },
+    select: {
+      total: true,
+      product: {
+        select: {
+          partner: { select: { id: true, publicName: true } },
+        },
+      },
+    },
+  });
+
+  const partnerMap = new Map<string, number>();
+  for (const item of partnerSalesRaw) {
+    const name = item.product.partner?.publicName ?? "Inconnu";
+    partnerMap.set(name, (partnerMap.get(name) ?? 0) + item.total);
+  }
+
+  const salesByPartner = Array.from(partnerMap.entries())
+    .map(([partner, value]) => ({ partner, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // TopPartners
+  const topPartners = salesByPartner.slice(0, 5).map((p, i) => ({
+    id: i + 1,
+    name: p.partner,
+    revenue: p.value,
+    orders: 0,
+    growth: 0,
+    rank: i + 1,
+  }));
+
+  // TopCategories
+  const topCategories = salesByCategory.slice(0, 5).map((c) => ({
+    category: c.category,
+    revenue: c.value,
+    percentage: revenue === 0 ? 0 : Math.round((c.value / revenue) * 100),
+  }));
+
+  // RecentOrders
+  const recentOrders = await prisma.order.findMany({
+    where: { status: "PAID" },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      total: true,
+      createdAt: true,
+      partner: { select: { publicName: true } },
+    },
+  });
+
+  const recentOrdersFormatted = recentOrders.map((o) => ({
+    id: o.id,
+    total: o.total,
+    createdAt: o.createdAt,
+    partner: o.partner?.publicName ?? "Inconnu",
+  }));
+
+  // RecentPartners
+  const recentPartners = await prisma.partner.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      publicName: true,
+      createdAt: true,
+      status: true,
+    },
+  });
+
+  // PartnersBySector
+  const partnersFull = await prisma.partner.findMany({
+    include: {
+      products: { include: { category: true } },
+    },
+  });
+
+  const partnerSectors: { partnerId: number; sector: string }[] = [];
+
+  for (const p of partnersFull) {
+    const counts = new Map<string, number>();
+
+    for (const product of p.products) {
+      const cat = product.category?.name ?? "Autres";
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+
+    if (counts.size === 0) {
+      partnerSectors.push({ partnerId: p.id, sector: "Autres" });
+      continue;
+    }
+
+    let topSector = "Autres";
+    let topCount = 0;
+
+    for (const [sector, count] of counts.entries()) {
+      if (count > topCount) {
+        topCount = count;
+        topSector = sector;
+      }
+    }
+
+    partnerSectors.push({ partnerId: p.id, sector: topSector });
+  }
+
+  const sectorCounts = new Map<string, number>();
+  for (const ps of partnerSectors) {
+    sectorCounts.set(ps.sector, (sectorCounts.get(ps.sector) ?? 0) + 1);
+  }
+
+  const partnersBySector = Array.from(sectorCounts.entries()).map(
+    ([sector, count]) => ({ sector, count })
+  );
+
+  return NextResponse.json({
+    range,
+    inactiveThreshold: inactive,
+
+    kpis: {
+      revenue,
+      orders: ordersCount,
+      avgOrder: Number(avgOrder.toFixed(2)),
+      growth: Number(growth.toFixed(2)),
+      activePartners,
+      inactivePartners,
+      activeProducts,
+      inactiveProducts,
+    },
+
+    salesPerDay,
+    ordersPerDay,
+    salesByCategory,
+    salesByPartner,
+    topPartners,
+    topCategories,
+    heatmap: [],
+    recentOrders: recentOrdersFormatted,
+    recentPartners,
+    partnersBySector,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\create\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function POST(req) {
+  const data = await req.json();
+
+  const category = await prisma.category.create({
+    data,
+  });
+
+  return NextResponse.json(category);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\list\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const categories = await prisma.category.findMany();
+  return NextResponse.json(categories);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\[id]\validate\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\route.ts =====
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ message: "Categories API root" });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\logs\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const logs = await prisma.adminLog.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      admin: { select: { publicName: true, email: true } },
+      partner: { select: { publicName: true, email: true } }
+    }
+  });
+
+  const formatted = logs.map((log) => ({
+    id: log.id,
+    action: log.action,
+    description: log.comment || null,
+
+    // TYPE DÉDUIT AUTOMATIQUEMENT
+    type: "partner",
+
+    createdAt: log.createdAt,
+
+    // NOM DE L’ADMIN
+    user: log.admin?.publicName || log.admin?.email || "Administrateur"
+  }));
+
+  return NextResponse.json(formatted);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\list\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const orders = await prisma.order.findMany({
+    include: {
+      user: {
+        select: { id: true, email: true, name: true },
+      },
+      items: {
+        include: {
+          product: {
+            select: { id: true, name: true, price: true },
+          },
+        },
+      },
+    },
+    orderBy: { id: "desc" },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\list\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      commissionRate: true,
+      freeProductLimit: true,
+      freeDaysLimit: true,
+      freeUntil: true,
+      createdAt: true,
+      _count: { select: { products: true } },
+    },
+  });
+
+  return NextResponse.json(partners);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\kyc\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\limits\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\logs\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\stats\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\update\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\history\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  const history = await prisma.productValidationHistory.findMany({
+    include: {
+      product: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(history);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\list\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      status: true,
+      images: true,
+      createdAt: true,
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\pending\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  const products = await prisma.product.findMany({
+    where: { status: "pending" },
+    include: {
+      partner: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\validate\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { z } from "zod";
+
+// --- Emails ---
+import { emailProductApproved } from "@/lib/emails/product/productApproved";
+import { emailProductRejected } from "@/lib/emails/product/productRejected";
+
+// --- Zod schema ---
+const productValidationSchema = z.object({
+  productId: z.string().min(1),
+  action: z.enum(["approve", "reject"]),
+  reason: z.string().optional(), // utile pour refus
+});
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth admin ---
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  // --- Zod Validation ---
+  const json = await req.json();
+  const parsed = productValidationSchema.safeParse(json);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { productId, action, reason } = parsed.data;
+
+  // --- Récupération du produit ---
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { partner: true },
+  });
+
+  if (!product) {
+    return NextResponse.json(
+      { error: "Produit introuvable" },
+      { status: 404 }
+    );
+  }
+
+  // --- Mise à jour du statut ---
+  const newStatus = action === "approve" ? "approved" : "rejected";
+
+  const updated = await prisma.product.update({
+    where: { id: productId },
+    data: {
+      status: newStatus,
+      adminReason: reason || null,
+    },
+  });
+
+  // --- Historique admin ---
+  await prisma.productValidationHistory.create({
+    data: {
+      productId,
+      adminId: session.user.id,
+      action,
+      reason: reason || null,
+    },
+  });
+
+  // --- Envoi email partenaire ---
+  if (product.partner?.email) {
+    if (action === "approve") {
+      await emailProductApproved(product.partner.email, product.name);
+    } else {
+      await emailProductRejected(product.partner.email, product.name, reason || "");
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    status: newStatus,
+    product: updated,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\logs\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\route.ts =====
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ message: "Products API root" });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-boosts\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const boosts = await prisma.boost.findMany({
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    include: {
+      product: { select: { title: true } },
+    },
+  });
+
+  return NextResponse.json(boosts);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-orders\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const orders = await prisma.order.findMany({
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    include: {
+      partner: { select: { name: true } },
+    },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-partners\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      _count: { select: { products: true } },
+    },
+  });
+
+  return NextResponse.json(partners);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\settings\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const settings = await prisma.setting.findMany();
+  return NextResponse.json(settings);
+}
+
+export async function POST(req: Request) {
+  const data = await req.json();
+
+  for (const key in data) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: { value: JSON.stringify(data[key]) },
+      create: { key, value: JSON.stringify(data[key]) }
+    });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\stats\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  MARKETPLACE_COMMISSION_RATE,
+  MARKETPLACE_FREE_PRODUCTS_LIMIT,
+  MARKETPLACE_FREE_DAYS_LIMIT,
+} from "@/lib/marketplaceConfig";
+
+export async function GET() {
+  const products = await prisma.product.count();
+  const partners = await prisma.user.count({ where: { role: "partner" } });
+  const users = await prisma.user.count({ where: { role: "user" } });
+  const orders = await prisma.order.count();
+
+  const revenueData = await prisma.order.findMany({
+    where: { status: "delivered" },
+    select: { total: true },
+  });
+
+  const grossRevenue = revenueData.reduce((sum, o) => sum + o.total, 0);
+  const commissionTotal = grossRevenue * MARKETPLACE_COMMISSION_RATE;
+
+  return NextResponse.json({
+    products,
+    partners,
+    users,
+    orders,
+    grossRevenue,
+    commissionTotal,
+    commissionRate: MARKETPLACE_COMMISSION_RATE,
+    freeProductsLimit: MARKETPLACE_FREE_PRODUCTS_LIMIT,
+    freeDaysLimit: MARKETPLACE_FREE_DAYS_LIMIT,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\reply\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const tickets = await prisma.supportTicket.findMany({
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      subject: true,
+      priority: true,
+      status: true,
+      updatedAt: true,
+      author: {
+        select: { publicName: true, email: true, role: true }
+      }
+    }
+  });
+
+  return NextResponse.json({ tickets });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\log.ts =====
+import prisma from "@/lib/prisma";
+
+export async function logAdminAction({
+  adminId,
+  partnerId,
+  action,
+  comment,
+}: {
+  adminId: string;
+  partnerId: string;
+  action: string;
+  comment?: string;
+}) {
+  await prisma.adminLog.create({
+    data: {
+      adminId,
+      partnerId,
+      action,
+      comment,
+    },
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\page.tsx =====
+"use client";
+
+import { useEffect, useState } from "react";
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        setStats(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <p>Chargement...</p>;
+
+  const cards = [
+    { label: "Produits", value: stats.products, color: "bg-blue-100 text-blue-700" },
+    { label: "Partenaires", value: stats.partners, color: "bg-green-100 text-green-700" },
+    { label: "Utilisateurs", value: stats.users, color: "bg-yellow-100 text-yellow-700" },
+    { label: "Commandes", value: stats.orders, color: "bg-purple-100 text-purple-700" },
+    { label: "Revenu total", value: stats.revenue + " €", color: "bg-red-100 text-red-700" },
+  ];
+
+  return (
+    <div className="p-8 space-y-10">
+      <h1 className="text-3xl font-bold">Dashboard Admin</h1>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {cards.map((card, i) => (
+          <div key={i} className={`p-6 rounded shadow ${card.color}`}>
+            <p className="text-lg font-semibold">{card.label}</p>
+            <p className="text-3xl font-bold mt-2">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Liens rapides */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Accès rapide</h2>
+
+        <div className="flex flex-wrap gap-4">
+          <a href="/admin/products" className="px-4 py-2 bg-blue-600 text-white rounded">
+            Produits
+          </a>
+
+          <a href="/admin/partners" className="px-4 py-2 bg-green-600 text-white rounded">
+            Partenaires
+          </a>
+
+          <a href="/admin/orders" className="px-4 py-2 bg-purple-600 text-white rounded">
+            Commandes
+          </a>
+
+          <a href="/admin/categories" className="px-4 py-2 bg-yellow-600 text-white rounded">
+            Catégories
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auth\change-email\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
+
+export async function POST(req) {
+  const { email } = await req.json();
+
+  if (!email) {
+    return NextResponse.json({ error: "Email manquant" }, { status: 400 });
+  }
+
+  // Vérifier si l'email existe déjà
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return NextResponse.json(
+      { error: "Cet email est déjà utilisé" },
+      { status: 400 }
+    );
+  }
+
+  // Récupérer l'utilisateur non validé
+  const unverifiedUser = await prisma.user.findFirst({
+    where: { emailVerified: null },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!unverifiedUser) {
+    return NextResponse.json(
+      { error: "Aucun compte en attente de validation" },
+      { status: 400 }
+    );
+  }
+
+  // Mettre à jour l'email
+  await prisma.user.update({
+    where: { id: unverifiedUser.id },
+    data: { email },
+  });
+
+  // Supprimer anciens tokens
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: unverifiedUser.email },
+  });
+
+  // Générer un nouveau token
+  const token = randomUUID();
+  const expires = new Date(Date.now() + 1000 * 60 * 60);
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: email,
+      token,
+      expires,
+    },
+  });
+
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+
+  // Envoyer l'email
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Locaplux <no-reply@locaplux.com>",
+      to: email,
+      subject: "Confirmez votre nouvelle adresse email",
+      html: `
+        <p>Veuillez confirmer votre nouvelle adresse email :</p>
+        <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+      `,
+    }),
+  });
+
+  // 🔥 Redirection premium vers la page "email mis à jour"
+  return NextResponse.redirect(new URL("/register/email-updated", req.url));
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auth\register\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    const { email, password, name, acceptTerms } = body;
+
+    // Vérification CGU / CGV
+    if (!acceptTerms) {
+      return NextResponse.json(
+        { error: "Vous devez accepter les CGU et les CGV." },
+        { status: 400 }
+      );
+    }
+
+    // Vérification champs obligatoires
+    if (!email || !password || !name) {
+      return NextResponse.json(
+        { error: "Champs manquants." },
+        { status: 400 }
+      );
+    }
+
+    // Vérification email déjà utilisé
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Un compte existe déjà avec cet email." },
+        { status: 400 }
+      );
+    }
+
+    // Hash du mot de passe
+    const hashed = await bcrypt.hash(password, 10);
+
+    // Création utilisateur
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashed,
+        name,
+        emailVerified: null,
+        acceptedTermsAt: new Date(), // 🔥 Ajout légal
+      },
+    });
+
+    // Token de vérification email
+    const token = randomUUID();
+    const expires = new Date(Date.now() + 1000 * 60 * 60);
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires,
+      },
+    });
+
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+
+    // Envoi email via Resend
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Locaplux <no-reply@locaplux.com>",
+        to: email,
+        subject: "Confirmez votre adresse email",
+        html: `
+          <p>Bienvenue sur Locaplux !</p>
+          <p>Veuillez confirmer votre adresse email :</p>
+          <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+        `,
+      }),
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "Erreur interne." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auth\register-partner\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+
+    const {
+      firstName,
+      lastName,
+      company,
+      publicName,
+      email,
+      street,
+      number,
+      postal,
+      city,
+      country,
+      phonePrefix,
+      phone,
+      vat,
+      website,
+      acceptPartnerTerms,
+    } = body;
+
+    // Vérification CGV Partenaires
+    if (!acceptPartnerTerms) {
+      return NextResponse.json(
+        { error: "Vous devez accepter les CGV Partenaires." },
+        { status: 400 }
+      );
+    }
+
+    // Vérification champs obligatoires
+    if (
+      !firstName ||
+      !lastName ||
+      !company ||
+      !publicName ||
+      !email ||
+      !postal ||
+      !phone ||
+      !phonePrefix ||
+      !vat
+    ) {
+      return NextResponse.json(
+        { error: "Veuillez remplir tous les champs obligatoires." },
+        { status: 400 }
+      );
+    }
+
+    // Vérification email déjà utilisé
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Un compte existe déjà avec cet email." },
+        { status: 400 }
+      );
+    }
+
+    // Génération d’un mot de passe aléatoire (vendeur validé ensuite par admin)
+    const generatedPassword = randomUUID().slice(0, 12);
+    const hashed = await bcrypt.hash(generatedPassword, 10);
+
+    // Création du compte vendeur
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashed,
+        name: `${firstName} ${lastName}`,
+        firstName,
+        lastName,
+        company,
+        publicName,
+        street,
+        number,
+        postal,
+        city,
+        country,
+        phonePrefix,
+        phone,
+        vat,
+        website,
+        role: "partner",
+        status: "pending",
+        emailVerified: null,
+        acceptedPartnerTermsAt: new Date(),
+      },
+    });
+
+    // Token de vérification email
+    const token = randomUUID();
+    const expires = new Date(Date.now() + 1000 * 60 * 60);
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires,
+      },
+    });
+
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+
+    // Envoi email via Resend
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Locaplux <no-reply@locaplux.com>",
+        to: email,
+        subject: "Confirmez votre adresse email",
+        html: `
+          <p>Bienvenue sur Locaplux !</p>
+          <p>Votre compte partenaire est en attente de validation par un administrateur.</p>
+          <p>Veuillez confirmer votre adresse email :</p>
+          <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+        `,
+      }),
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "Erreur interne." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auth\resend-verification\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+
+export async function GET(req) {
+  const email = req.nextUrl.searchParams.get("email");
+
+  if (!email) {
+    return NextResponse.json({ error: "Email manquant" }, { status: 400 });
+  }
+
+  const token = randomUUID();
+  const expires = new Date(Date.now() + 1000 * 60 * 60);
+
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: email },
+  });
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: email,
+      token,
+      expires,
+    },
+  });
+
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Locaplux <no-reply@locaplux.com>",
+      to: email,
+      subject: "Confirmez votre adresse email",
+      html: `
+        <p>Veuillez confirmer votre adresse email :</p>
+        <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+      `,
+    }),
+  });
+
+  return NextResponse.redirect("/register/check-email");
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auth\[...nextauth]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\auto-category\route.ts =====
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const { name, description } = await req.json();
+
+  const text = `${name} ${description}`.toLowerCase();
+
+  let category = "Autre";
+
+  if (text.includes("voiture") || text.includes("auto")) category = "Automobile";
+  if (text.includes("maison") || text.includes("appartement")) category = "Immobilier";
+  if (text.includes("ordinateur") || text.includes("pc") || text.includes("laptop")) category = "Informatique";
+  if (text.includes("meuble") || text.includes("chaise") || text.includes("table")) category = "Mobilier";
+  if (text.includes("vêtement") || text.includes("t-shirt") || text.includes("chaussure")) category = "Mode";
+
+  return NextResponse.json({ category });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\categories\list\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json(categories);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\categories\[id]\products\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\categories\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+  });
+
+  return NextResponse.json(categories);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\checkout\route.ts =====
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req) {
+  const { cart } = await req.json();
+
+  if (!cart || cart.length === 0) {
+    return NextResponse.json({ error: "Panier vide" }, { status: 400 });
+  }
+
+  const line_items = cart.map((item) => ({
+    price_data: {
+      currency: "eur",
+      product_data: {
+        name: item.name,
+        images: item.images,
+      },
+      unit_amount: Math.round(item.price * 100),
+    },
+    quantity: item.quantity,
+  }));
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items,
+    mode: "payment",
+    success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
+  });
+
+  return NextResponse.json({ url: session.url });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\cloudinary\sign\route.ts =====
+import { NextResponse } from "next/server";
+import cloudinary from "@/lib/cloudinary";
+
+export async function GET() {
+  const timestamp = Math.round(Date.now() / 1000);
+
+  const signature = cloudinary.utils.api_sign_request(
+    { timestamp, folder: "products" },
+    process.env.CLOUDINARY_API_SECRET!
+  );
+
+  return NextResponse.json({
+    timestamp,
+    signature,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\messages\conversations\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  const conversations = await prisma.conversation.findMany({
+    where: {
+      OR: [
+        { buyerId: user.id },
+        { partnerId: user.id },
+      ],
+    },
+    include: {
+      order: true,
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          text: true,
+          createdAt: true,
+          senderId: true,      // ⭐ AJOUT ESSENTIEL
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return NextResponse.json(conversations);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\messages\create\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiSpamMessage } from "@/lib/security/antiSpam";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+
+import { messageCreateSchema } from "@/lib/validation/messages";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth ---
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  // --- Récupération de l'utilisateur ---
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Utilisateur introuvable" },
+      { status: 404 }
+    );
+  }
+
+  // --- Anti‑spam messages ---
+  const spamCheck = antiSpamMessage(ip, user.id);
+  if (!spamCheck.ok) {
+    return NextResponse.json(
+      { error: spamCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Lecture du JSON ---
+  const json = await req.json();
+
+  // --- Zod Validation ---
+  const parsed = messageCreateSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { conversationId, text, image } = parsed.data;
+
+  // --- Création du message ---
+  const message = await prisma.message.create({
+    data: {
+      conversationId,
+      senderId: user.id,
+      text: text || null,
+      image: image || null,
+    },
+  });
+
+  // --- Mise à jour de la conversation ---
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { updatedAt: new Date() },
+  });
+
+  // --- Récupération de la conversation complète ---
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      messages: { orderBy: { createdAt: "asc" } },
+    },
+  });
+
+  if (!conversation) {
+    return NextResponse.json(message);
+  }
+
+  // --- Calcul du temps de réponse partenaire ---
+  if (user.id === conversation.partnerId) {
+    const firstBuyerMessage = conversation.messages.find(
+      (m) => m.senderId === conversation.buyerId
+    );
+
+    const firstPartnerReply = conversation.messages.find(
+      (m) => m.senderId === conversation.partnerId
+    );
+
+    if (firstBuyerMessage && firstPartnerReply) {
+      const diffMs =
+        new Date(firstPartnerReply.createdAt).getTime() -
+        new Date(firstBuyerMessage.createdAt).getTime();
+
+      const diffMinutes = Math.round(diffMs / 1000 / 60);
+
+      await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/partner/${conversation.partnerId}/response-time`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ minutes: diffMinutes }),
+        }
+      );
+    }
+  }
+
+  return NextResponse.json(message);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\messages\read\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  const { conversationId } = await req.json();
+
+  await prisma.message.updateMany({
+    where: {
+      conversationId,
+      senderId: { not: user!.id }, // ⭐ messages reçus
+      read: false,
+    },
+    data: { read: true },
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\messages\upload\route.ts =====
+import { NextResponse } from "next/server";
+import { v2 as cloudinary } from "cloudinary";
+import { rateLimit } from "@/lib/rateLimit";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
+
+export async function POST(req: Request) {
+  // --- Rate Limit Protection ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+  // -----------------------------
+
+  const formData = await req.formData();
+  const file = formData.get("file") as File | null;
+
+  if (!file) {
+    return NextResponse.json({ error: "Aucun fichier" }, { status: 400 });
+  }
+
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "locaplux/messages" },
+      (error, result) => {
+        if (error || !result) {
+          return reject(
+            NextResponse.json({ error: "Upload échoué" }, { status: 500 })
+          );
+        }
+        resolve(NextResponse.json({ url: result.secure_url }));
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\messages\[conversationId]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\onboarding\address\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+  const body = await req.json();
+
+  const { billing, shipping } = body;
+
+  // Validation back-end
+  const required = ["street", "zip", "city", "country"];
+
+  for (const field of required) {
+    if (!billing[field]) {
+      return NextResponse.json(
+        { error: "Champs obligatoires manquants (facturation)" },
+        { status: 400 }
+      );
+    }
+  }
+
+  for (const field of required) {
+    if (!shipping[field]) {
+      return NextResponse.json(
+        { error: "Champs obligatoires manquants (livraison)" },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Supprimer anciennes adresses (optionnel mais propre)
+  await prisma.address.deleteMany({
+    where: { userId },
+  });
+
+  // Créer adresse de facturation
+  await prisma.address.create({
+    data: {
+      userId,
+      type: "billing",
+      street: billing.street,
+      number: billing.number,
+      zip: billing.zip,
+      city: billing.city,
+      country: billing.country,
+      phone: billing.phone,
+    },
+  });
+
+  // Créer adresse de livraison
+  await prisma.address.create({
+    data: {
+      userId,
+      type: "shipping",
+      street: shipping.street,
+      number: shipping.number,
+      zip: shipping.zip,
+      city: shipping.city,
+      country: shipping.country,
+      phone: shipping.phone,
+    },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\onboarding\preferences\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+  const { preferredLanguage } = await req.json();
+
+  if (!preferredLanguage) {
+    return NextResponse.json(
+      { error: "Langue manquante" },
+      { status: 400 }
+    );
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { preferredLanguage },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\create\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+import { emailOrderNew } from "@/lib/emails/order/orderNew";
+import { emailOrderConfirmation } from "@/lib/emails/order/orderConfirmation";
+import { emailOrderReceipt } from "@/lib/emails/order/orderReceipt";
+
+import { eventBus } from "@/lib/events/eventBus";
+import { rateLimit } from "@/lib/rateLimit";
+import { orderCreateSchema } from "@/lib/validation/orders";
+
+import { antiFraudOrder } from "@/lib/security/antiFraud";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+  // -----------------------------
+
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  // --- Anti‑fraude commandes ---
+  const fraudCheck = antiFraudOrder(ip, session.user.id);
+
+  if (!fraudCheck.ok) {
+    return NextResponse.json(
+      { error: fraudCheck.reason },
+      { status: 429 }
+    );
+  }
+  // -----------------------------
+
+  // --- Zod Validation ---
+  const json = await req.json();
+  const parsed = orderCreateSchema.safeParse(json);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { items } = parsed.data;
+  // -----------------------
+
+  // Récupération de l’acheteur
+  const buyer = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!buyer) {
+    return NextResponse.json(
+      { error: "Utilisateur introuvable" },
+      { status: 404 }
+    );
+  }
+
+  // Vérification des produits + calcul total
+  const productIds = items.map((i) => i.productId);
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    include: { partner: true },
+  });
+
+  if (products.length !== items.length) {
+    return NextResponse.json(
+      { error: "Produit introuvable" },
+      { status: 400 }
+    );
+  }
+
+  // ⚠️ Locaplux = 1 vendeur par commande
+  const partner = products[0].partner;
+
+  const total = products.reduce((sum, product) => {
+    const item = items.find((i) => i.productId === product.id);
+    return sum + product.price * item.quantity;
+  }, 0);
+
+  // ⭐ Création de la commande
+  const order = await prisma.order.create({
+    data: {
+      userId: buyer.id,
+      partnerId: partner.id,
+      total,
+      items: {
+        create: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          price: products.find((p) => p.id === i.productId)!.price,
+        })),
+      },
+    },
+    include: {
+      user: true,
+      partner: true,
+      items: { include: { product: true } },
+    },
+  });
+
+  // ⭐⭐ Notification SSE
+  eventBus.emit("notification", {
+    type: "ORDER_CREATED",
+    userId: order.partnerId,
+    payload: {
+      orderId: order.id,
+      total: order.total,
+      buyer: order.user.name,
+    },
+  });
+
+  // ⭐ Création automatique de la conversation
+  await prisma.conversation.create({
+    data: {
+      orderId: order.id,
+      buyerId: order.userId,
+      partnerId: order.partnerId,
+    },
+  });
+
+  // Emails premium
+  const buyerEmail = order.user.email;
+  const partnerEmail = order.partner.email;
+
+  if (partnerEmail) {
+    await emailOrderNew(partnerEmail, order.id);
+  }
+
+  if (buyerEmail) {
+    await emailOrderConfirmation(buyerEmail, order.id);
+    await emailOrderReceipt(buyerEmail, order.id, order.total);
+  }
+
+  return NextResponse.json(order);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\mark-paid\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
+
+export async function POST(req: Request) {
+  // --- Rate Limit Protection ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // Ici on peut être encore plus strict : 5 requêtes/minute max
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+  // -----------------------------
+
+  const { orderId } = await req.json();
+
+  if (!orderId) {
+    return NextResponse.json(
+      { error: "ID de commande manquant" },
+      { status: 400 }
+    );
+  }
+
+  const order = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: "paid",
+      paidAt: new Date(),
+    },
+  });
+
+  return NextResponse.json(order);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\me\route.ts =====
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      partner: true,
+      items: { include: { product: true } },
+    },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\partner\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur est partenaire
+  const partner = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!partner || partner.role !== "partner") {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  // Récupérer les commandes reçues
+  const orders = await prisma.order.findMany({
+    where: { partnerId: partner.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: { include: { product: true } },
+      user: true,
+    },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\status\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { handleOrderStatusChange } from "@/lib/events";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Seuls admin OU partenaire propriétaire peuvent modifier une commande
+    if (!session || !["admin", "partner"].includes(session.user?.role)) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
+    const { orderId, newStatus } = await req.json();
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: true,
+        partner: true,
+      },
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+    }
+
+    // Si partenaire : vérifier qu'il est bien propriétaire de la commande
+    if (session.user.role === "partner" && session.user.id !== order.partnerId) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
+
+    const previousStatus = order.status;
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus },
+      include: {
+        user: true,
+        partner: true,
+      },
+    });
+
+    if (previousStatus !== newStatus) {
+      await handleOrderStatusChange(updatedOrder, previousStatus);
+    }
+
+    return NextResponse.json({ success: true, order: updatedOrder });
+  } catch (error) {
+    console.error("Erreur update order status:", error);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\[orderId]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\orders\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const orders = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        partner: true,
+      },
+    });
+
+    return NextResponse.json(orders);
+  } catch (error) {
+    console.error("Erreur API commandes :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur" },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\account\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+
+export async function GET() {
+  const session = await getServerSession();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partner = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  return NextResponse.json(partner);
+}
+
+export async function PATCH(req: Request) {
+  const session = await getServerSession();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const data = await req.json();
+
+  const updated = await prisma.user.update({
+    where: { email: session.user.email },
+    data: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      publicName: data.publicName,
+      company: data.company,
+      vat: data.vat,
+      phonePrefix: data.phonePrefix,
+      phone: data.phone,
+      street: data.street,
+      number: data.number,
+      postal: data.postal,
+      city: data.city,
+      country: data.country,
+      website: data.website,
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\boosts\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const boosts = await prisma.boost.findMany({
+    where: {
+      partnerId,
+      endDate: { gte: new Date() },
+    },
+    include: {
+      product: true,
+    },
+  });
+
+  return NextResponse.json(boosts);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\invoices\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const invoices = await prisma.invoice.findMany({
+    where: { partnerId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(invoices);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\orders\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const orders = await prisma.order.findMany({
+    where: { partnerId },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    include: {
+      items: { include: { product: true } },
+    },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\overview\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const orders = await prisma.order.findMany({
+    where: { partnerId, status: "confirmed" },
+  });
+
+  const totalSales = orders.reduce((s, o) => s + o.total, 0);
+  const totalCommission = orders.reduce((s, o) => s + (o.commissionAmount ?? 0), 0);
+  const totalPartner = orders.reduce((s, o) => s + (o.partnerAmount ?? 0), 0);
+  const avgBasket = orders.length ? Math.round(totalSales / orders.length) : 0;
+
+  return NextResponse.json({
+    totalSales,
+    totalCommission,
+    totalPartner,
+    totalOrders: orders.length,
+    avgBasket,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\stats\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const stats = await prisma.order.groupBy({
+    by: ["createdAt"],
+    where: { partnerId, status: "confirmed" },
+    _sum: {
+      total: true,
+      commissionAmount: true,
+      partnerAmount: true,
+    },
+  });
+
+  const formatted = stats.map((s) => ({
+    month: s.createdAt.toISOString().slice(0, 7),
+    total: s._sum.total ?? 0,
+    commission: s._sum.commissionAmount ?? 0,
+    partner: s._sum.partnerAmount ?? 0,
+  }));
+
+  return NextResponse.json(formatted);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\dashboard\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const partner = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!partner || partner.role !== "partner") {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  // Stats globales
+  const totalOrders = await prisma.order.count({
+    where: { partnerId: partner.id },
+  });
+
+  const totalRevenue = await prisma.order.aggregate({
+    where: { partnerId: partner.id },
+    _sum: { total: true },
+  });
+
+  const totalProducts = await prisma.product.count({
+    where: { partnerId: partner.id },
+  });
+
+  const activeProducts = await prisma.product.count({
+    where: { partnerId: partner.id, active: true },
+  });
+
+  const outOfStockProducts = await prisma.product.count({
+    where: { partnerId: partner.id, stock: 0 },
+  });
+
+  // 5 dernières commandes
+  const recentOrders = await prisma.order.findMany({
+    where: { partnerId: partner.id },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      items: { include: { product: true } },
+    },
+  });
+
+  // 5 produits actifs
+  const recentProducts = await prisma.product.findMany({
+    where: { partnerId: partner.id, active: true },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+
+  return NextResponse.json({
+    stats: {
+      totalOrders,
+      totalRevenue: totalRevenue._sum.total || 0,
+      totalProducts,
+      activeProducts,
+      outOfStockProducts,
+    },
+    recentOrders,
+    recentProducts,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\delete-image\route.ts =====
+import { NextResponse } from "next/server";
+import cloudinary from "@/lib/cloudinary";
+
+export async function POST(req: Request) {
+  const { publicId } = await req.json();
+
+  if (!publicId) {
+    return NextResponse.json({ error: "Missing publicId" }, { status: 400 });
+  }
+
+  await cloudinary.uploader.destroy(publicId);
+
+  return NextResponse.json({ ok: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\orders\status\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+import { emailOrderStatusUpdate } from "@/lib/emails/order/orderStatusUpdate";
+
+export async function POST(req, { params }) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const partner = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!partner || partner.role !== "partner") {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: params.id },
+    include: { user: true },
+  });
+
+  if (!order || order.partnerId !== partner.id) {
+    return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+  }
+
+  const { status } = await req.json();
+
+  const allowed = ["shipped", "delivered", "cancelled"];
+
+  if (!allowed.includes(status)) {
+    return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: params.id },
+    data: { status },
+    include: { user: true },
+  });
+
+  // Email client
+  await emailOrderStatusUpdate(
+    updated.user.email,
+    updated.id,
+    status
+  );
+
+  return NextResponse.json(updated);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\orders\[orderId]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\orders\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+
+export async function GET() {
+  const session = await getServerSession();
+
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { partnerId: session.user.id },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      items: true,
+    },
+    orderBy: { id: "desc" },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\list\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(req) {
+  const partnerId = req.headers.get("x-partner-id");
+
+  if (!partnerId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const products = await prisma.product.findMany({
+    where: { partnerId: Number(partnerId) },
+    include: { category: true },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\mobile-upload\route.ts =====
+import { NextResponse } from "next/server";
+import cloudinary from "@/lib/cloudinary";
+
+const sessions = new Map();
+
+export async function POST(req: Request) {
+  const form = await req.formData();
+  const file = form.get("file") as File;
+  const session = form.get("session") as string;
+
+  if (!file || !session) {
+    return NextResponse.json({ error: "Missing data" }, { status: 400 });
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const result: any = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: `mobile-capture`,
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error || !result) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
+  sessions.set(session, result.secure_url);
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const session = searchParams.get("session");
+
+  if (!session) return NextResponse.json({ url: null });
+
+  const url = sessions.get(session) || null;
+
+  return NextResponse.json({ url });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\new\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { productCreateSchema } from "@/lib/validation/products";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth partenaire ---
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  // --- Zod Validation ---
+  const json = await req.json();
+  const parsed = productCreateSchema.safeParse(json);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const data = parsed.data;
+
+  // --- Création du produit ---
+  const product = await prisma.product.create({
+    data: {
+      partnerId,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      categoryName: data.categoryName,
+      images: data.images,
+      status: "pending", // validation manuelle ou auto
+    },
+  });
+
+  return NextResponse.json(product);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\update\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { productUpdateSchema } from "@/lib/validation/products";
+
+// --- Emails ---
+import { emailProductPendingAdminAlert } from "@/lib/emails/product/productPendingAdminAlert";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth partenaire ---
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  // --- Zod Validation ---
+  const json = await req.json();
+  const parsed = productUpdateSchema.safeParse(json);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { productId, ...updates } = parsed.data;
+
+  // --- Vérification ownership produit ---
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { partner: true }, // nécessaire pour email admin
+  });
+
+  if (!product) {
+    return NextResponse.json(
+      { error: "Produit introuvable" },
+      { status: 404 }
+    );
+  }
+
+  if (product.partnerId !== partnerId) {
+    return NextResponse.json(
+      { error: "Vous ne pouvez modifier que vos propres produits" },
+      { status: 403 }
+    );
+  }
+
+  // --- Détection de modifications importantes ---
+  const requiresAdminReview =
+    (updates.price && updates.price !== product.price) ||
+    (updates.description && updates.description !== product.description) ||
+    (updates.images && JSON.stringify(updates.images) !== JSON.stringify(product.images)) ||
+    (updates.categoryName && updates.categoryName !== product.categoryName);
+
+  // --- Mise à jour du produit ---
+  const updated = await prisma.product.update({
+    where: { id: productId },
+    data: {
+      ...updates,
+      status: requiresAdminReview ? "pending" : product.status,
+    },
+  });
+
+  // --- Email admin si repasse en pending ---
+  if (requiresAdminReview) {
+    await emailProductPendingAdminAlert(product.name, session.user.email);
+  }
+
+  return NextResponse.json({
+    updated,
+    requiresAdminReview,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\upload-image\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import cloudinary from "@/lib/cloudinary";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { productImageUploadSchema } from "@/lib/validation/upload";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth partenaire ---
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  // --- Lecture du formData ---
+  const formData = await req.formData();
+
+  // --- Zod Validation (pour champs textuels éventuels) ---
+  const textFields: Record<string, any> = {};
+  formData.forEach((value, key) => {
+    if (typeof value === "string") textFields[key] = value;
+  });
+
+  const parsed = productImageUploadSchema.safeParse(textFields);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid fields", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  // --- Validation stricte du fichier ---
+  const file = formData.get("file") as File | null;
+
+  if (!file) {
+    return NextResponse.json({ error: "No file" }, { status: 400 });
+  }
+
+  // Taille max : 10 Mo
+  const MAX_SIZE = 10 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json(
+      { error: "Fichier trop volumineux (max 10 Mo)" },
+      { status: 400 }
+    );
+  }
+
+  // Types autorisés
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) {
+    return NextResponse.json(
+      { error: "Format non supporté (JPEG, PNG, WEBP uniquement)" },
+      { status: 400 }
+    );
+  }
+
+  // --- Upload Cloudinary ---
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const result: any = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: `partners/${partnerId}/products`,
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error || !result) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
+  return NextResponse.json({
+    url: result.secure_url,
+    publicId: result.public_id,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\products\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+  const data = await req.json();
+
+  const product = await prisma.product.create({
+    data: {
+      name: data.name,
+      description: data.description || "",
+      price: Number(data.price),
+      categoryName: data.categoryName,
+      stock: Number(data.stock || 0),
+      status: "pending",
+      imageUrl: data.imageUrl || null,
+      partnerId, // ← IMPORTANT : cohérent avec ton GET
+    },
+  });
+
+  return NextResponse.json(product);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\sales\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const partner = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!partner || partner.role !== "partner") {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  // Récupérer tous les items vendus par ce partenaire
+  const items = await prisma.orderItem.findMany({
+    where: {
+      order: {
+        partnerId: partner.id,
+        status: { not: "cancelled" }, // On exclut les commandes annulées
+      },
+    },
+    include: {
+      product: true,
+      order: true,
+    },
+  });
+
+  // Regroupement par produit
+  const grouped = {};
+
+  for (const item of items) {
+    const pid = item.productId;
+
+    if (!grouped[pid]) {
+      grouped[pid] = {
+        productId: pid,
+        productName: item.product.name,
+        productSlug: item.product.slug,
+        productPrice: item.product.price,
+        stock: item.product.stock,
+        active: item.product.active,
+        totalQuantity: 0,
+        totalRevenue: 0,
+        orders: new Set(),
+        lastSale: null,
+      };
+    }
+
+    grouped[pid].totalQuantity += item.quantity;
+    grouped[pid].totalRevenue += item.quantity * item.price;
+    grouped[pid].orders.add(item.orderId);
+
+    const saleDate = new Date(item.order.createdAt);
+    if (!grouped[pid].lastSale || saleDate > grouped[pid].lastSale) {
+      grouped[pid].lastSale = saleDate;
+    }
+  }
+
+  // Convertir Set → number
+  const result = Object.values(grouped).map((p: any) => ({
+    ...p,
+    ordersCount: p.orders.size,
+    orders: undefined,
+  }));
+
+  return NextResponse.json(result);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\stats\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+
+export async function GET() {
+  const session = await getServerSession();
+
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const partnerId = session.user.id;
+
+  const products = await prisma.product.count({
+    where: { partnerId },
+  });
+
+  const orders = await prisma.order.count({
+    where: { partnerId },
+  });
+
+  const revenue = await prisma.order.aggregate({
+    where: { partnerId },
+    _sum: { total: true },
+  });
+
+  return NextResponse.json({
+    products,
+    orders,
+    revenue: revenue._sum.total || 0,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\status\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { handlePartnerStatusChange } from "@/lib/events";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
+    const { userId, newStatus } = await req.json();
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    }
+
+    const previousStatus = user.status;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { status: newStatus },
+    });
+
+    if (previousStatus !== newStatus) {
+      await handlePartnerStatusChange(updatedUser, previousStatus);
+    }
+
+    return NextResponse.json({ success: true, user: updatedUser });
+  } catch (error) {
+    console.error("Erreur update partner status:", error);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\update\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { partnerApplicationUpdateSchema } from "@/lib/validation/partner";
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  try {
+    // --- Auth admin ---
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
+    // --- Zod Validation ---
+    const json = await req.json();
+    const parsed = partnerApplicationUpdateSchema.safeParse(json);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Données invalides", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { applicationId, action } = parsed.data;
+
+    // --- Récupérer la demande ---
+    const application = await prisma.partnerApplication.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        { error: "Demande introuvable" },
+        { status: 404 }
+      );
+    }
+
+    // --- Mise à jour du statut ---
+    const newStatus = action === "approve" ? "approved" : "rejected";
+
+    await prisma.partnerApplication.update({
+      where: { id: applicationId },
+      data: { status: newStatus },
+    });
+
+    // --- Mise à jour du rôle utilisateur ---
+    await prisma.user.update({
+      where: { id: application.userId },
+      data: {
+        role: action === "approve" ? "partner" : "user",
+      },
+    });
+
+    return NextResponse.json({ success: true, status: newStatus });
+  } catch (error) {
+    console.error("Erreur admin update:", error);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\[id]\response-time\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\partner\[id]\reviews\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\create\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(req: Request) {
+  const { name, description, price, images, categoryName } = await req.json();
+
+  // 1) Vérifier si la catégorie existe
+  let category = await prisma.category.findFirst({
+    where: { name: categoryName },
+  });
+
+  // 2) Si elle n'existe pas → la créer automatiquement
+  if (!category) {
+    category = await prisma.category.create({
+      data: {
+        name: categoryName,
+        validated: false, // admin devra valider
+      },
+    });
+  }
+
+  // 3) Créer le produit lié à la catégorie
+  const product = await prisma.product.create({
+    data: {
+      name,
+      description,
+      price,
+      images,
+      categoryId: category.id,
+    },
+  });
+
+  return NextResponse.json(product);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\latest\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        category: true,
+        partner: true,
+      },
+    });
+
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("Error fetching latest products:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\popular\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        category: true,
+        partner: true,
+      },
+    });
+
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("Error fetching popular products:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\status\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { handleProductStatusChange } from "@/lib/events";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Seul admin peut changer le statut d’un produit
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
+    const { productId, newStatus } = await req.json();
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        partner: true,
+      },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+    }
+
+    const previousStatus = product.status;
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: { status: newStatus },
+      include: {
+        partner: true,
+      },
+    });
+
+    if (previousStatus !== newStatus) {
+      await handleProductStatusChange(updatedProduct, previousStatus);
+    }
+
+    return NextResponse.json({ success: true, product: updatedProduct });
+  } catch (error) {
+    console.error("Erreur update product status:", error);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\products\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const products = await prisma.product.findMany({
+    include: {
+      category: true,
+      user: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\public\partner\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\questions\answer\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+// 🔒 Filtre anti-détournement renforcé (même que F11.3)
+async function sanitizeMessage(message: string) {
+  let clean = message;
+
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    select: { name: true, company: true },
+  });
+
+  const patterns = [
+    /\b[\w.%+-]+@[\w.-]+\.\w{2,}\b/gi,
+    /\b[\w.%+-]+\s*(?:at|@)\s*[\w.-]+\s*(?:dot|point|\.)\s*\w{2,}\b/gi,
+    /\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}/gi,
+    /\b(zero|un|deux|trois|quatre|cinq|six|sept|huit|neuf)(\s|-)?(zero|un|deux|trois|quatre|cinq|six|sept|huit|neuf)+\b/gi,
+    /https?:\/\/\S+/gi,
+    /www\.\S+/gi,
+    /\b(bit\.ly|tinyurl\.com|t\.co|wa\.me|linktr\.ee|goo\.gl)\/\S+/gi,
+    /\b(instagram|facebook|whatsapp|tiktok|snapchat|telegram|messenger)\b/gi,
+    /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/gi,
+    /\b(rue|avenue|boulevard|impasse|chemin|route|allée|place)\b\s+\w+/gi,
+    /\b(L-\d{4}|\d{4,5})\b/gi,
+    /data:image\/png;base64,[A-Za-z0-9+/=]+/gi,
+    /\b(sarl|sa|gmbh|sprl|sàrl|ltd|inc)\b/gi,
+  ];
+
+  patterns.forEach((pattern) => {
+    clean = clean.replace(pattern, "[contenu masqué]");
+  });
+
+  partners.forEach((p) => {
+    if (p.name) clean = clean.replace(new RegExp(p.name, "gi"), "[contenu masqué]");
+    if (p.company) clean = clean.replace(new RegExp(p.company, "gi"), "[contenu masqué]");
+  });
+
+  return clean;
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Vous devez être connecté." },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { questionId, answer } = body;
+
+    if (!questionId || !answer) {
+      return NextResponse.json(
+        { error: "Question et réponse requises." },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier la question
+    const question = await prisma.question.findUnique({
+      where: { id: questionId },
+    });
+
+    if (!question) {
+      return NextResponse.json(
+        { error: "Question introuvable." },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier que l'utilisateur est bien le partenaire concerné
+    if (question.partnerId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Vous n'êtes pas autorisé à répondre à cette question." },
+        { status: 403 }
+      );
+    }
+
+    // 🔒 Filtrer la réponse (anti-détournement)
+    const safeAnswer = await sanitizeMessage(answer);
+
+    // Enregistrer la réponse
+    const updated = await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        answer: safeAnswer,
+        answeredAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true, question: updated });
+  } catch (error) {
+    console.error("Erreur API /questions/answer :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\questions\list\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Non autorisé." },
+        { status: 401 }
+      );
+    }
+
+    const questions = await prisma.question.findMany({
+      where: { buyerId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        product: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ questions });
+  } catch (error) {
+    console.error("Erreur API /questions/list :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\questions\partner\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Non autorisé." },
+        { status: 401 }
+      );
+    }
+
+    const questions = await prisma.question.findMany({
+      where: { partnerId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        product: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ questions });
+  } catch (error) {
+    console.error("Erreur API /questions/partner :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\questions\send\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+// 🔒 Filtre anti-détournement renforcé
+async function sanitizeMessage(message: string) {
+  let clean = message;
+
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    select: { name: true, company: true },
+  });
+
+  const patterns = [
+    /\b[\w.%+-]+@[\w.-]+\.\w{2,}\b/gi,
+    /\b[\w.%+-]+\s*(?:at|@)\s*[\w.-]+\s*(?:dot|point|\.)\s*\w{2,}\b/gi,
+    /\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}/gi,
+    /\b(zero|un|deux|trois|quatre|cinq|six|sept|huit|neuf)(\s|-)?(zero|un|deux|trois|quatre|cinq|six|sept|huit|neuf)+\b/gi,
+    /https?:\/\/\S+/gi,
+    /www\.\S+/gi,
+    /\b(bit\.ly|tinyurl\.com|t\.co|wa\.me|linktr\.ee|goo\.gl)\/\S+/gi,
+    /\b(instagram|facebook|whatsapp|tiktok|snapchat|telegram|messenger)\b/gi,
+    /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/gi,
+    /\b(rue|avenue|boulevard|impasse|chemin|route|allée|place)\b\s+\w+/gi,
+    /\b(L-\d{4}|\d{4,5})\b/gi,
+    /data:image\/png;base64,[A-Za-z0-9+/=]+/gi,
+    /\b(sarl|sa|gmbh|sprl|sàrl|ltd|inc)\b/gi,
+  ];
+
+  patterns.forEach((pattern) => {
+    clean = clean.replace(pattern, "[contenu masqué]");
+  });
+
+  partners.forEach((p) => {
+    if (p.name) clean = clean.replace(new RegExp(p.name, "gi"), "[contenu masqué]");
+    if (p.company) clean = clean.replace(new RegExp(p.company, "gi"), "[contenu masqué]");
+  });
+
+  return clean;
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Vous devez être connecté pour poser une question." },
+        { status: 401 }
+      );
+    }
+
+    // 🔵 Détection JSON vs FormData
+    const contentType = req.headers.get("content-type") || "";
+
+    let productId: string;
+    let message: string;
+    let files: File[] = [];
+
+    if (contentType.includes("multipart/form-data")) {
+      // ✔ Après paiement → FormData
+      const form = await req.formData();
+      productId = form.get("productId") as string;
+      message = form.get("message") as string;
+
+      const uploaded = form.getAll("files");
+      files = uploaded.filter((f) => f instanceof File) as File[];
+    } else {
+      // ❌ Avant paiement → JSON
+      const body = await req.json();
+      productId = body.productId;
+      message = body.message;
+    }
+
+    if (!productId || !message) {
+      return NextResponse.json(
+        { error: "Produit et message requis." },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier le produit
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { partner: true },
+    });
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Produit introuvable." },
+        { status: 404 }
+      );
+    }
+
+    // 🔵 Vérifier si l'utilisateur a acheté ce produit
+    const order = await prisma.order.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "delivered",
+        items: { some: { productId } },
+      },
+    });
+
+    const unlocked = !!order;
+
+    // ❌ Blocage des fichiers avant paiement
+    if (!unlocked && files.length > 0) {
+      return NextResponse.json(
+        { error: "Les fichiers ne peuvent pas être envoyés avant le paiement." },
+        { status: 400 }
+      );
+    }
+
+    // 🔒 Filtrer le message si pas débloqué
+    const finalMessage = unlocked ? message : await sanitizeMessage(message);
+
+    // 🔵 Enregistrer la question
+    const question = await prisma.question.create({
+      data: {
+        productId,
+        buyerId: session.user.id,
+        partnerId: product.partnerId,
+        message: finalMessage,
+      },
+    });
+
+    // 🔵 Si fichiers → stockage (à implémenter plus tard)
+    // Ici on ne stocke pas encore, mais la structure est prête
+
+    return NextResponse.json({ success: true, question });
+  } catch (error) {
+    console.error("Erreur API /questions/send :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\questions\unlock\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Non autorisé." },
+        { status: 401 }
+      );
+    }
+
+    const { productId } = await req.json();
+
+    if (!productId) {
+      return NextResponse.json(
+        { error: "Produit requis." },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier si l'utilisateur a acheté ce produit
+    const order = await prisma.order.findFirst({
+      where: {
+        userId: session.user.id,
+        status: "delivered", // ou "confirmed" selon ton workflow
+        items: {
+          some: { productId },
+        },
+      },
+      include: {
+        partner: true,
+      },
+    });
+
+    if (!order) {
+      return NextResponse.json(
+        { unlocked: false },
+        { status: 200 }
+      );
+    }
+
+    // Débloquer les infos du partenaire
+    return NextResponse.json({
+      unlocked: true,
+      partner: {
+        name: order.partner.name,
+        email: order.partner.email,
+        phone: order.partner.phone,
+        address: order.partner.address,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur API /questions/unlock :", error);
+    return NextResponse.json(
+      { error: "Erreur serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\register\partner\route.ts =====
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export async function POST(req: Request) {
+  try {
+    const data = await req.json();
+
+    const {
+      firstName,
+      lastName,
+      company,
+      publicName,
+      email,
+      street,
+      number,
+      postal,
+      city,
+      country,
+      phonePrefix,
+      phone,
+      vat,
+      website,
+    } = data;
+
+    // Validation simple
+    if (
+      !firstName ||
+      !lastName ||
+      !company ||
+      !publicName ||
+      !email ||
+      !postal ||
+      !country ||
+      !phonePrefix ||
+      !phone ||
+      !vat
+    ) {
+      return NextResponse.json(
+        { error: "Champs obligatoires manquants." },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier si un utilisateur existe déjà avec cet email
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Un compte existe déjà avec cet email." },
+        { status: 400 }
+      );
+    }
+
+    // Création du compte partenaire (User)
+    const user = await prisma.user.create({
+      data: {
+        email,
+        role: "partner",
+        status: "pending",
+
+        firstName,
+        lastName,
+
+        company,
+        publicName,
+        vat,
+
+        phonePrefix,
+        phone,
+
+        street,
+        number,
+        postal,
+        city,
+        country,
+
+        website,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        message:
+          "Votre demande a été envoyée. Un administrateur doit valider votre compte avant activation.",
+        userId: user.id,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Erreur API register/partner :", error);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur." },
+      { status: 500 }
+    );
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\register\route.ts =====
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(req: Request) {
+  const { name, email, password } = await req.json();
+
+  const hashed = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashed,
+      role: "partner",
+    },
+  });
+
+  return NextResponse.json(user);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\search\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const q = searchParams.get("q");
+
+  if (!q) return NextResponse.json([]);
+
+  const products = await prisma.product.findMany({
+    where: {
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    include: {
+      category: true,
+      user: true,
+    },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\sse\notifications\route.ts =====
+import { NextRequest } from 'next/server';
+import { eventBus } from '@/lib/events/eventBus';
+
+export const runtime = 'nodejs';
+
+export async function GET(req: NextRequest) {
+  const stream = new ReadableStream({
+    start(controller) {
+      const encoder = new TextEncoder();
+
+      const listener = (data: any) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
+
+      eventBus.on('notification', listener);
+
+      req.signal.addEventListener('abort', () => {
+        eventBus.off('notification', listener);
+        controller.close();
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\stripe\callback\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import Stripe from "stripe";
+import { getServerSession } from "next-auth";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function GET() {
+  const session = await getServerSession();
+
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.redirect("/login");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
+
+  if (!user?.stripeAccountId) {
+    return NextResponse.redirect("/partner/stripe");
+  }
+
+  const account = await stripe.accounts.retrieve(user.stripeAccountId);
+
+  // Si le compte est validé → statut vendeur actif
+  if (account.details_submitted) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { stripeVerified: true },
+    });
+
+    return NextResponse.redirect("/partner/dashboard");
+  }
+
+  return NextResponse.redirect("/partner/stripe");
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\stripe\checkout\route.ts =====
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import prisma from "@/lib/prisma";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+
+    const {
+      items,
+      customer: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        street,
+        number,
+        postal,
+        city,
+        country,
+      },
+    } = body;
+
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: "Panier vide" }, { status: 400 });
+    }
+
+    if (!firstName || !lastName || !email || !phone) {
+      return NextResponse.json(
+        { error: "Informations client incomplètes" },
+        { status: 400 }
+      );
+    }
+
+    const productIds = items.map((i: any) => i.productId);
+
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: { partner: true },
+    });
+
+    for (const item of items) {
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) {
+        return NextResponse.json(
+          { error: `Produit introuvable : ${item.productId}` },
+          { status: 400 }
+        );
+      }
+
+      if (product.stock < item.quantity) {
+        return NextResponse.json(
+          {
+            error: `Stock insuffisant pour ${product.name}. Stock actuel : ${product.stock}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 1 vendeur par commande
+    const partner = products[0].partner;
+
+    if (!partner.stripeAccountId) {
+      return NextResponse.json(
+        { error: "Partenaire non configuré pour les paiements" },
+        { status: 400 }
+      );
+    }
+
+    // Calcul du total et de la commission
+    const grossTotal = items.reduce((sum: number, i: any) => {
+      const product = products.find((p) => p.id === i.productId)!;
+      return sum + product.price * i.quantity;
+    }, 0);
+
+    // Commission : 0 si produit gratuit, sinon commissionRate du partenaire
+    // (on part du principe que tous les produits de la commande ont le même partenaire)
+    const commissionRate =
+      products.every((p) => p.isFree) ? 0 : partner.commissionRate ?? 0.12;
+
+    const commissionAmount = Math.round(grossTotal * commissionRate * 100) / 100;
+    const partnerAmount = Math.round((grossTotal - commissionAmount) * 100) / 100;
+
+    // Création de la commande (commission stockée pour cohérence)
+    const order = await prisma.order.create({
+      data: {
+        userId: partner.id, // à remplacer par l’acheteur réel plus tard
+        partnerId: partner.id,
+        total: grossTotal,
+        status: "pending",
+        commissionRate,
+        commissionAmount,
+        partnerAmount,
+        street,
+        number,
+        postal,
+        city,
+        country,
+        items: {
+          create: items.map((i: any) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: products.find((p) => p.id === i.productId)!.price,
+          })),
+        },
+      },
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: email,
+      metadata: {
+        orderId: order.id,
+      },
+      line_items: items.map((i: any) => {
+        const product = products.find((p) => p.id === i.productId)!;
+        return {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: product.name,
+            },
+            unit_amount: product.price * 100,
+          },
+          quantity: i.quantity,
+        };
+      }),
+      payment_intent_data: {
+        application_fee_amount: Math.round(commissionAmount * 100),
+        transfer_data: {
+          destination: partner.stripeAccountId,
+        },
+      },
+      success_url: `${process.env.NEXTAUTH_URL}/success?orderId=${order.id}`,
+      cancel_url: `${process.env.NEXTAUTH_URL}/checkout?cancelled=true`,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\stripe\connect\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import Stripe from "stripe";
+import { getServerSession } from "next-auth";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST() {
+  const session = await getServerSession();
+
+  if (!session || session.user.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
+
+  // Créer un compte Stripe si pas encore créé
+  if (!user.stripeAccountId) {
+    const account = await stripe.accounts.create({
+      type: "express",
+      email: user.email,
+    });
+
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { stripeAccountId: account.id },
+    });
+  }
+
+  // Créer un lien d’onboarding
+  const link = await stripe.accountLinks.create({
+    account: user.stripeAccountId,
+    refresh_url: `${process.env.NEXTAUTH_URL}/partner/stripe`,
+    return_url: `${process.env.NEXTAUTH_URL}/api/stripe/callback`,
+    type: "account_onboarding",
+  });
+
+  return NextResponse.json({ url: link.url });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\stripe\subscribe\route.ts =====
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { stripe } from "@/lib/stripe";
+
+export async function POST(req: NextRequest) {
+  await connectDB();
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token || token.role !== "partner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await User.findById(token.id);
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    payment_method_types: ["card"],
+    customer_email: user.email,
+    line_items: [
+      {
+        price: process.env.STRIPE_PRO_PRICE_ID!,
+        quantity: 1,
+      },
+    ],
+    success_url: "http://localhost:3000/partner/pro/success",
+    cancel_url: "http://localhost:3000/partner/pro/cancel",
+  });
+
+  return NextResponse.json({ url: session.url });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\stripe\webhook\route.ts =====
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import prisma from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
+
+// Buffer helper
+async function buffer(readable: ReadableStream<Uint8Array>) {
+  const chunks: Uint8Array[] = [];
+  const reader = readable.getReader();
+  let done = false;
+  let value: Uint8Array | undefined;
+
+  while (!done) {
+    ({ done, value } = await reader.read());
+    if (value) chunks.push(value);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+export async function POST(req: Request) {
+  // --- Rate Limit Protection (Stripe Special) ---
+  const ip = req.headers.get("x-forwarded-for") || "stripe";
+
+  // Stripe peut envoyer beaucoup d’événements → limite élargie
+  // On modifie temporairement la limite interne
+  const allowed = rateLimit(ip); // 20/min par défaut
+
+  // Si tu veux une limite élargie, tu peux dupliquer rateLimit avec une version XL
+  // Mais pour rester simple : on laisse passer Stripe même si rateLimit retourne false
+  // car Stripe renverra automatiquement le webhook si tu bloques.
+  // Donc on NE bloque PAS Stripe.
+  // ------------------------------------------------
+
+  const buf = await buffer(req.body!);
+  const signature = req.headers.get("stripe-signature")!;
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      buf,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err) {
+    console.error("Invalid signature", err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // 1) Paiement d'une commande
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+
+    const orderId = session.metadata?.orderId;
+    const paymentIntentId = session.payment_intent as string;
+
+    if (!orderId) {
+      return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { product: true } },
+        partner: true,
+      },
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Mise à jour du stock
+    for (const item of order.items) {
+      const newStock = item.product.stock - item.quantity;
+
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: {
+          stock: Math.max(newStock, 0),
+          active: newStock > 0,
+        },
+      });
+    }
+
+    // Recalcul du total
+    const recalculatedTotal = order.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    // Recalcul commission
+    const commissionRate =
+      order.commissionRate ?? order.partner.commissionRate ?? 0.12;
+
+    const commissionAmount =
+      order.commissionAmount ??
+      Math.round(recalculatedTotal * commissionRate * 100) / 100;
+
+    const partnerAmount =
+      order.partnerAmount ??
+      Math.round((recalculatedTotal - commissionAmount) * 100) / 100;
+
+    // Mise à jour de la commande
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: "confirmed",
+        paidAt: new Date(),
+        paymentIntentId,
+        total: recalculatedTotal,
+        commissionRate,
+        commissionAmount,
+        partnerAmount,
+      },
+    });
+
+    // Enregistrement de la commission
+    await prisma.commission.create({
+      data: {
+        orderId: updatedOrder.id,
+        partnerId: updatedOrder.partnerId,
+        commissionRate,
+        commissionAmount,
+      },
+    });
+
+    // Facture par vente
+    const vatRate = 0.17;
+    const vat = Math.round(commissionAmount * vatRate * 100) / 100;
+    const totalInvoice = commissionAmount + vat;
+
+    await prisma.invoice.create({
+      data: {
+        partnerId: updatedOrder.partnerId,
+        type: "commission",
+        amount: commissionAmount,
+        vat,
+        total: totalInvoice,
+        createdAt: new Date(),
+        paid: true,
+        metadata: {
+          orderId: updatedOrder.id,
+          paymentIntentId,
+        },
+      },
+    });
+
+    return NextResponse.json({ received: true });
+  }
+
+  // 2) Abonnements PRO
+  if (event.type === "customer.subscription.created") {
+    const subscription = event.data.object as any;
+
+    await prisma.user.updateMany({
+      where: { email: subscription.customer_email },
+      data: { status: "active" },
+    });
+
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as any;
+
+    await prisma.user.updateMany({
+      where: { stripeAccountId: subscription.id },
+      data: { status: "paused" },
+    });
+
+    return NextResponse.json({ received: true });
+  }
+
+  return NextResponse.json({ received: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\upload\route.ts =====
+import { NextResponse } from "next/server";
+import { v2 as cloudinary } from "cloudinary";
+import { detectCategoryIdFromTags } from "@/lib/categories/categoryAutoDetect";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
+
+export async function POST(req: Request) {
+  const form = await req.formData();
+  const file = form.get("file") as File;
+
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  return new Promise((resolve) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "products",
+        auto_tagging: 0.7,
+      },
+      async (error, result: any) => {
+        if (error) resolve(NextResponse.json({ error }));
+
+        const tags = result.tags || [];
+        const autoCategoryId = await detectCategoryIdFromTags(tags);
+
+        resolve(
+          NextResponse.json({
+            url: result.secure_url,
+            tags,
+            autoCategoryId,
+          })
+        );
+      }
+    );
+
+    stream.end(buffer);
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\user\accept-partner-terms\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { CURRENT_PARTNER_TERMS_VERSION } from "@/lib/terms";
+
+export async function POST() {
+  const session = await getServerSession();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  await prisma.user.update({
+    where: { email: session.user.email },
+    data: {
+      acceptedPartnerTermsAt: new Date(),
+      partnerTermsVersion: CURRENT_PARTNER_TERMS_VERSION, // 🔥 version CGV partenaires
+    },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\user\accept-terms\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { CURRENT_TERMS_VERSION } from "@/lib/terms";
+
+export async function POST() {
+  const session = await getServerSession();
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  await prisma.user.update({
+    where: { email: session.user.email },
+    data: {
+      acceptedTermsAt: new Date(),
+      termsVersion: CURRENT_TERMS_VERSION, // 🔥 version CGU/CGV acheteurs
+    },
+  });
+
+  return NextResponse.json({ success: true });
+}
+

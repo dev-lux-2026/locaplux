@@ -1,0 +1,152 @@
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\banner\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { deleteFromSupabase, uploadToSupabase } from "@/lib/upload";
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const formData = await req.formData();
+  const file = formData.get("file") as File | null;
+
+  if (!file) {
+    return NextResponse.json({ error: "Missing file" }, { status: 400 });
+  }
+
+  const uploadedUrl = await uploadToSupabase(
+    file,
+    `banners/${session.user.id}`
+  );
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { bannerUrl: uploadedUrl },
+  });
+
+  return NextResponse.json({ success: true, url: uploadedUrl });
+}
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Supprimer du storage
+  await deleteFromSupabase(`banners/${session.user.id}`);
+
+  // Reset Prisma
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { bannerUrl: null },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\delete\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export async function POST() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  try {
+    // Suppression des données personnelles
+    await prisma.message.deleteMany({ where: { userId } });
+    await prisma.question.deleteMany({ where: { userId } });
+    await prisma.wishlist.deleteMany({ where: { userId } });
+    await prisma.address.deleteMany({ where: { userId } });
+
+    // Anonymisation du compte (obligation légale pour les commandes)
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: "Utilisateur supprimé",
+        email: `deleted_${userId}@locaplux.com`,
+        password: null,
+        phone: null,
+        deletedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\export\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  // Récupération des données utilisateur
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      orders: true,
+      messages: true,
+      questions: true,
+      wishlist: true,
+      addresses: true,
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+  }
+
+  // Structure d’export
+  const exportData = {
+    generatedAt: new Date().toISOString(),
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt,
+    },
+    orders: user.orders,
+    messages: user.messages,
+    questions: user.questions,
+    wishlist: user.wishlist,
+    addresses: user.addresses,
+  };
+
+  const json = JSON.stringify(exportData, null, 2);
+
+  return new NextResponse(json, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Disposition": `attachment; filename="locaplux-export-${userId}.json"`,
+    },
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\account\orders\[id]\page.tsx =====
+

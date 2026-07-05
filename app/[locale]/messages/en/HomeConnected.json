@@ -1,0 +1,21 @@
+{
+  "HomeConnected": {
+    "welcome": "Welcome",
+    "intro": "Locaplux is the place where great deals disappear fast. Display items, end-of-stock products, last pieces, official liquidations: here, every item is a real opportunity, often unique, sometimes available in only one unit. Our verified partners — brands, shops and professional sellers — publish their last pieces at the best price before they disappear for good. If you like smart shopping and never missing out… you're in the right place.",
+
+    "suggestion": {
+      "fashion": "Fashion & accessories",
+      "home": "Home & decor",
+      "tech": "High-tech & gadgets",
+      "collection": "Collectible items",
+      "brands": "Brand liquidations",
+      "stock": "Exclusive stock clearances"
+    },
+
+    "search": {
+      "label": "Search for a brand, a category or a rare item…",
+      "placeholder": "Ex: limited edition sneakers, designer sofa, collectible watch…",
+      "button": "Search"
+    }
+  }
+}

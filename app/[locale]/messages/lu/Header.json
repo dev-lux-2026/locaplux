@@ -1,0 +1,22 @@
+{
+  "slogan": "Kaaft besser, liewt besser.",
+  "becomePartner": "Partner ginn",
+
+  "logoutMessage": "Dir sidd elo ausgeloggt",
+  "unauthorizedMessage": "Zougang nëmme fir d’Administratioun",
+
+  "notifications": {
+    "title": "Notifikatiounen",
+    "empty": "Keng Notifikatiounen.",
+    "newOrder": "Nei Bestellung",
+    "seeAll": "All Notifikatiounen gesinn"
+  },
+
+  "menu": {
+    "profile": "Profil",
+    "orders": "Meng Bestellungen",
+    "partnerDashboard": "Partner‑Dashboard",
+    "adminDashboard": "Admin‑Dashboard",
+    "logout": "Ausloggen"
+  }
+}

@@ -1,0 +1,845 @@
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\analytics\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { subDays } from "date-fns";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+
+  const range = searchParams.get("range") ?? "30d";
+  const inactive = Number(searchParams.get("inactive") ?? 30);
+
+  const now = new Date();
+  let start: Date;
+
+  switch (range) {
+    case "24h":
+      start = subDays(now, 1);
+      break;
+    case "7d":
+      start = subDays(now, 7);
+      break;
+    case "30d":
+      start = subDays(now, 30);
+      break;
+    case "6m":
+      start = subDays(now, 180);
+      break;
+    case "12m":
+      start = subDays(now, 365);
+      break;
+    default:
+      start = subDays(now, 30);
+  }
+
+  // KPIs
+  const orders = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { total: true },
+  });
+
+  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const ordersCount = orders.length;
+  const avgOrder = ordersCount > 0 ? revenue / ordersCount : 0;
+
+  const previousStart = subDays(start, start.getTime() - now.getTime());
+
+  const previousOrders = await prisma.order.findMany({
+    where: { createdAt: { gte: previousStart, lt: start }, status: "PAID" },
+    select: { total: true },
+  });
+
+  const previousRevenue = previousOrders.reduce((s, o) => s + o.total, 0);
+
+  const growth =
+    previousRevenue === 0
+      ? 100
+      : ((revenue - previousRevenue) / previousRevenue) * 100;
+
+  const inactiveDate = subDays(now, inactive);
+
+  const activePartners = await prisma.partner.count({
+    where: { lastActivityAt: { gte: inactiveDate } },
+  });
+
+  const inactivePartners = await prisma.partner.count({
+    where: { lastActivityAt: { lt: inactiveDate } },
+  });
+
+  const activeProducts = await prisma.product.count({
+    where: { isActive: true },
+  });
+
+  const inactiveProducts = await prisma.product.count({
+    where: { isActive: false },
+  });
+
+  // SalesPerDay
+  const salesRaw = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { total: true, createdAt: true },
+  });
+
+  const salesMap = new Map<string, number>();
+  for (const o of salesRaw) {
+    const d = o.createdAt.toISOString().split("T")[0];
+    salesMap.set(d, (salesMap.get(d) ?? 0) + o.total);
+  }
+
+  const salesPerDay = Array.from(salesMap.entries())
+    .map(([date, value]) => ({ date, value }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // OrdersPerDay
+  const ordersRaw = await prisma.order.findMany({
+    where: { createdAt: { gte: start }, status: "PAID" },
+    select: { createdAt: true },
+  });
+
+  const ordersMap = new Map<string, number>();
+  for (const o of ordersRaw) {
+    const d = o.createdAt.toISOString().split("T")[0];
+    ordersMap.set(d, (ordersMap.get(d) ?? 0) + 1);
+  }
+
+  const ordersPerDay = Array.from(ordersMap.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // SalesByCategory
+  const categorySalesRaw = await prisma.orderItem.findMany({
+    where: {
+      order: { createdAt: { gte: start }, status: "PAID" },
+    },
+    select: {
+      total: true,
+      product: { select: { category: { select: { name: true } } } },
+    },
+  });
+
+  const categoryMap = new Map<string, number>();
+  for (const item of categorySalesRaw) {
+    const cat = item.product.category?.name ?? "Autres";
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + item.total);
+  }
+
+  const salesByCategory = Array.from(categoryMap.entries())
+    .map(([category, value]) => ({ category, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // SalesByPartner
+  const partnerSalesRaw = await prisma.orderItem.findMany({
+    where: {
+      order: { createdAt: { gte: start }, status: "PAID" },
+    },
+    select: {
+      total: true,
+      product: {
+        select: {
+          partner: { select: { id: true, publicName: true } },
+        },
+      },
+    },
+  });
+
+  const partnerMap = new Map<string, number>();
+  for (const item of partnerSalesRaw) {
+    const name = item.product.partner?.publicName ?? "Inconnu";
+    partnerMap.set(name, (partnerMap.get(name) ?? 0) + item.total);
+  }
+
+  const salesByPartner = Array.from(partnerMap.entries())
+    .map(([partner, value]) => ({ partner, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // TopPartners
+  const topPartners = salesByPartner.slice(0, 5).map((p, i) => ({
+    id: i + 1,
+    name: p.partner,
+    revenue: p.value,
+    orders: 0,
+    growth: 0,
+    rank: i + 1,
+  }));
+
+  // TopCategories
+  const topCategories = salesByCategory.slice(0, 5).map((c) => ({
+    category: c.category,
+    revenue: c.value,
+    percentage: revenue === 0 ? 0 : Math.round((c.value / revenue) * 100),
+  }));
+
+  // RecentOrders
+  const recentOrders = await prisma.order.findMany({
+    where: { status: "PAID" },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      total: true,
+      createdAt: true,
+      partner: { select: { publicName: true } },
+    },
+  });
+
+  const recentOrdersFormatted = recentOrders.map((o) => ({
+    id: o.id,
+    total: o.total,
+    createdAt: o.createdAt,
+    partner: o.partner?.publicName ?? "Inconnu",
+  }));
+
+  // RecentPartners
+  const recentPartners = await prisma.partner.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      publicName: true,
+      createdAt: true,
+      status: true,
+    },
+  });
+
+  // PartnersBySector
+  const partnersFull = await prisma.partner.findMany({
+    include: {
+      products: { include: { category: true } },
+    },
+  });
+
+  const partnerSectors: { partnerId: number; sector: string }[] = [];
+
+  for (const p of partnersFull) {
+    const counts = new Map<string, number>();
+
+    for (const product of p.products) {
+      const cat = product.category?.name ?? "Autres";
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+
+    if (counts.size === 0) {
+      partnerSectors.push({ partnerId: p.id, sector: "Autres" });
+      continue;
+    }
+
+    let topSector = "Autres";
+    let topCount = 0;
+
+    for (const [sector, count] of counts.entries()) {
+      if (count > topCount) {
+        topCount = count;
+        topSector = sector;
+      }
+    }
+
+    partnerSectors.push({ partnerId: p.id, sector: topSector });
+  }
+
+  const sectorCounts = new Map<string, number>();
+  for (const ps of partnerSectors) {
+    sectorCounts.set(ps.sector, (sectorCounts.get(ps.sector) ?? 0) + 1);
+  }
+
+  const partnersBySector = Array.from(sectorCounts.entries()).map(
+    ([sector, count]) => ({ sector, count })
+  );
+
+  return NextResponse.json({
+    range,
+    inactiveThreshold: inactive,
+
+    kpis: {
+      revenue,
+      orders: ordersCount,
+      avgOrder: Number(avgOrder.toFixed(2)),
+      growth: Number(growth.toFixed(2)),
+      activePartners,
+      inactivePartners,
+      activeProducts,
+      inactiveProducts,
+    },
+
+    salesPerDay,
+    ordersPerDay,
+    salesByCategory,
+    salesByPartner,
+    topPartners,
+    topCategories,
+    heatmap: [],
+    recentOrders: recentOrdersFormatted,
+    recentPartners,
+    partnersBySector,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\create\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function POST(req) {
+  const data = await req.json();
+
+  const category = await prisma.category.create({
+    data,
+  });
+
+  return NextResponse.json(category);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\list\route.ts =====
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const categories = await prisma.category.findMany();
+  return NextResponse.json(categories);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\[id]\validate\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\categories\route.ts =====
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ message: "Categories API root" });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\logs\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const logs = await prisma.adminLog.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      admin: { select: { publicName: true, email: true } },
+      partner: { select: { publicName: true, email: true } }
+    }
+  });
+
+  const formatted = logs.map((log) => ({
+    id: log.id,
+    action: log.action,
+    description: log.comment || null,
+
+    // TYPE DÉDUIT AUTOMATIQUEMENT
+    type: "partner",
+
+    createdAt: log.createdAt,
+
+    // NOM DE L’ADMIN
+    user: log.admin?.publicName || log.admin?.email || "Administrateur"
+  }));
+
+  return NextResponse.json(formatted);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\list\route.ts =====
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const orders = await prisma.order.findMany({
+    include: {
+      user: {
+        select: { id: true, email: true, name: true },
+      },
+      items: {
+        include: {
+          product: {
+            select: { id: true, name: true, price: true },
+          },
+        },
+      },
+    },
+    orderBy: { id: "desc" },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\orders\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\list\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      commissionRate: true,
+      freeProductLimit: true,
+      freeDaysLimit: true,
+      freeUntil: true,
+      createdAt: true,
+      _count: { select: { products: true } },
+    },
+  });
+
+  return NextResponse.json(partners);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\kyc\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\limits\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\logs\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\stats\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\update\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\partners\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\history\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  const history = await prisma.productValidationHistory.findMany({
+    include: {
+      product: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(history);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\list\route.ts =====
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      status: true,
+      images: true,
+      createdAt: true,
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\pending\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  const products = await prisma.product.findMany({
+    where: { status: "pending" },
+    include: {
+      partner: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return NextResponse.json(products);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\validate\route.ts =====
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+import { rateLimit } from "@/lib/rateLimit";
+import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
+import { z } from "zod";
+
+// --- Emails ---
+import { emailProductApproved } from "@/lib/emails/product/productApproved";
+import { emailProductRejected } from "@/lib/emails/product/productRejected";
+
+// --- Zod schema ---
+const productValidationSchema = z.object({
+  productId: z.string().min(1),
+  action: z.enum(["approve", "reject"]),
+  reason: z.string().optional(), // utile pour refus
+});
+
+export async function POST(req: Request) {
+  // --- IP extraction ---
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+
+  // --- Rate Limit Protection ---
+  if (!rateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter une minute." },
+      { status: 429 }
+    );
+  }
+
+  // --- Anti‑abuse IP global ---
+  const abuseCheck = antiAbuseIP(ip);
+  if (!abuseCheck.ok) {
+    return NextResponse.json(
+      { error: abuseCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // --- Auth admin ---
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  // --- Zod Validation ---
+  const json = await req.json();
+  const parsed = productValidationSchema.safeParse(json);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { productId, action, reason } = parsed.data;
+
+  // --- Récupération du produit ---
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { partner: true },
+  });
+
+  if (!product) {
+    return NextResponse.json(
+      { error: "Produit introuvable" },
+      { status: 404 }
+    );
+  }
+
+  // --- Mise à jour du statut ---
+  const newStatus = action === "approve" ? "approved" : "rejected";
+
+  const updated = await prisma.product.update({
+    where: { id: productId },
+    data: {
+      status: newStatus,
+      adminReason: reason || null,
+    },
+  });
+
+  // --- Historique admin ---
+  await prisma.productValidationHistory.create({
+    data: {
+      productId,
+      adminId: session.user.id,
+      action,
+      reason: reason || null,
+    },
+  });
+
+  // --- Envoi email partenaire ---
+  if (product.partner?.email) {
+    if (action === "approve") {
+      await emailProductApproved(product.partner.email, product.name);
+    } else {
+      await emailProductRejected(product.partner.email, product.name, reason || "");
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    status: newStatus,
+    product: updated,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\logs\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\products\route.ts =====
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ message: "Products API root" });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-boosts\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const boosts = await prisma.boost.findMany({
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    include: {
+      product: { select: { title: true } },
+    },
+  });
+
+  return NextResponse.json(boosts);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-orders\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const orders = await prisma.order.findMany({
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    include: {
+      partner: { select: { name: true } },
+    },
+  });
+
+  return NextResponse.json(orders);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\recent-partners\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const partners = await prisma.user.findMany({
+    where: { role: "partner" },
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      _count: { select: { products: true } },
+    },
+  });
+
+  return NextResponse.json(partners);
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\settings\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const settings = await prisma.setting.findMany();
+  return NextResponse.json(settings);
+}
+
+export async function POST(req: Request) {
+  const data = await req.json();
+
+  for (const key in data) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: { value: JSON.stringify(data[key]) },
+      create: { key, value: JSON.stringify(data[key]) }
+    });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\stats\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  MARKETPLACE_COMMISSION_RATE,
+  MARKETPLACE_FREE_PRODUCTS_LIMIT,
+  MARKETPLACE_FREE_DAYS_LIMIT,
+} from "@/lib/marketplaceConfig";
+
+export async function GET() {
+  const products = await prisma.product.count();
+  const partners = await prisma.user.count({ where: { role: "partner" } });
+  const users = await prisma.user.count({ where: { role: "user" } });
+  const orders = await prisma.order.count();
+
+  const revenueData = await prisma.order.findMany({
+    where: { status: "delivered" },
+    select: { total: true },
+  });
+
+  const grossRevenue = revenueData.reduce((sum, o) => sum + o.total, 0);
+  const commissionTotal = grossRevenue * MARKETPLACE_COMMISSION_RATE;
+
+  return NextResponse.json({
+    products,
+    partners,
+    users,
+    orders,
+    grossRevenue,
+    commissionTotal,
+    commissionRate: MARKETPLACE_COMMISSION_RATE,
+    freeProductsLimit: MARKETPLACE_FREE_PRODUCTS_LIMIT,
+    freeDaysLimit: MARKETPLACE_FREE_DAYS_LIMIT,
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\reply\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\status\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\[id]\route.ts =====
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\support\route.ts =====
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const tickets = await prisma.supportTicket.findMany({
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      subject: true,
+      priority: true,
+      status: true,
+      updatedAt: true,
+      author: {
+        select: { publicName: true, email: true, role: true }
+      }
+    }
+  });
+
+  return NextResponse.json({ tickets });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\log.ts =====
+import prisma from "@/lib/prisma";
+
+export async function logAdminAction({
+  adminId,
+  partnerId,
+  action,
+  comment,
+}: {
+  adminId: string;
+  partnerId: string;
+  action: string;
+  comment?: string;
+}) {
+  await prisma.adminLog.create({
+    data: {
+      adminId,
+      partnerId,
+      action,
+      comment,
+    },
+  });
+}
+
+===== FILE: C:\Users\Bons_\documents\marketplace\app\api\admin\page.tsx =====
+"use client";
+
+import { useEffect, useState } from "react";
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        setStats(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <p>Chargement...</p>;
+
+  const cards = [
+    { label: "Produits", value: stats.products, color: "bg-blue-100 text-blue-700" },
+    { label: "Partenaires", value: stats.partners, color: "bg-green-100 text-green-700" },
+    { label: "Utilisateurs", value: stats.users, color: "bg-yellow-100 text-yellow-700" },
+    { label: "Commandes", value: stats.orders, color: "bg-purple-100 text-purple-700" },
+    { label: "Revenu total", value: stats.revenue + " €", color: "bg-red-100 text-red-700" },
+  ];
+
+  return (
+    <div className="p-8 space-y-10">
+      <h1 className="text-3xl font-bold">Dashboard Admin</h1>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {cards.map((card, i) => (
+          <div key={i} className={`p-6 rounded shadow ${card.color}`}>
+            <p className="text-lg font-semibold">{card.label}</p>
+            <p className="text-3xl font-bold mt-2">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Liens rapides */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Accès rapide</h2>
+
+        <div className="flex flex-wrap gap-4">
+          <a href="/admin/products" className="px-4 py-2 bg-blue-600 text-white rounded">
+            Produits
+          </a>
+
+          <a href="/admin/partners" className="px-4 py-2 bg-green-600 text-white rounded">
+            Partenaires
+          </a>
+
+          <a href="/admin/orders" className="px-4 py-2 bg-purple-600 text-white rounded">
+            Commandes
+          </a>
+
+          <a href="/admin/categories" className="px-4 py-2 bg-yellow-600 text-white rounded">
+            Catégories
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+

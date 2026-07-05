@@ -1,0 +1,8 @@
+﻿
+FullName                                                 
+--------                                                 
+C:\Users\Bons_\documents\marketplace\components\dashboard
+C:\Users\Bons_\documents\marketplace\components\home     
+C:\Users\Bons_\documents\marketplace\components\theme    
+
+

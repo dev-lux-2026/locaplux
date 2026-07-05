@@ -1,0 +1,48 @@
+{
+  "Home": {
+    "profileIncomplete": "Your profile is not complete yet.",
+    "completeNow": "Complete now",
+
+    "heroTitle": "The premium marketplace of Luxembourg & Greater Region",
+    "heroSubtitle": "Buy, sell, discover. A refined, secure and local experience.",
+    "exploreProducts": "Explore products",
+
+    "categories": "Categories",
+    "popularProducts": "Popular products",
+    "newProducts": "New arrivals",
+
+    "advSecurityTitle": "Security",
+    "advSecurityText": "Secure payments, verified partners, protected transactions.",
+
+    "advLocalTitle": "Local & Premium",
+    "advLocalText": "A selection of trusted sellers in the Greater Region.",
+
+    "advSupportTitle": "Human support",
+    "advSupportText": "Fast and personalized assistance when needed.",
+
+    "partnerTitle": "Become a Locaplux partner",
+    "partnerSubtitle": "Join a premium marketplace and grow your business.",
+    "partnerCTA": "Create a seller account",
+
+    "rights": "All rights reserved."
+  },
+
+  "Header": {
+    "slogan": "Buy better, live better.",
+    "becomePartner": "Become a partner",
+
+    "logoutMessage": "You are now logged out",
+    "unauthorizedMessage": "Access restricted to administration",
+
+    "notifications": "Notifications",
+    "noNotifications": "No notifications.",
+    "newOrder": "New order",
+    "seeAllNotifications": "See all notifications",
+
+    "profile": "Profile",
+    "orders": "My orders",
+    "partnerDashboard": "Partner dashboard",
+    "adminDashboard": "Admin dashboard",
+    "logout": "Logout"
+  }
+}

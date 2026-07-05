@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------ */
+/* LOCA/PLUX — DARK MODE SIGNATURE C2 (NOIR + GRIS + OR)  */
+/* ------------------------------------------------------ */
+
+/* Transition douce Apple-like entre clair/sombre */
+html {
+  background-color: #ffffff;
+  color: #111111;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Mode sombre Locaplux Signature */
+html.dark {
+  background-color: #0B0B0C; /* Noir doux premium */
+  color: #D1D1D6; /* Gris clair Apple-like */
+}
+
+/* Surfaces sombres (cards, menus, dropdowns) */
+.dark .surface {
+  background-color: #18181A;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Surfaces légèrement élevées */
+.dark .surface-elevated {
+  background-color: #1F1F22;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Accent or Locaplux (subtil, jamais agressif) */
+.accent-gold {
+  color: #D4AF37;
+}
+
+.dark .accent-gold-hover:hover {
+  background-color: #D4AF37;
+  color: #000;
+  transition: background-color 0.2s ease;
+}
+
+/* ------------------------------------------------------ */
+/* TYPOGRAPHIE PREMIUM LOCA/PLUX                          */
+/* ------------------------------------------------------ */
+
+body {
+  @apply bg-lp-neutral-50 text-lp-black dark:bg-lp-neutral-900 dark:text-lp-white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  @apply font-display font-semibold;
+}
+
+/* Cards premium */
+.card {
+  @apply rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800;
+}
+
+/* ------------------------------------------------------ */
+/* INTRO LOCA/PLUX — ANIMATION LETTRE PAR LETTRE PREMIUM */
+/* ------------------------------------------------------ */
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.45s ease-out forwards;
+}
+
+/* ------------------------------------------------------ */
+/* MODAL PREMIUM — BACKDROP + SCALE/SLIDE ANIMATION */
+/* ------------------------------------------------------ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.25s ease-out forwards;
+}
+/* ------------------------------------------------------ */
+/* LOCAPLUX — MICRO ANIMATION PREMIUM POUR FEEDBACK UI    */
+/* ------------------------------------------------------ */
+
+@keyframes fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.25s ease-out forwards;
+}
+
+/* ------------------------------------------------------ */
+/* LOCAPLUX — ANIMATION TESLA (CARROUSEL LOGOS PARTENAIRES) */
+/* ------------------------------------------------------ */
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 18s linear infinite;
+}
