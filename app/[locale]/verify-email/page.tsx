@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth"; // si tu utilises next-auth v5
+import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 
 export default async function VerifyEmailPage({ searchParams, params }) {
