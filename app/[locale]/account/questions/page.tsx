@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Card from "../components/ui/Card";
-import Badge from "../components/ui/Badge";
-import Skeleton from "../components/ui/Skeleton";
+import Card from '@/app/[locale]/account/components/ui/Card'
+import Badge from '@/app/[locale]/account/components/ui/Badge'
+import Skeleton from '@/app/[locale]/account/components/ui/Skeleton'
 
 export default function MyQuestionsPage() {
   const [questions, setQuestions] = useState<any[]>([]);
