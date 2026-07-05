@@ -15,26 +15,27 @@ export default function DeleteAccountPage() {
 
     setLoading(true);
 
-    try:
-      const res = await fetch("/api/account/delete", {
-        method: "POST",
-      });
+    try {
+  const res = await fetch("/api/account/delete", {
+    method: "POST",
+  });
 
-      if (!res.ok) {
-        alert("Erreur lors de la suppression du compte.");
-        setLoading(false);
-        return;
-      }
+  if (!res.ok) {
+    alert("Erreur lors de la suppression du compte.");
+    setLoading(false);
+    return;
+  }
 
-      // Déconnexion
-      await signOut({ redirect: false });
+  // Déconnexion
+  await signOut({ redirect: false });
 
-      // Redirection
-      router.push("/");
-    } catch (err) {
-      console.error(err);
-      alert("Une erreur est survenue.");
-    }
+  // Redirection
+  router.push("/");
+} catch (err) {
+  console.error(err);
+  alert("Une erreur est survenue.");
+}
+
 
     setLoading(false);
   };
