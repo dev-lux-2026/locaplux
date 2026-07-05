@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Toast from "../../[locale]/admin/components/Toast";
+import Toast from '../components/Toast';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
