@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { haversineDistance } from "@/utils/haversine";
+import haversine from "@/app/utils/haversine";
+import { createClient } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const { productId, clientLat, clientLng } = await req.json();
