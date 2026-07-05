@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ConfirmModal from "../../[locale]/admin/components/ConfirmModal";
-import Toast from "../../[locale]/admin/components/Toast";
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);

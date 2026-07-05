@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import ConfirmModal from "../../../[locale]/admin/components/ConfirmModal";
-import Toast from "../../../[locale]/admin/components/Toast";
+import ConfirmModal from '../../components/ConfirmModal';
+import Toast from '../../components/Toast';
 
 export default function AdminPartnerDetail() {
   const params = useParams();
