@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/utils/supabase/server";
-import { haversineDistance } from "@/utils/haversine";
+import { supabase } from "@/lib/supabase";
+import { haversineDistance } from "@/app/utils/haversine";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -19,7 +19,6 @@ export async function POST(req) {
     );
   }
 
-  const supabase = createClient();
   const line_items = [];
 
   // On suppose 1 seul produit par commande (comme Locaplux)
