@@ -199,7 +199,7 @@ export default function EditProduct({ id }: { id: string }) {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0B0C]">
       {toast && (
