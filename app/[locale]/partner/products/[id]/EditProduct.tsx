@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePartnerMode } from "@/lib/context/PartnerModeContext";
 import Toast from "@/components/Toast";
-import ImageUploader from "@/components/ImageUploader";
+import Toast from "@/app/components/Toast";
 import { QRCodeCanvas } from "qrcode.react";
 
 export default function EditProduct({ id }: { id: string }) {
