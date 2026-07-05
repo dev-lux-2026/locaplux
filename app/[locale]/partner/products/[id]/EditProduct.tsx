@@ -461,4 +461,13 @@ export default function EditProduct({ id }: { id: string }) {
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Stock disponible
                 </label>
-                <input
+                <input                />
+              </div>
+            </div>
+          </section>
+
+        </form>
+      </div>
+    </div>
+  );
+}
