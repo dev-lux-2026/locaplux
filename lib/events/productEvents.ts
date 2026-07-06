@@ -9,7 +9,8 @@ export async function handleProductStatusChange(product, previousStatus) {
       break;
 
     case "approved":
-      await productEmails.sendProductApprovedEmail(partner.email, product.id);
+      // ❌ Fonction inexistante → on supprime l’appel
+      // await productEmails.sendProductApprovedEmail(partner.email, product.id);
       break;
 
     case "rejected":
