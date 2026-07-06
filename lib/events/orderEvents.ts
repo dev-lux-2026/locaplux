@@ -1,4 +1,4 @@
-import { orderEmails } from "@/lib/emails";
+import * as orderEmails from "@/lib/emails/order";
 
 export async function handleOrderStatusChange(order, previousStatus) {
   const { status, user, partner } = order;
@@ -9,19 +9,19 @@ export async function handleOrderStatusChange(order, previousStatus) {
       break;
 
     case "confirmed":
-      await orderEmails.orderConfirmation(user.email, order.id);
+      await orderEmails.sendOrderConfirmationEmail(user.email, order.id);
       break;
 
     case "shipped":
-      await orderEmails.orderShipped(user.email, order.id);
+      await orderEmails.sendOrderShippedEmail(user.email, order.id);
       break;
 
     case "delivered":
-      await orderEmails.orderDelivered(user.email, order.id);
+      await orderEmails.sendOrderDeliveredEmail(user.email, order.id);
       break;
 
     case "cancelled":
-      await orderEmails.orderCancelled(user.email, order.id);
+      await orderEmails.sendOrderCancelledEmail(user.email, order.id);
       break;
 
     default:

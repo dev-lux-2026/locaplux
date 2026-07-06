@@ -1,4 +1,4 @@
-import { partnerEmails } from "@/lib/emails";
+import * as partnerEmails from "@/lib/emails/partner";
 
 export async function handlePartnerStatusChange(partner, previousStatus) {
   const { status, email } = partner;
@@ -9,23 +9,23 @@ export async function handlePartnerStatusChange(partner, previousStatus) {
       break;
 
     case "approved":
-      await partnerEmails.partnerApproved(email);
+      await partnerEmails.sendPartnerApprovedEmail(email);
       break;
 
     case "active":
-      await partnerEmails.partnerActivated(email);
+      await partnerEmails.sendPartnerActivatedEmail(email);
       break;
 
     case "paused":
-      await partnerEmails.partnerPaused(email);
+      await partnerEmails.sendPartnerPausedEmail(email);
       break;
 
     case "banned":
-      await partnerEmails.partnerBanned(email);
+      await partnerEmails.sendPartnerBannedEmail(email);
       break;
 
     case "rejected":
-      await partnerEmails.partnerRejected(email);
+      await partnerEmails.sendPartnerRejectedEmail(email);
       break;
 
     default:

@@ -1,4 +1,4 @@
-import { productEmails } from "@/lib/emails";
+import * as productEmails from "@/lib/emails/product";
 
 export async function handleProductStatusChange(product, previousStatus) {
   const { status, partner } = product;
@@ -9,15 +9,15 @@ export async function handleProductStatusChange(product, previousStatus) {
       break;
 
     case "approved":
-      await productEmails.productApproved(partner.email);
+      await productEmails.sendProductApprovedEmail(partner.email, product.id);
       break;
 
     case "rejected":
-      await productEmails.productRejected(partner.email);
+      await productEmails.sendProductRejectedEmail(partner.email, product.id);
       break;
 
     case "disabled":
-      await productEmails.productDisabled(partner.email);
+      await productEmails.sendProductDisabledEmail(partner.email, product.id);
       break;
 
     default:
