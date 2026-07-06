@@ -8,6 +8,7 @@ import {
 } from "@/lib/emails/partner/sendPartnerEmails";
 
 import { createPartnerActivationToken } from "@/lib/auth/createPartnerActivationToken";
+import { handlePartnerStatusChange } from "@/lib/events/partnerEvents";
 
 export async function PATCH(req, context) {
   const { id } = context.params;
@@ -70,6 +71,9 @@ export async function PATCH(req, context) {
       "Votre dossier n’a pas été accepté."
     );
   }
+
+  // 🔥 Appeler les événements partenaires (emails, workflows, etc.)
+  await handlePartnerStatusChange(updated);
 
   return NextResponse.json(updated);
 }
