@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { sendProductApprovedEmail } from "@/lib/emails/product/sendProductEmails";
+import { emailProductApproved } from "@/lib/emails/product/productApproved";
 
 export async function POST(req: Request) {
   try {
     const { to, productId } = await req.json();
 
-    await sendProductApprovedEmail(to, productId);
+   await emailProductApproved(to, productName);
 
     return NextResponse.json({ success: true });
   } catch (error) {
