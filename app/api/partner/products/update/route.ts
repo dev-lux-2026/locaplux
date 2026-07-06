@@ -6,14 +6,9 @@ import { rateLimit } from "@/lib/rateLimit";
 import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
 import { productUpdateSchema } from "@/lib/validation/products";
 
-// --- Emails ---
-import { emailProductPendingAdminAlert } from "@/lib/emails/product/productPendingAdminAlert";
-
 export async function POST(req: Request) {
-  // --- IP extraction ---
   const ip = req.headers.get("x-forwarded-for") || "unknown";
 
-  // --- Rate Limit Protection ---
   if (!rateLimit(ip)) {
     return NextResponse.json(
       { error: "Trop de requêtes. Veuillez patienter une minute." },
@@ -21,7 +16,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Anti‑abuse IP global ---
   const abuseCheck = antiAbuseIP(ip);
   if (!abuseCheck.ok) {
     return NextResponse.json(
@@ -30,7 +24,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Auth partenaire (CORRECT pour App Router) ---
   const token = await getToken({ req });
 
   if (!token || token.role !== "partner") {
@@ -39,7 +32,6 @@ export async function POST(req: Request) {
 
   const partnerId = token.id;
 
-  // --- Zod Validation ---
   const json = await req.json();
   const parsed = productUpdateSchema.safeParse(json);
 
@@ -52,7 +44,6 @@ export async function POST(req: Request) {
 
   const { productId, ...updates } = parsed.data;
 
-  // --- Vérification ownership produit ---
   const product = await prisma.product.findUnique({
     where: { id: productId },
     include: { partner: true },
@@ -72,14 +63,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Détection de modifications importantes ---
   const requiresAdminReview =
     (updates.price && updates.price !== product.price) ||
     (updates.description && updates.description !== product.description) ||
     (updates.images && JSON.stringify(updates.images) !== JSON.stringify(product.images)) ||
     (updates.categoryName && updates.categoryName !== product.categoryName);
 
-  // --- Mise à jour du produit ---
   const updated = await prisma.product.update({
     where: { id: productId },
     data: {
@@ -87,11 +76,6 @@ export async function POST(req: Request) {
       status: requiresAdminReview ? "pending" : product.status,
     },
   });
-
-  // --- Email admin si repasse en pending ---
-  if (requiresAdminReview) {
-    await emailProductPendingAdminAlert(product.name, token.email);
-  }
 
   return NextResponse.json({
     updated,

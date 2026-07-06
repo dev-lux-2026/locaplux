@@ -1,4 +1,4 @@
-import { sendEmail } from "../../sendEmail";
+import { sendOrderReceiptEmail } from "./sendOrderEmails";
 
 export async function emailOrderReceipt(
   to: string,

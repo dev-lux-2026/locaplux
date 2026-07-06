@@ -1,4 +1,4 @@
-import { sendEmail } from "../../sendEmail";
+import { sendOrderShippedEmail } from "./sendOrderEmails";
 
 export async function emailOrderShipped(to: string, orderId: string) {
   await sendEmail({

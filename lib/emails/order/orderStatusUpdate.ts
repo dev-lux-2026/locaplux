@@ -1,4 +1,4 @@
-import { sendEmail } from "../../sendEmail";
+import { sendOrderStatusUpdateEmail } from "./sendOrderEmails";
 
 export async function emailOrderStatusUpdate(
   to: string,

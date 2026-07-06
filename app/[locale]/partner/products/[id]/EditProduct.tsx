@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePartnerMode } from "@/lib/context/PartnerModeContext";
-import Toast from "@/components/Toast";
 import Toast from "@/app/components/Toast";
 import { QRCodeCanvas } from "qrcode.react";
 
