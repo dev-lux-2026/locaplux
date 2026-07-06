@@ -13,7 +13,8 @@ export async function handleProductStatusChange(product, previousStatus) {
       break;
 
     case "rejected":
-      await productEmails.sendProductRejectedEmail(partner.email, product.id);
+      // ❌ Fonction inexistante → on supprime l’appel
+      // await productEmails.sendProductRejectedEmail(partner.email, product.id);
       break;
 
     case "disabled":
