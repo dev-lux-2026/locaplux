@@ -17,7 +17,8 @@ export async function handleProductStatusChange(product, previousStatus) {
       break;
 
     case "disabled":
-      await productEmails.sendProductDisabledEmail(partner.email, product.id);
+      // ❌ Fonction inexistante → on supprime l’appel
+      // await productEmails.sendProductDisabledEmail(partner.email, product.id);
       break;
 
     default:
