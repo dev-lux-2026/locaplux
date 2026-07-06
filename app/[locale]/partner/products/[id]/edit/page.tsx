@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { CATEGORY_LABELS } from "@/lib/autoCategory";
 
 export default function EditProductPage({ params }) {
   const router = useRouter();
@@ -80,9 +79,9 @@ export default function EditProductPage({ params }) {
             source: data.source,
             suggestions: data.suggestions?.map((s) => ({
               ...s,
-              label: CATEGORY_LABELS[s.categoryId],
+              label: s.category, // 🔥 dynamique
             })),
-            label: CATEGORY_LABELS[data.categoryId],
+            label: data.category, // 🔥 dynamique
           },
         }));
       }
