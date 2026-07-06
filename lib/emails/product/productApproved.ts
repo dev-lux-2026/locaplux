@@ -1,10 +1,11 @@
-import { sendProductApprovedEmail } from "./sendProductEmails";
+import { sendTemplatedEmail } from "../sendTemplatedEmail";
 
 export async function emailProductApproved(to: string, productName: string) {
-  await sendEmail({
+  await sendTemplatedEmail({
     to,
     subject: "Votre produit est maintenant en ligne",
-    html: `
+    title: "Produit approuvé",
+    content: `
       <p>Bonjour,</p>
 
       <p>Votre produit <strong>${productName}</strong> a été validé et est désormais visible sur Locaplux.</p>
@@ -15,4 +16,3 @@ export async function emailProductApproved(to: string, productName: string) {
     `,
   });
 }
-

@@ -1,24 +1,19 @@
-import { sendProductRejectedEmail } from "./sendProductEmails";
+import { sendTemplatedEmail } from "../sendTemplatedEmail";
 
-export async function emailProductRejected(to: string, productName: string, reason?: string) {
-  await sendEmail({
+export async function emailProductRejected(to: string, productName: string, reason: string) {
+  await sendTemplatedEmail({
     to,
-    subject: "Votre produit nécessite une modification",
-    html: `
+    subject: "Votre produit a été refusé",
+    title: "Produit refusé",
+    content: `
       <p>Bonjour,</p>
 
-      <p>Votre produit <strong>${productName}</strong> n’a pas pu être validé.</p>
+      <p>Votre produit <strong>${productName}</strong> a été refusé.</p>
 
-      ${
-        reason
-          ? `<p>Raison : ${reason}</p>`
-          : `<p>Une ou plusieurs informations doivent être ajustées avant publication.</p>`
-      }
+      <p>Raison :</p>
+      <p>${reason}</p>
 
-      <p>Vous pouvez le modifier puis le soumettre à nouveau pour validation.</p>
-
-      <p>Merci pour votre compréhension.<br>L’équipe Locaplux</p>
+      <p>Bien à vous,<br>L’équipe Locaplux</p>
     `,
   });
 }
-
