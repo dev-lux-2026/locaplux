@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import haversine from "@/app/utils/haversine";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const { productId, clientLat, clientLng } = await req.json();
@@ -8,8 +8,6 @@ export async function POST(req: Request) {
   if (!productId || !clientLat || !clientLng) {
     return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
-
-  const supabase = createClient();
 
   // 1) Récupérer le produit + partenaire
   const { data: product, error: productError } = await supabase
@@ -49,7 +47,7 @@ export async function POST(req: Request) {
   }
 
   // 3) Calcul distance
-  const distanceKm = haversineDistance(
+  const distanceKm = haversine(
     partner.lat,
     partner.lng,
     clientLat,
