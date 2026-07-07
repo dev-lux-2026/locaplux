@@ -1,6 +1,6 @@
 import { sendTemplatedEmail } from "../sendTemplatedEmail";
 
-export async function sendVatCheckFailedAlert({
+export async function sendVatCheckFailedEmail({
   company,
   publicName,
   vat,
@@ -12,7 +12,6 @@ export async function sendVatCheckFailedAlert({
   email: string;
 }) {
   const subject = "⚠️ Vérification TVA impossible — Action requise";
-
   const title = "Vérification TVA impossible";
 
   const content = (
