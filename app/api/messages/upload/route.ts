@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { rateLimit } from "@/lib/rateLimit";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // ✔ correction
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 cloudinary.config({
@@ -51,19 +51,23 @@ export async function POST(req: Request) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  // --- Upload Cloudinary ---
-  return new Promise((resolve, reject) => {
+  // --- Upload Cloudinary (✔ version compatible Next.js 14) ---
+  const result = await new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: `locaplux/messages/${user.id}` }, // 🔒 dossier isolé par utilisateur
+      { folder: `locaplux/messages/${user.id}` },
       (error, result) => {
         if (error || !result) {
-          return reject(
-            NextResponse.json({ error: "Upload échoué" }, { status: 500 })
-          );
+          reject(error);
+        } else {
+          resolve(result);
         }
-        resolve(NextResponse.json({ url: result.secure_url }));
       }
     );
     stream.end(buffer);
+  });
+
+  // ✔ Next.js reçoit un vrai Response
+  return NextResponse.json({
+    url: (result as any).secure_url,
   });
 }
