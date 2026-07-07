@@ -4,6 +4,9 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
 
+// 🔥 AJOUT : export signIn pour verify-email
+export { signIn } from "next-auth/react";
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
 
@@ -42,7 +45,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             emailVerified: false,
-            role: user.role, // 🔥 AJOUT
+            role: user.role,
           };
         }
 
@@ -50,7 +53,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           emailVerified: user.emailVerified,
-          role: user.role, // 🔥 AJOUT
+          role: user.role,
         };
       },
     }),
@@ -61,7 +64,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.emailVerified = user.emailVerified ?? false;
-        token.role = user.role; // 🔥 AJOUT CRITIQUE
+        token.role = user.role;
       }
       return token;
     },
@@ -70,7 +73,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string;
         session.user.emailVerified = token.emailVerified as boolean;
-        session.user.role = token.role as string; // 🔥 AJOUT CRITIQUE
+        session.user.role = token.role as string;
       }
       return session;
     },
