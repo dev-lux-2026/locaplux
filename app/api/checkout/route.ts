@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
-import { haversineDistance } from "@/app/utils/haversine";
+import { haversine } from "@/app/utils/haversine";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -77,13 +77,13 @@ export async function POST(req) {
       );
     }
 
-    // 4) Distance
-    distanceKm = haversineDistance(
-      partner.lat,
-      partner.lng,
-      clientLat,
-      clientLng
-    );
+  // 4) Distance
+distanceKm = haversine(
+  partner.lat,
+  partner.lng,
+  clientLat,
+  clientLng
+);
 
     if (partner.delivery_max_km && distanceKm > partner.delivery_max_km) {
       return NextResponse.json(
