@@ -1,6 +1,6 @@
 import { sendTemplatedEmail } from "../sendTemplatedEmail";
 
-export async function sendVatCheckFailedEmail({
+export async function sendVatCheckFailedAlert({
   company,
   publicName,
   vat,
