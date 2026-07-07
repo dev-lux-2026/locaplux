@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { signIn } from "@/auth"; // ✔ NextAuth v5 server-side
 import { cookies } from "next/headers";
 
 export default async function VerifyEmailPage({ searchParams, params }) {
@@ -29,7 +29,7 @@ export default async function VerifyEmailPage({ searchParams, params }) {
   await prisma.verificationToken.delete({ where: { token } });
 
   // Connexion automatique via next-auth v5 (server-side)
-  const session = await auth().signIn("credentials", {
+  await signIn("credentials", {
     email: user.email,
     password: user.password,
     redirect: false,

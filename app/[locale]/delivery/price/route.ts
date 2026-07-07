@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import haversine from "@/app/utils/haversine";
+import { haversine } from "@/app/utils/haversine"; // ✔ correction
 import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
