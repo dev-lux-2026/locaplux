@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,14 +17,11 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  // Liste complète UE
   const euCountries = [
     { code: "LU", name: "Luxembourg" },
     { code: "BE", name: "Belgique" },
     { code: "FR", name: "France" },
-
     { code: "separator", name: "──────────" },
-
     { code: "DE", name: "Allemagne" },
     { code: "AT", name: "Autriche" },
     { code: "BG", name: "Bulgarie" },
@@ -53,7 +51,6 @@ export default function RegisterPage() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Validation des champs obligatoires
     if (
       !form.firstName.trim() ||
       !form.lastName.trim() ||
@@ -65,14 +62,12 @@ export default function RegisterPage() {
       return;
     }
 
-    // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       toast.error("Veuillez entrer une adresse email valide.");
       return;
     }
 
-    // Validation CGU / CGV
     if (!form.acceptTerms) {
       toast.error("Vous devez accepter les CGU et les CGV pour continuer.");
       return;
@@ -97,19 +92,13 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto py-12">
-
-      {/* HEADER PREMIUM */}
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-semibold mb-2">
-          Créer votre compte
-        </h1>
-
+        <h1 className="text-3xl font-semibold mb-2">Créer votre compte</h1>
         <p className="text-gray-600 dark:text-gray-300 text-base">
           Accédez à une expérience premium et sécurisée.
         </p>
       </div>
 
-      {/* FORMULAIRE */}
       <form
         onSubmit={handleSubmit}
         className="space-y-4 bg-white dark:bg-[#111] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-white/10"
@@ -144,7 +133,6 @@ export default function RegisterPage() {
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
 
-        {/* Sélecteur de pays UE */}
         <select
           className="input"
           value={form.country}
@@ -165,7 +153,6 @@ export default function RegisterPage() {
           )}
         </select>
 
-        {/* CASE À COCHER CGU / CGV */}
         <div className="flex items-start space-x-3 pt-2">
           <input
             type="checkbox"
@@ -181,13 +168,19 @@ export default function RegisterPage() {
             className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
           >
             J’accepte les{" "}
-            <a href="/legal/terms" className="underline hover:text-black dark:hover:text-white">
+            <Link
+              href="/legal/terms"
+              className="underline hover:text-black dark:hover:text-white"
+            >
               Conditions Générales d’Utilisation
-            </a>{" "}
+            </Link>{" "}
             et les{" "}
-            <a href="/legal/cgv" className="underline hover:text-black dark:hover:text-white">
+            <Link
+              href="/legal/cgv"
+              className="underline hover:text-black dark:hover:text-white"
+            >
               Conditions Générales de Vente
-            </a>.
+            </Link>.
           </label>
         </div>
 
@@ -196,15 +189,14 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      {/* FOOTER */}
       <p className="text-center text-gray-600 dark:text-gray-400 mt-6 text-sm">
         Déjà un compte ?{" "}
-        <a
+        <Link
           href="/login"
           className="text-black dark:text-[#D4AF37] font-medium hover:underline"
         >
           Se connecter
-        </a>
+        </Link>
       </p>
     </div>
   );
