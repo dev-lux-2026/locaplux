@@ -32,6 +32,7 @@ interface Partner {
 interface KycData {
   status: "approved" | "rejected" | "pending";
   adminComment?: string;
+  documents?: string[];   // ← AJOUTER CECI
 }
 
 interface LogEntry {
