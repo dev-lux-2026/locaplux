@@ -29,7 +29,17 @@ export async function PATCH(
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
   }
 
-  const partner = await prisma.user.findUnique({ where: { id } });
+  const partner = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      publicName: true,
+      company: true,
+      firstName: true,
+      lastName: true,
+    },
+  });
 
   if (!partner) {
     return NextResponse.json(
@@ -47,29 +57,35 @@ export async function PATCH(
   await logAdminAction({
     partnerId: id,
     action: `status:${status}`,
-    comment: comment || null,
+    comment: comment ?? null,
   });
 
-  const displayName = partner.publicName || partner.company || partner.email;
+  // Toujours un string
+  const displayName =
+    partner.publicName ??
+    partner.company ??
+    `${partner.firstName ?? ""} ${partner.lastName ?? ""}`.trim() ??
+    "";
 
   // APPROVED → créer token + envoyer email
   if (status === "approved") {
     const token = await createPartnerActivationToken(partner.id);
 
-    const createPasswordUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}`;
+    const createPasswordUrl =
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}` ?? "";
 
     await sendPartnerKycApprovedEmail(
       partner.email ?? "",
-      displayName ?? "",
-      createPasswordUrl
+      displayName || "",
+      createPasswordUrl || ""
     );
   }
 
   // REJECTED → email rejet
   if (status === "rejected") {
     await sendPartnerKycRejectedEmail(
-      partner.email,
-      displayName,
+      partner.email ?? "",
+      displayName || "",
       "Votre dossier n’a pas été accepté."
     );
   }
