@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-export default function AdminOrderDetail({ params }) {
+interface AdminOrderDetailProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function AdminOrderDetail({ params }: AdminOrderDetailProps) {
   const id = params.id;
 
-  const [order, setOrder] = useState(null);
+  const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +25,7 @@ export default function AdminOrderDetail({ params }) {
 
   if (loading) return <div>Chargement...</div>;
 
-  const updateStatus = async (status) => {
+  const updateStatus = async (status: string) => {
     await fetch(`/api/admin/orders/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -51,7 +57,7 @@ export default function AdminOrderDetail({ params }) {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Articles</h2>
 
-        {order.items.map((item) => (
+        {order.items.map((item: any) => (
           <div key={item.id} className="border p-4 rounded">
             <p><strong>Produit :</strong> {item.product?.name}</p>
             <p><strong>Quantité :</strong> {item.quantity}</p>
