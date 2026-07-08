@@ -1,6 +1,20 @@
 "use client";
 
-export default function ConfirmModal({ open, onClose, onConfirm, title, message }) {
+interface ConfirmModalProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+}
+
+export default function ConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+}: ConfirmModalProps) {
   if (!open) return null;
 
   return (
