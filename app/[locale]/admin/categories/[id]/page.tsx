@@ -1,4 +1,8 @@
-export default function AdminCategoryDetails({ params }) {
+export default function AdminCategoryDetails({
+  params,
+}: {
+  params: { id: string; locale?: string };
+}) {
   return (
     <div>
       <h1 className="text-2xl font-bold">Catégorie #{params.id}</h1>
