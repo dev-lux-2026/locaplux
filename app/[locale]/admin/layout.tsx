@@ -1,7 +1,12 @@
 import { adminGuard } from "./guard";
 import Link from "next/link";
+import React from "react";
 
-export default async function AdminLayout({ children }) {
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
+
+export default async function AdminLayout({ children }: AdminLayoutProps) {
   await adminGuard(); // Protection serveur
 
   const nav = [
