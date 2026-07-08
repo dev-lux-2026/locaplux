@@ -1,6 +1,13 @@
+import { ReactNode } from "react";
 import clsx from "clsx";
 
-export default function Badge({ children, variant = "default" }) {
+export default function Badge({
+  children,
+  variant = "default",
+}: {
+  children: ReactNode;
+  variant?: "default" | "success" | "danger" | "warning" | "info";
+}) {
   const variants = {
     default:
       "bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200",
