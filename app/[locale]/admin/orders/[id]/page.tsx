@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
