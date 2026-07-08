@@ -1,120 +1,124 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ConfirmModal from "../components/ConfirmModal";
 
-interface AdminOrderDetailProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function AdminOrderDetail({ params }: AdminOrderDetailProps) {
-  const id = params.id;
-
-  const [order, setOrder] = useState<any>(null);
+export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<string | null>(null);
+
   useEffect(() => {
-    fetch(`/api/admin/orders/${id}`)
+    fetch("/api/admin/orders")
       .then((res) => res.json())
       .then((data) => {
-        setOrder(data);
+        setOrders(data);
         setLoading(false);
       });
-  }, [id]);
+  }, []);
 
-  if (loading) return <div>Chargement...</div>;
+  // 🔥 Correction strict TS ici
+  function openModal(id: string, type: string) {
+    setSelectedId(id);
+    setActionType(type);
+    setModalOpen(true);
+  }
 
-  const updateStatus = async (status: string) => {
-    await fetch(`/api/admin/orders/${id}/status`, {
+  async function confirmAction() {
+    if (!selectedId || !actionType) return;
+
+    await fetch(`/api/admin/orders/${selectedId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: actionType }),
     });
 
-    alert("Statut mis à jour");
-  };
+    setModalOpen(false);
+    location.reload();
+  }
+
+  if (loading) return <p>Chargement...</p>;
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Commande #{order.id}</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Commandes</h1>
 
-      {/* Infos commande */}
-      <div className="space-y-2">
-        <p><strong>Statut :</strong> {order.status}</p>
-        <p><strong>Total :</strong> {order.total} €</p>
-        <p><strong>Date :</strong> {new Date(order.createdAt).toLocaleString()}</p>
-      </div>
+      <ConfirmModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={confirmAction}
+        title="Confirmer l'action"
+        message={`Voulez-vous vraiment appliquer l'action : ${actionType}?`}
+      />
 
-      {/* Utilisateur */}
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Client</h2>
-        <p>Nom : {order.user?.name}</p>
-        <p>Email : {order.user?.email}</p>
-      </div>
+      <table className="w-full bg-white shadow rounded-lg">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="p-3 text-left">ID</th>
+            <th className="p-3 text-left">Client</th>
+            <th className="p-3 text-left">Total</th>
+            <th className="p-3 text-left">Statut</th>
+            <th className="p-3 text-left">Actions</th>
+          </tr>
+        </thead>
 
-      {/* Items */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Articles</h2>
+        <tbody>
+          {orders.map((o) => (
+            <tr key={o.id} className="border-t">
+              <td className="p-3">{o.id}</td>
+              <td className="p-3">{o.user?.name}</td>
+              <td className="p-3">{o.total} €</td>
+              <td className="p-3">{o.status}</td>
+              <td className="p-3 space-x-3">
+                <a
+                  href={`/admin/orders/${o.id}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  Voir
+                </a>
 
-        {order.items.map((item: any) => (
-          <div key={item.id} className="border p-4 rounded">
-            <p><strong>Produit :</strong> {item.product?.name}</p>
-            <p><strong>Quantité :</strong> {item.quantity}</p>
-            <p><strong>Prix unitaire :</strong> {item.product?.price} €</p>
-            <p><strong>Total :</strong> {item.quantity * item.product?.price} €</p>
+                <button
+                  onClick={() => openModal(o.id, "processing")}
+                  className="text-yellow-600 hover:underline"
+                >
+                  En traitement
+                </button>
 
-            <a
-              href={`/admin/products/${item.product?.id}`}
-              className="text-blue-600 underline"
-            >
-              Voir le produit
-            </a>
-          </div>
-        ))}
-      </div>
+                <button
+                  onClick={() => openModal(o.id, "shipped")}
+                  className="text-blue-600 hover:underline"
+                >
+                  Expédiée
+                </button>
 
-      {/* Statut */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Changer le statut</h2>
+                <button
+                  onClick={() => openModal(o.id, "delivered")}
+                  className="text-green-600 hover:underline"
+                >
+                  Livrée
+                </button>
 
-        <div className="flex gap-4 flex-wrap">
-          <button
-            onClick={() => updateStatus("processing")}
-            className="bg-yellow-600 text-white px-4 py-2 rounded"
-          >
-            En traitement
-          </button>
+                <button
+                  onClick={() => openModal(o.id, "cancelled")}
+                  className="text-red-600 hover:underline"
+                >
+                  Annulée
+                </button>
 
-          <button
-            onClick={() => updateStatus("shipped")}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Expédiée
-          </button>
-
-          <button
-            onClick={() => updateStatus("delivered")}
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Livrée
-          </button>
-
-          <button
-            onClick={() => updateStatus("cancelled")}
-            className="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            Annulée
-          </button>
-
-          <button
-            onClick={() => updateStatus("refunded")}
-            className="bg-gray-600 text-white px-4 py-2 rounded"
-          >
-            Remboursée
-          </button>
-        </div>
-      </div>
+                <button
+                  onClick={() => openModal(o.id, "refunded")}
+                  className="text-gray-600 hover:underline"
+                >
+                  Remboursée
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
