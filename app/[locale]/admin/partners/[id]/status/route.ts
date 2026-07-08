@@ -59,7 +59,7 @@ export async function PATCH(
     const createPasswordUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}`;
 
     await sendPartnerKycApprovedEmail(
-      partner.email,
+      partner.email ?? "",
       displayName,
       createPasswordUrl
     );
