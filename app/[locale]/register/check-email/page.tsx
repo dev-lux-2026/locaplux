@@ -1,9 +1,16 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function CheckEmailPage() {
   const { locale } = useParams(); // ← locale dynamique (fr, en, lu)
+
+  async function resendVerification() {
+    await fetch("/api/auth/resend-verification", {
+      method: "POST",
+    });
+  }
 
   return (
     <div className="max-w-md mx-auto py-20 text-center">
@@ -15,21 +22,21 @@ export default function CheckEmailPage() {
       </p>
 
       <div className="space-y-4">
-        {/* API → NON localisée */}
-        <a
-          href="/api/auth/resend-verification"
+        {/* API → doit être un bouton, jamais un <Link> */}
+        <button
+          onClick={resendVerification}
           className="block w-full bg-black text-white py-3 rounded-md"
         >
           Renvoyer l’email de validation
-        </a>
+        </button>
 
-        {/* 🔥 Lien localisé */}
-        <a
+        {/* 🔥 Lien localisé → doit être un <Link> */}
+        <Link
           href={`/${locale}/register/change-email`}
           className="block w-full text-black underline"
         >
           Modifier mon adresse email
-        </a>
+        </Link>
       </div>
     </div>
   );
