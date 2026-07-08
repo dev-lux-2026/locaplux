@@ -122,7 +122,7 @@ export default function WishlistPage() {
               </Link>
 
               <Button
-                variant="outline"
+                variant="secondary"
                 className="px-4 py-2"
                 onClick={() => removeFromWishlist(product.id)}
               >
