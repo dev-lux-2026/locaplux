@@ -24,15 +24,14 @@ interface Partner {
   country?: string;
   status?: string;
 
-  vatCheckFailed?: boolean; // ✔ correction
+  vatCheckFailed?: boolean;
   products?: any[];
-
 }
 
 interface KycData {
   status: "approved" | "rejected" | "pending";
   adminComment?: string;
-  documents?: string[];   // ← AJOUTER CECI
+  documents?: string[];
 }
 
 interface LogEntry {
@@ -200,15 +199,16 @@ export default function AdminPartnerDetail() {
         👁️ Voir comme ce partenaire
       </Link>
 
-     <ConfirmModal
-  open={modalOpen}
-  onClose={() => !processing && setModalOpen(false)}
-  onConfirm={confirmAction}
-  title="Confirmation"
-  message={
-    processing ? "Traitement en cours..." : "Confirmer cette action ?"
-  }
-/>
+      <ConfirmModal
+        open={modalOpen}
+        onClose={() => !processing && setModalOpen(false)}
+        onConfirm={confirmAction}
+        title="Confirmation"
+        message={
+          processing ? "Traitement en cours..." : "Confirmer cette action ?"
+        }
+      />
+
       {/* Infos partenaires */}
       <div className="space-y-2 bg-white p-6 shadow rounded">
         <p><span className="font-semibold">Nom public :</span> {partner.publicName || "—"}</p>
@@ -224,7 +224,6 @@ export default function AdminPartnerDetail() {
 
         <p><span className="font-semibold">TVA :</span> {partner.vat || "—"}</p>
 
-        {/* Badge TVA */}
         {partner.vat && (
           <p>
             <span className="font-semibold">Statut TVA :</span>{" "}
@@ -249,7 +248,6 @@ export default function AdminPartnerDetail() {
           </p>
         )}
 
-        {/* Vérification TVA */}
         <button
           onClick={async () => {
             const res = await fetch(`/api/admin/partners/${partner.id}/vat`);
@@ -352,7 +350,7 @@ export default function AdminPartnerDetail() {
       <div className="space-y-4 bg-white p-6 shadow rounded">
         <h2 className="text-xl font-semibold">Documents KYC</h2>
 
-        {kyc?.documents?.length > 0 ? (
+        {Array.isArray(kyc?.documents) && kyc.documents.length > 0 ? (
           <ul className="list-disc ml-6">
             {kyc.documents.map((doc: string, i: number) => (
               <li key={i}>
