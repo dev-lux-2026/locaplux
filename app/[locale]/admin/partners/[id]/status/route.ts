@@ -71,8 +71,8 @@ export async function PATCH(
   if (status === "approved") {
     const token = await createPartnerActivationToken(partner.id);
 
-    const createPasswordUrl =
-      `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}` ?? "";
+const createPasswordUrl =
+  `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}`;
 
     await sendPartnerKycApprovedEmail(
       partner.email ?? "",
