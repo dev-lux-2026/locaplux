@@ -3,24 +3,54 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import ConfirmModal from '../../components/ConfirmModal';
-import Toast from '../../components/Toast';
+import ConfirmModal from "../../components/ConfirmModal";
+import Toast from "../../components/Toast";
+
+interface Partner {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  phonePrefix?: string;
+  company?: string;
+  publicName?: string;
+  vat?: string;
+  website?: string;
+  street?: string;
+  number?: string;
+  postal?: string;
+  city?: string;
+  country?: string;
+  status?: string;
+}
+
+interface KycData {
+  status: "approved" | "rejected" | "pending";
+  adminComment?: string;
+}
+
+interface LogEntry {
+  id: string;
+  message: string;
+  createdAt: string;
+}
 
 export default function AdminPartnerDetail() {
   const params = useParams();
-  const id = params?.id;
+  const id = params?.id as string;
 
-  const [partner, setPartner] = useState<any>(null);
-  const [kyc, setKyc] = useState<any>(null);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const [kyc, setKyc] = useState<KycData | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [processing, setProcessing] = useState<boolean>(false);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [actionType, setActionType] = useState<string | null>(null);
 
-  const [adminComment, setAdminComment] = useState("");
+  const [adminComment, setAdminComment] = useState<string>("");
   const [toast, setToast] = useState<
     null | { message: string; type: "success" | "error" }
   >(null);
@@ -88,7 +118,7 @@ export default function AdminPartnerDetail() {
 
       if (body) {
         const newStatus = JSON.parse(body).status;
-        setPartner((prev: any) => ({ ...prev, status: newStatus }));
+        setPartner((prev) => (prev ? { ...prev, status: newStatus } : prev));
       }
     } else {
       setToast({ message: "Erreur lors de l’action", type: "error" });
@@ -115,10 +145,14 @@ export default function AdminPartnerDetail() {
       const updated = await res.json();
       setKyc(updated);
 
-      setPartner((prev: any) => ({
-        ...prev,
-        status: newStatus === "approved" ? "approved" : "rejected",
-      }));
+      setPartner((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: newStatus === "approved" ? "approved" : "rejected",
+            }
+          : prev
+      );
     } else {
       setToast({ message: "Erreur lors de la mise à jour KYC", type: "error" });
     }
@@ -129,7 +163,7 @@ export default function AdminPartnerDetail() {
   if (loading) return <p>Chargement...</p>;
   if (!partner) return <p>Partenaire introuvable.</p>;
 
-  const statusColors: any = {
+  const statusColors: Record<string, string> = {
     approved: "bg-green-100 text-green-700",
     active: "bg-green-200 text-green-800",
     paused: "bg-yellow-100 text-yellow-700",
@@ -154,7 +188,6 @@ export default function AdminPartnerDetail() {
 
       <h1 className="text-2xl font-bold">Partenaire #{partner.id}</h1>
 
-      {/* 👁️ Bouton Voir comme ce partenaire */}
       <Link
         href={`/partner/dashboard?asAdmin=1&partnerId=${partner.id}`}
         className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -172,7 +205,6 @@ export default function AdminPartnerDetail() {
         }
         disabled={processing}
       />
-
       {/* Infos partenaires */}
       <div className="space-y-2 bg-white p-6 shadow rounded">
         <p><span className="font-semibold">Nom public :</span> {partner.publicName || "—"}</p>
@@ -224,7 +256,6 @@ export default function AdminPartnerDetail() {
               type: data.status === "valid" ? "success" : "error",
             });
 
-            // Recharge les infos partenaire
             const updated = await fetch(`/api/admin/partners/${partner.id}`).then(r => r.json());
             setPartner(updated);
           }}
@@ -250,7 +281,7 @@ export default function AdminPartnerDetail() {
 
         <p className="mt-3">
           <span className="font-semibold">Statut :</span>{" "}
-          <span className={`px-3 py-1 rounded text-sm ${statusColors[partner.status]}`}>
+          <span className={`px-3 py-1 rounded text-sm ${statusColors[partner.status ?? "pending"]}`}>
             {partner.status}
           </span>
         </p>
