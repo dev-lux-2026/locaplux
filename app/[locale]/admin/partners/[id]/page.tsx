@@ -25,6 +25,8 @@ interface Partner {
   status?: string;
 
   vatCheckFailed?: boolean; // ✔ correction
+  products?: any[];
+
 }
 
 interface KycData {
