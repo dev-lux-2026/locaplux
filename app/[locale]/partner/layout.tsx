@@ -1,93 +1,36 @@
-import { partnerGuard } from "@/lib/guards/partnerGuard";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { logAdminAction } from "@/lib/logAdminAction";
+import Image from "next/image";
 import { PartnerModeProvider } from "@/lib/context/PartnerModeContext";
 
-export default async function PartnerLayout({ children }) {
-  const { mode, userId: adminId } = await partnerGuard();
+export default function PartnerLayout({ children }) {
+  const [mode, setMode] = useState<string | null>(null);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [partnerData, setPartnerData] = useState<any>(null);
 
-  // On récupère l'URL via les props du layout (Next.js 15)
-  // Le layout reçoit automatiquement "params" et "searchParams"
-  // mais comme tu n'as pas défini la signature, on utilise une astuce :
-  const fullUrl = globalThis.location?.href || ""; // fallback client
-  const urlObj = new URL(fullUrl || "http://localhost");
-  const searchParams = urlObj.searchParams;
-  const pathname = urlObj.pathname;
+  useEffect(() => {
+    async function load() {
+      const fullUrl = window.location.href;
+      const urlObj = new URL(fullUrl);
+      const searchParams = urlObj.searchParams;
 
-  const partnerId = searchParams.get("partnerId");
+      const modeParam = searchParams.get("mode");
+      const pid = searchParams.get("partnerId");
 
-  let partnerData = null;
+      setMode(modeParam);
+      setPartnerId(pid);
 
-  /* -------------------------------------------------------------------------- */
-  /*                         MODE ADMIN OVERWATCH SEULEMENT                     */
-  /* -------------------------------------------------------------------------- */
-
-  if (mode === "admin-overwatch") {
-    if (partnerId) {
-      partnerData = await prisma.user.findUnique({
-        where: { id: partnerId },
-        select: {
-          publicName: true,
-          company: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          image: true,
-          status: true,
-          city: true,
-          country: true,
-        },
-      });
-
-      // LOG INTELLIGENT
-      let action;
-
-      if (pathname.includes("/products")) action = "Consultation des produits";
-      else if (pathname.includes("/orders")) action = "Consultation des commandes";
-      else if (pathname.includes("/payouts")) action = "Consultation des paiements";
-      else if (pathname.includes("/messages")) action = "Consultation des messages";
-      else if (pathname.includes("/account")) action = "Consultation du profil partenaire";
-      else if (pathname.includes("/settings")) action = "Consultation des paramètres partenaire";
-      else action = "Consultation du dashboard partenaire";
-
-      await logAdminAction({
-        adminId,
-        partnerId,
-        action,
-      });
+      if (modeParam === "admin-overwatch" && pid) {
+        const res = await fetch(`/api/admin/partners/${pid}`);
+        const data = await res.json();
+        setPartnerData(data);
+      }
     }
 
-    // Forcer asAdmin=1 si absent
-    if (!searchParams.get("asAdmin")) {
-      redirect(
-        `/partner/dashboard?asAdmin=1${partnerId ? `&partnerId=${partnerId}` : ""}`
-      );
-    }
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                         PRÉPARATION MINI PROFIL                            */
-  /* -------------------------------------------------------------------------- */
-
-  const partnerName =
-    partnerData?.publicName ||
-    partnerData?.company ||
-    `${partnerData?.firstName || ""} ${partnerData?.lastName || ""}`.trim();
-
-  const partnerPhoto = partnerData?.avatar || partnerData?.image || null;
-
-  const partnerStatus = partnerData?.status || null;
-
-  const partnerLocation =
-    partnerData?.city && partnerData?.country
-      ? `${partnerData.city}, ${partnerData.country}`
-      : partnerData?.country || partnerData?.city || null;
-
-  /* -------------------------------------------------------------------------- */
-  /*                                NAVIGATION                                  */
-  /* -------------------------------------------------------------------------- */
+    load();
+  }, []);
 
   const nav = [
     { href: "/partner/dashboard", label: "Dashboard" },
@@ -109,23 +52,18 @@ export default async function PartnerLayout({ children }) {
 
   const readOnly = mode === "admin-overwatch";
 
-  /* -------------------------------------------------------------------------- */
-  /*                                 RENDER                                     */
-  /* -------------------------------------------------------------------------- */
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-
-      {/* BANDEAU OVERWATCH */}
-      {mode === "admin-overwatch" && (
+      {mode === "admin-overwatch" && partnerData && (
         <>
           <div className="bg-red-600 text-white py-2 z-50 flex items-center justify-center gap-8 px-4">
-
-            {partnerPhoto && (
-              <img
-                src={partnerPhoto}
+            {partnerData.avatar && (
+              <Image
+                src={partnerData.avatar}
                 alt="Logo partenaire"
-                className="w-10 h-10 rounded-full border border-white shadow"
+                width={40}
+                height={40}
+                className="rounded-full border border-white shadow"
               />
             )}
 
@@ -135,22 +73,10 @@ export default async function PartnerLayout({ children }) {
               </span>
 
               <span className="font-bold underline text-lg">
-                {partnerName || "Partenaire inconnu"}
+                {partnerData.publicName ||
+                  partnerData.company ||
+                  `${partnerData.firstName} ${partnerData.lastName}`}
               </span>
-
-              <div className="text-sm opacity-90">
-                {partnerStatus && (
-                  <span className="mr-2 capitalize">
-                    Statut : <strong>{partnerStatus}</strong>
-                  </span>
-                )}
-
-                {partnerLocation && (
-                  <span>
-                    Localisation : <strong>{partnerLocation}</strong>
-                  </span>
-                )}
-              </div>
             </div>
 
             <div className="flex items-center gap-2 bg-white text-red-700 px-3 py-1 rounded shadow">
@@ -184,7 +110,6 @@ export default async function PartnerLayout({ children }) {
       )}
 
       <div className="flex flex-1">
-
         <aside className="w-64 bg-white shadow-md p-6 hidden md:block mt-6">
           <h2 className="text-xl font-bold mb-6">Espace partenaire</h2>
 
@@ -206,9 +131,7 @@ export default async function PartnerLayout({ children }) {
         </aside>
 
         <PartnerModeProvider readOnly={readOnly}>
-          <main className="flex-1 p-8 mt-6">
-            {children}
-          </main>
+          <main className="flex-1 p-8 mt-6">{children}</main>
         </PartnerModeProvider>
       </div>
     </div>
