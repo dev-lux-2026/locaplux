@@ -9,9 +9,11 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
 
-  const [toast, setToast] = useState(null);
+  // 🔥 Correction strict TS ici
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/categories/list")
@@ -23,9 +25,9 @@ export default function AdminCategories() {
   }, []);
 
   function openModal(id: string) {
-  setSelectedId(id);
-  setModalOpen(true);
-}
+    setSelectedId(id);
+    setModalOpen(true);
+  }
 
   async function confirmAction() {
     await fetch(`/api/admin/categories/${selectedId}`, {
