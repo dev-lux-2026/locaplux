@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logAdminAction } from "@/lib/logAdminAction";
 
@@ -9,7 +9,10 @@ import {
 
 import { createPartnerActivationToken } from "@/lib/auth/createPartnerActivationToken";
 
-export async function PATCH(req, context) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
   const { id } = context.params;
   const { status, comment } = await req.json();
 
