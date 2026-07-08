@@ -21,10 +21,7 @@ export default function BannerUploadPage() {
     if (!f) return;
 
     if (f.size > MAX_SIZE_BYTES) {
-      toast({
-        title: "Image trop lourde",
-        description: `La taille maximale est ${MAX_SIZE_MB} Mo.`,
-      });
+      toast.error(`Image trop lourde. Taille maximale : ${MAX_SIZE_MB} Mo.`);
       return;
     }
 
@@ -74,10 +71,7 @@ export default function BannerUploadPage() {
 
     const croppedBlob = await getCroppedImage();
     if (!croppedBlob) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de recadrer l’image.",
-      });
+      toast.error("Impossible de recadrer l’image.");
       setLoading(false);
       return;
     }
@@ -93,17 +87,11 @@ export default function BannerUploadPage() {
     setLoading(false);
 
     if (res.ok) {
-      toast({
-        title: "Bannière mise à jour",
-        description: "Votre nouvelle bannière est maintenant visible.",
-      });
+      toast.success("Bannière mise à jour.");
       setImageSrc(null);
       setFile(null);
     } else {
-      toast({
-        title: "Erreur",
-        description: "Impossible d’envoyer la bannière.",
-      });
+      toast.error("Impossible d’envoyer la bannière.");
     }
   };
 
@@ -117,17 +105,11 @@ export default function BannerUploadPage() {
     setLoading(false);
 
     if (res.ok) {
-      toast({
-        title: "Bannière supprimée",
-        description: "Votre page utilise maintenant le fond par défaut.",
-      });
+      toast.success("Bannière supprimée.");
       setImageSrc(null);
       setFile(null);
     } else {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la bannière.",
-      });
+      toast.error("Impossible de supprimer la bannière.");
     }
   };
 
