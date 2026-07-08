@@ -1,4 +1,11 @@
-export default function Input({ label, className, ...props }) {
+import { InputHTMLAttributes, ReactNode } from "react";
+
+type InputProps = {
+  label?: ReactNode;
+  className?: string;
+} & InputHTMLAttributes<HTMLInputElement>;
+
+export default function Input({ label, className, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -15,7 +22,7 @@ export default function Input({ label, className, ...props }) {
           text-neutral-900 dark:text-neutral-100
           focus:outline-none focus:ring-2 focus:ring-lp-blue
           transition
-          ${className}
+          ${className || ""}
         `}
         {...props}
       />

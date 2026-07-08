@@ -1,4 +1,11 @@
-export default function Textarea({ label, className, ...props }) {
+import { ReactNode, TextareaHTMLAttributes } from "react";
+
+type TextareaProps = {
+  label?: ReactNode;
+  className?: string;
+} & TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+export default function Textarea({ label, className, ...props }: TextareaProps) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -15,7 +22,7 @@ export default function Textarea({ label, className, ...props }) {
           text-neutral-900 dark:text-neutral-100
           focus:outline-none focus:ring-2 focus:ring-lp-blue
           transition
-          ${className}
+          ${className || ""}
         `}
         {...props}
       />

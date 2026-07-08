@@ -9,7 +9,12 @@ import {
   ProfileIcon,
 } from "./icons";
 
-export default function MobileDrawer({ open, onClose }) {
+type MobileDrawerProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
   }, [open]);

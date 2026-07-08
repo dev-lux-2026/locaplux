@@ -1,4 +1,17 @@
-export default function Select({ label, children, className, ...props }) {
+import { ReactNode, SelectHTMLAttributes } from "react";
+
+type SelectProps = {
+  label?: ReactNode;
+  children: ReactNode;
+  className?: string;
+} & SelectHTMLAttributes<HTMLSelectElement>;
+
+export default function Select({
+  label,
+  children,
+  className,
+  ...props
+}: SelectProps) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -15,7 +28,7 @@ export default function Select({ label, children, className, ...props }) {
           text-neutral-900 dark:text-neutral-100
           focus:outline-none focus:ring-2 focus:ring-lp-blue
           transition
-          ${className}
+          ${className || ""}
         `}
         {...props}
       >

@@ -4,16 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 
 export default function Header() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   return (
     <header className="w-full flex items-center justify-between mb-8">
-      {/* Left: Page title (dynamic if needed) */}
       <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
         Mon compte
       </h1>
 
-      {/* Right: Avatar + menu */}
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
@@ -28,7 +26,6 @@ export default function Header() {
           />
         </button>
 
-        {/* Dropdown */}
         {open && (
           <div
             className="

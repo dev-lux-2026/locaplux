@@ -1,11 +1,18 @@
+import { ReactNode, ButtonHTMLAttributes } from "react";
 import clsx from "clsx";
+
+type ButtonProps = {
+  children: ReactNode;
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  className?: string;
+} & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export default function Button({
   children,
   variant = "primary",
   className,
   ...props
-}) {
+}: ButtonProps) {
   const base =
     "px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2";
 
