@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import Container from "@/components/Container";
 
 type OrderData = {
@@ -12,15 +12,22 @@ type OrderData = {
   };
 };
 
-export default function OrderReviewPage({ params }) {
+type OrderReviewPageProps = {
+  params: {
+    id: string;
+    locale?: string; // si Next.js fournit aussi locale
+  };
+};
+
+export default function OrderReviewPage({ params }: OrderReviewPageProps) {
   const { id } = params;
 
   const [order, setOrder] = useState<OrderData | null>(null);
   const [rating, setRating] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [comment, setComment] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     fetch(`/api/account/orders/${id}`)
@@ -117,7 +124,9 @@ export default function OrderReviewPage({ params }) {
             className="w-full h-32 border rounded-lg p-3 text-sm bg-white dark:bg-[#18181A] border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-100"
             placeholder="Partagez votre expérience avec ce partenaire…"
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+              setComment(e.target.value)
+            }
             maxLength={800}
           />
 
@@ -125,7 +134,11 @@ export default function OrderReviewPage({ params }) {
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">Merci, votre avis a bien été enregistré.</p>}
+        {success && (
+          <p className="text-sm text-green-600">
+            Merci, votre avis a bien été enregistré.
+          </p>
+        )}
 
         <div className="flex justify-end gap-3">
           <a
