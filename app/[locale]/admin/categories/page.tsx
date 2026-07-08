@@ -22,10 +22,10 @@ export default function AdminCategories() {
       });
   }, []);
 
-  function openModal(id) {
-    setSelectedId(id);
-    setModalOpen(true);
-  }
+  function openModal(id: string) {
+  setSelectedId(id);
+  setModalOpen(true);
+}
 
   async function confirmAction() {
     await fetch(`/api/admin/categories/${selectedId}`, {
