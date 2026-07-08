@@ -1,18 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ConfirmModal from '../components/ConfirmModal';
-import Toast from '../components/Toast';
+import ConfirmModal from "../components/ConfirmModal";
+import Toast from "../components/Toast";
+
+interface Order {
+  id: string;
+  total: number;
+  status: string;
+  user?: {
+    email?: string;
+  };
+  userId?: string;
+}
 
 export default function AdminOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [actionType, setActionType] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [actionType, setActionType] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/orders/list")
@@ -30,7 +40,9 @@ export default function AdminOrders() {
   }
 
   async function confirmAction() {
-    const statusMap = {
+    if (!selectedId || !actionType) return;
+
+    const statusMap: Record<string, string> = {
       ship: "shipped",
       cancel: "cancelled",
     };
@@ -53,7 +65,7 @@ export default function AdminOrders() {
   if (loading) return <p>Chargement...</p>;
   if (orders.length === 0) return <p>Aucune commande trouvée.</p>;
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-700",
     paid: "bg-blue-100 text-blue-700",
     processing: "bg-purple-100 text-purple-700",
