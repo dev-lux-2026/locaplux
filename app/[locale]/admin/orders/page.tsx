@@ -23,7 +23,7 @@ export default function AdminOrders() {
       });
   }, []);
 
-  function openModal(id, type) {
+  function openModal(id: string, type: string) {
     setSelectedId(id);
     setActionType(type);
     setModalOpen(true);
