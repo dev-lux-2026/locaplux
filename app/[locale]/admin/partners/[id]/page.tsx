@@ -23,6 +23,8 @@ interface Partner {
   city?: string;
   country?: string;
   status?: string;
+
+  vatCheckFailed?: boolean; // ✔ correction
 }
 
 interface KycData {
