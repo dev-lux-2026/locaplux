@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import MobileMenuButton from "./components/ui/MobileMenuButton";
 import MobileDrawer from "./components/ui/MobileDrawer";
 import Header from "./components/ui/Header";
 
-export default function AccountLayout({ children }) {
-  const [open, setOpen] = useState(false);
+type AccountLayoutProps = {
+  children: ReactNode;
+};
+
+export default function AccountLayout({ children }: AccountLayoutProps) {
+  const [open, setOpen] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950">
