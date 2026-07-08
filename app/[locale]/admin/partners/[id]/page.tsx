@@ -195,16 +195,15 @@ export default function AdminPartnerDetail() {
         👁️ Voir comme ce partenaire
       </Link>
 
-      <ConfirmModal
-        open={modalOpen}
-        onClose={() => !processing && setModalOpen(false)}
-        onConfirm={confirmAction}
-        title="Confirmation"
-        message={
-          processing ? "Traitement en cours..." : "Confirmer cette action ?"
-        }
-        disabled={processing}
-      />
+     <ConfirmModal
+  open={modalOpen}
+  onClose={() => !processing && setModalOpen(false)}
+  onConfirm={confirmAction}
+  title="Confirmation"
+  message={
+    processing ? "Traitement en cours..." : "Confirmer cette action ?"
+  }
+/>
       {/* Infos partenaires */}
       <div className="space-y-2 bg-white p-6 shadow rounded">
         <p><span className="font-semibold">Nom public :</span> {partner.publicName || "—"}</p>
