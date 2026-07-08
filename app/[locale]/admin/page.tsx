@@ -2,11 +2,44 @@
 
 import { useEffect, useState } from "react";
 
+interface Stats {
+  products: number;
+  partners: number;
+  users: number;
+  orders: number;
+  grossRevenue: number;
+  commissionRate: number;
+  commissionTotal: number;
+  freeProductsLimit: number;
+  freeDaysLimit: number;
+}
+
+interface Order {
+  id: string;
+  total: number;
+  partner?: { name?: string };
+  status: string;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  email: string;
+  _count: { products: number };
+}
+
+interface Boost {
+  id: string;
+  type: string;
+  price: number;
+  product?: { title?: string };
+}
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null);
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [recentPartners, setRecentPartners] = useState([]);
-  const [recentBoosts, setRecentBoosts] = useState([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentPartners, setRecentPartners] = useState<Partner[]>([]);
+  const [recentBoosts, setRecentBoosts] = useState<Boost[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/stats").then(r => r.json()).then(setStats);
@@ -95,7 +128,7 @@ export default function AdminDashboard() {
   );
 }
 
-function KpiCard({ label, value }) {
+function KpiCard({ label, value }: { label: string; value: any }) {
   return (
     <div className="p-6 bg-white shadow rounded-lg text-center">
       <p className="text-gray-500">{label}</p>
@@ -104,7 +137,15 @@ function KpiCard({ label, value }) {
   );
 }
 
-function SectionList({ title, items, render }) {
+function SectionList({
+  title,
+  items,
+  render
+}: {
+  title: string;
+  items: any[];
+  render: (item: any) => JSX.Element;
+}) {
   return (
     <section>
       <h2 className="text-xl font-semibold mb-4">{title}</h2>
