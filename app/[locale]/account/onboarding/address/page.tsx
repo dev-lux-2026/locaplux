@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent, ReactNode } from "react";
 import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 export default function OnboardingAddressPage() {
   const router = useRouter();
-  const { locale } = useParams(); // ← locale dynamique
+  const { locale } = useParams(); // locale dynamique
 
   const [billing, setBilling] = useState({
     street: "",
@@ -27,9 +27,9 @@ export default function OnboardingAddressPage() {
     phone: "",
   });
 
-  const [useDifferentShipping, setUseDifferentShipping] = useState(false);
+  const [useDifferentShipping, setUseDifferentShipping] = useState<boolean>(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (
@@ -74,9 +74,17 @@ export default function OnboardingAddressPage() {
 
     toast.success("Adresse enregistrée !");
 
-    // 🔥 Redirection localisée
     router.push(`/${locale}/account/onboarding/preferences`);
   }
+
+  // Typage propre pour les inputs
+  const handleBillingChange = (field: keyof typeof billing) => 
+    (e: ChangeEvent<HTMLInputElement>) =>
+      setBilling({ ...billing, [field]: e.target.value });
+
+  const handleShippingChange = (field: keyof typeof shipping) => 
+    (e: ChangeEvent<HTMLInputElement>) =>
+      setShipping({ ...shipping, [field]: e.target.value });
 
   return (
     <div className="max-w-md mx-auto py-10">
@@ -92,50 +100,42 @@ export default function OnboardingAddressPage() {
             className="input"
             placeholder="Rue *"
             value={billing.street}
-            onChange={(e) =>
-              setBilling({ ...billing, street: e.target.value })
-            }
+            onChange={handleBillingChange("street")}
           />
 
           <input
             className="input"
             placeholder="Numéro"
             value={billing.number}
-            onChange={(e) =>
-              setBilling({ ...billing, number: e.target.value })
-            }
+            onChange={handleBillingChange("number")}
           />
 
           <input
             className="input"
             placeholder="Code postal *"
             value={billing.zip}
-            onChange={(e) => setBilling({ ...billing, zip: e.target.value })}
+            onChange={handleBillingChange("zip")}
           />
 
           <input
             className="input"
             placeholder="Ville *"
             value={billing.city}
-            onChange={(e) => setBilling({ ...billing, city: e.target.value })}
+            onChange={handleBillingChange("city")}
           />
 
           <input
             className="input"
             placeholder="Pays *"
             value={billing.country}
-            onChange={(e) =>
-              setBilling({ ...billing, country: e.target.value })
-            }
+            onChange={handleBillingChange("country")}
           />
 
           <input
             className="input"
             placeholder="Téléphone"
             value={billing.phone}
-            onChange={(e) =>
-              setBilling({ ...billing, phone: e.target.value })
-            }
+            onChange={handleBillingChange("phone")}
           />
         </div>
 
@@ -144,7 +144,9 @@ export default function OnboardingAddressPage() {
           <input
             type="checkbox"
             checked={useDifferentShipping}
-            onChange={(e) => setUseDifferentShipping(e.target.checked)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setUseDifferentShipping(e.target.checked)
+            }
           />
           <label>Adresse de livraison différente ?</label>
         </div>
@@ -158,54 +160,42 @@ export default function OnboardingAddressPage() {
               className="input"
               placeholder="Rue *"
               value={shipping.street}
-              onChange={(e) =>
-                setShipping({ ...shipping, street: e.target.value })
-              }
+              onChange={handleShippingChange("street")}
             />
 
             <input
               className="input"
               placeholder="Numéro"
               value={shipping.number}
-              onChange={(e) =>
-                setShipping({ ...shipping, number: e.target.value })
-              }
+              onChange={handleShippingChange("number")}
             />
 
             <input
               className="input"
               placeholder="Code postal *"
               value={shipping.zip}
-              onChange={(e) =>
-                setShipping({ ...shipping, zip: e.target.value })
-              }
+              onChange={handleShippingChange("zip")}
             />
 
             <input
               className="input"
               placeholder="Ville *"
               value={shipping.city}
-              onChange={(e) =>
-                setShipping({ ...shipping, city: e.target.value })
-              }
+              onChange={handleShippingChange("city")}
             />
 
             <input
               className="input"
               placeholder="Pays *"
               value={shipping.country}
-              onChange={(e) =>
-                setShipping({ ...shipping, country: e.target.value })
-              }
+              onChange={handleShippingChange("country")}
             />
 
             <input
               className="input"
               placeholder="Téléphone"
               value={shipping.phone}
-              onChange={(e) =>
-                setShipping({ ...shipping, phone: e.target.value })
-              }
+              onChange={handleShippingChange("phone")}
             />
           </div>
         )}
