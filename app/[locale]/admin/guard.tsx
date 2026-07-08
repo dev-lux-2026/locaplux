@@ -9,7 +9,8 @@ export async function adminGuard() {
     redirect("/login");
   }
 
-  if (session.user.role !== "admin") {
+  // 🔥 Correction strict TS ici
+  if (!session?.user || session.user.role !== "admin") {
     redirect("/");
   }
 
