@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import Cropper from "react-easy-crop";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -16,13 +16,12 @@ export default function BannerUploadPage() {
   const MAX_SIZE_MB = 5;
   const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     if (!f) return;
 
     if (f.size > MAX_SIZE_BYTES) {
       toast({
-        variant: "destructive",
         title: "Image trop lourde",
         description: `La taille maximale est ${MAX_SIZE_MB} Mo.`,
       });
@@ -76,7 +75,6 @@ export default function BannerUploadPage() {
     const croppedBlob = await getCroppedImage();
     if (!croppedBlob) {
       toast({
-        variant: "destructive",
         title: "Erreur",
         description: "Impossible de recadrer l’image.",
       });
@@ -103,7 +101,6 @@ export default function BannerUploadPage() {
       setFile(null);
     } else {
       toast({
-        variant: "destructive",
         title: "Erreur",
         description: "Impossible d’envoyer la bannière.",
       });
@@ -128,7 +125,6 @@ export default function BannerUploadPage() {
       setFile(null);
     } else {
       toast({
-        variant: "destructive",
         title: "Erreur",
         description: "Impossible de supprimer la bannière.",
       });
@@ -149,7 +145,6 @@ export default function BannerUploadPage() {
           Taille max : <strong>{MAX_SIZE_MB} Mo</strong>
         </p>
 
-        {/* INPUT */}
         <input
           type="file"
           accept="image/*"
@@ -157,7 +152,6 @@ export default function BannerUploadPage() {
           className="block w-full text-sm text-gray-700 dark:text-gray-300"
         />
 
-        {/* CROPPER */}
         {imageSrc && (
           <>
             <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden">
@@ -193,7 +187,6 @@ export default function BannerUploadPage() {
           </>
         )}
 
-        {/* DELETE BUTTON */}
         <button
           onClick={handleDelete}
           disabled={loading}
