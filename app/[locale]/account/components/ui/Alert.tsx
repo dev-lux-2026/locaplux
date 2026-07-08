@@ -1,6 +1,13 @@
+import { ReactNode } from "react";
 import clsx from "clsx";
 
-export default function Alert({ children, variant = "info" }) {
+export default function Alert({
+  children,
+  variant = "info",
+}: {
+  children: ReactNode;
+  variant?: "info" | "success" | "danger" | "warning";
+}) {
   const variants = {
     info: "bg-lp-blue/10 text-lp-blue border-l-4 border-lp-blue",
     success: "bg-lp-green/10 text-lp-green border-l-4 border-lp-green",

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { sendVatCheckFailedEmail } from "@/lib/emails/alerts/sendVatCheckFailed";
+import { sendVatCheckFailedAlert } from "@/lib/emails/alerts/sendVatCheckFailed";
 
 export async function POST(req: Request) {
   try {
     const { to, vatNumber, companyName } = await req.json();
 
-    await sendVatCheckFailedEmail(to, vatNumber, companyName);
+    await sendVatCheckFailedAlert(to, vatNumber, companyName);
 
     return NextResponse.json({ success: true });
   } catch (error) {
