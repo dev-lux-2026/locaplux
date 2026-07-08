@@ -5,14 +5,16 @@ import ConfirmModal from "../components/ConfirmModal";
 import Toast from "../components/Toast";
 
 export default function AdminCategories() {
-  const [categories, setCategories] = useState([]);
+  // 🔥 Typage strict du tableau
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  // 🔥 Correction strict TS ici
+  // 🔥 Typage strict de selectedId
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // 🔥 Typage strict du toast
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
 
   useEffect(() => {
