@@ -144,7 +144,7 @@ function SectionList({
 }: {
   title: string;
   items: any[];
-  render: (item: any) => JSX.Element;
+  render: (item: any) => React.ReactNode;
 }) {
   return (
     <section>
