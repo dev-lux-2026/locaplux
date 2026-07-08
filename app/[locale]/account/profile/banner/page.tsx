@@ -9,6 +9,10 @@ export default function BannerUploadPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+
+  // 🔥 Obligatoire pour react-easy-crop
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -139,6 +143,8 @@ export default function BannerUploadPage() {
             <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden">
               <Cropper
                 image={imageSrc}
+                crop={crop}               // 🔥 obligatoire
+                onCropChange={setCrop}    // 🔥 obligatoire
                 cropShape="rect"
                 aspect={3 / 1}
                 zoom={zoom}
