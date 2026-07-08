@@ -36,7 +36,12 @@ interface KycData {
 
 interface LogEntry {
   id: string;
-  message: string;
+  action: string;
+  comment?: string;
+  admin?: {
+    name?: string;
+    email?: string;
+  };
   createdAt: string;
 }
 
