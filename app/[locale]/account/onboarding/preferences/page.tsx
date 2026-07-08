@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import OnboardingProgress from "@/components/OnboardingProgress";
@@ -9,10 +9,10 @@ export default function OnboardingPreferencesPage() {
   const router = useRouter();
   const { locale } = useParams(); // ← locale dynamique
 
-  const [preferredLanguage, setPreferredLanguage] = useState("fr");
-  const [loadingEmail, setLoadingEmail] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
+  const [loadingEmail, setLoadingEmail] = useState<boolean>(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const res = await fetch("/api/onboarding/preferences", {
@@ -66,7 +66,9 @@ export default function OnboardingPreferencesPage() {
           <select
             className="input"
             value={preferredLanguage}
-            onChange={(e) => setPreferredLanguage(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setPreferredLanguage(e.target.value)
+            }
           >
             <option value="fr">Français</option>
             <option value="en">Anglais</option>
