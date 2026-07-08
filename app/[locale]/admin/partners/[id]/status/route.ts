@@ -60,7 +60,7 @@ export async function PATCH(
 
     await sendPartnerKycApprovedEmail(
       partner.email ?? "",
-      displayName,
+      displayName ?? "",
       createPasswordUrl
     );
   }
