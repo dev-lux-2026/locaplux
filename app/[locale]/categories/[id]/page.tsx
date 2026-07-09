@@ -5,11 +5,25 @@ import Container from "@/components/Container";
 import SectionTitle from "@/components/SectionTitle";
 import CategoryPageSkeleton from "@/components/ui/CategoryPageSkeleton";
 
-export default function CategoryPage({ params }) {
-  const { id } = params;
+interface Category {
+  id: string;
+  name: string;
+}
 
-  const [category, setCategory] = useState(null);
-  const [products, setProducts] = useState([]);
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+}
+
+export default function CategoryPage(
+  { params }: { params: { id: string; locale: string } }
+) {
+  const { id, locale } = params;
+
+  const [category, setCategory] = useState<Category | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filtres premium
@@ -21,15 +35,15 @@ export default function CategoryPage({ params }) {
     async function load() {
       // Charger toutes les catégories
       const cats = await fetch("/api/categories/list").then((r) => r.json());
-      const found = cats.find((c) => c.id === id);
-      setCategory(found);
+      const found = cats.find((c: Category) => c.id === id);
+      setCategory(found ?? null);
 
       // Charger les produits
       const prods = await fetch(`/api/categories/${id}/products`).then((r) =>
         r.json()
       );
-      setProducts(prods);
 
+      setProducts(Array.isArray(prods) ? prods : []);
       setLoading(false);
     }
 
@@ -39,17 +53,17 @@ export default function CategoryPage({ params }) {
   const applyFilters = async () => {
     setLoading(true);
 
-    const params = new URLSearchParams({
+    const query = new URLSearchParams({
       sort,
       minPrice,
       maxPrice,
     });
 
     const prods = await fetch(
-      `/api/categories/${id}/products?${params.toString()}`
+      `/api/categories/${id}/products?${query.toString()}`
     ).then((r) => r.json());
 
-    setProducts(prods);
+    setProducts(Array.isArray(prods) ? prods : []);
     setLoading(false);
   };
 
@@ -126,12 +140,10 @@ export default function CategoryPage({ params }) {
 
         {/* PRODUITS */}
         {products.length === 0 ? (
-          // EMPTY STATE PREMIUM
           <div className="text-center py-20 opacity-70">
             <p>Aucun produit trouvé dans cette catégorie.</p>
           </div>
         ) : (
-          // GRID PREMIUM
           <div
             className="
               grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 
@@ -141,7 +153,7 @@ export default function CategoryPage({ params }) {
             {products.map((p) => (
               <a
                 key={p.id}
-                href={`/${params.locale}/product/${p.id}`}
+                href={`/${locale}/product/${p.id}`}
                 className="
                   border border-gray-200 dark:border-white/10 
                   rounded-xl p-4 shadow-sm 
