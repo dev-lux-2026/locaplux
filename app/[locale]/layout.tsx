@@ -1,8 +1,11 @@
+import { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 
-export default async function LocaleLayout({ children, params }) {
+export default async function LocaleLayout(
+  { children, params }: { children: ReactNode; params: { locale: string } }
+) {
   const locale = params.locale;
 
   try {
