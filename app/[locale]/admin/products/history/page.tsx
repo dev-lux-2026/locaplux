@@ -2,17 +2,31 @@
 
 import { useEffect, useState } from "react";
 
+interface ProductHistoryEntry {
+  id: string;
+  action: string;
+  reason?: string;
+  createdAt: string;
+  product?: {
+    id: string;
+    name: string;
+  };
+}
+
 export default function ProductHistoryPage() {
   const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<ProductHistoryEntry[]>([]);
 
   useEffect(() => {
     async function load() {
       const res = await fetch("/api/admin/products/history");
       const data = await res.json();
-      setHistory(data);
+
+      // Toujours un tableau typé
+      setHistory(Array.isArray(data) ? data : []);
       setLoading(false);
     }
+
     load();
   }, []);
 
@@ -23,11 +37,30 @@ export default function ProductHistoryPage() {
       <h1 className="text-2xl font-bold">Historique des validations</h1>
 
       <div className="space-y-4">
+        {history.length === 0 && (
+          <p>Aucun historique disponible.</p>
+        )}
+
         {history.map((h) => (
-          <div key={h.id} className="border p-4 rounded-lg bg-white shadow-sm">
-            <p><strong>Produit :</strong> {h.product?.name}</p>
-            <p><strong>Action :</strong> {h.action}</p>
-            {h.reason && <p><strong>Raison :</strong> {h.reason}</p>}
+          <div
+            key={h.id}
+            className="border p-4 rounded-lg bg-white shadow-sm"
+          >
+            <p>
+              <strong>Produit :</strong>{" "}
+              {h.product?.name ?? "Produit supprimé"}
+            </p>
+
+            <p>
+              <strong>Action :</strong> {h.action}
+            </p>
+
+            {h.reason && (
+              <p>
+                <strong>Raison :</strong> {h.reason}
+              </p>
+            )}
+
             <p className="text-sm text-gray-500">
               {new Date(h.createdAt).toLocaleString()}
             </p>
