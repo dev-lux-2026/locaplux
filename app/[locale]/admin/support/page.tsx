@@ -2,31 +2,63 @@
 
 import { useEffect, useState } from "react";
 
+interface SupportTicket {
+  id: string;
+  type: string;
+  subject: string;
+  priority: string;
+  status: string;
+  updatedAt: string;
+  author: {
+    publicName?: string;
+    email?: string;
+  };
+}
+
+interface SupportMessage {
+  id: string;
+  from: string;
+  content: string;
+  createdAt: string;
+}
+
+interface SupportDetail {
+  id: string;
+  subject: string;
+  description: string;
+  messages: SupportMessage[];
+}
+
 export default function SupportPage() {
-  const [tickets, setTickets] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [detail, setDetail] = useState(null);
-  const [reply, setReply] = useState("");
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [detail, setDetail] = useState<SupportDetail | null>(null);
+  const [reply, setReply] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/admin/support")
       .then((r) => r.json())
-      .then((d) => setTickets(d.tickets));
+      .then((d) => {
+        setTickets(Array.isArray(d.tickets) ? d.tickets : []);
+      });
   }, []);
 
   const openTicket = async (id: string) => {
     setSelected(id);
+
     const res = await fetch(`/api/admin/support/${id}`);
     const data = await res.json();
+
     setDetail(data);
   };
 
   const sendReply = async () => {
-    if (!reply.trim()) return;
+    if (!reply.trim() || !selected) return;
 
     await fetch(`/api/admin/support/${selected}/reply`, {
       method: "POST",
-      body: JSON.stringify({ content: reply, adminId: "admin" })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: reply, adminId: "admin" }),
     });
 
     setReply("");
@@ -34,9 +66,12 @@ export default function SupportPage() {
   };
 
   const changeStatus = async (status: string) => {
+    if (!selected) return;
+
     await fetch(`/api/admin/support/${selected}/status`, {
       method: "POST",
-      body: JSON.stringify({ status })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
     });
 
     openTicket(selected);
@@ -61,7 +96,7 @@ export default function SupportPage() {
           </thead>
 
           <tbody>
-            {tickets.map((t: any) => (
+            {tickets.map((t) => (
               <tr
                 key={t.id}
                 className="border-b hover:bg-gray-50 cursor-pointer"
@@ -92,7 +127,7 @@ export default function SupportPage() {
             <h3 className="font-semibold">Messages</h3>
 
             <div className="space-y-2">
-              {detail.messages.map((m: any) => (
+              {detail.messages.map((m) => (
                 <div key={m.id} className="p-3 border rounded">
                   <div className="text-xs text-gray-500">
                     {m.from} — {new Date(m.createdAt).toLocaleString()}
