@@ -6,6 +6,13 @@ import Link from "next/link";
 import ConfirmModal from "../../components/ConfirmModal";
 import Toast from "../../components/Toast";
 
+interface Product {
+  id: string;
+  name: string;
+  status: string;
+  price: number;
+}
+
 interface Partner {
   id: string;
   firstName?: string;
@@ -25,7 +32,7 @@ interface Partner {
   status?: string;
 
   vatCheckFailed?: boolean;
-  products?: any[];
+  products?: Product[];
 }
 
 interface KycData {
@@ -53,13 +60,13 @@ export default function AdminPartnerDetail() {
   const [kyc, setKyc] = useState<KycData | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [processing, setProcessing] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [actionType, setActionType] = useState<string | null>(null);
 
-  const [adminComment, setAdminComment] = useState<string>("");
+  const [adminComment, setAdminComment] = useState("");
   const [toast, setToast] = useState<
     null | { message: string; type: "success" | "error" }
   >(null);
@@ -335,18 +342,18 @@ export default function AdminPartnerDetail() {
           <p>Aucun produit pour ce partenaire.</p>
         )}
 
-        {partner.products?.map((product: any) => (
+        {partner.products?.map((product) => (
           <div key={product.id} className="border p-4 rounded">
             <p><strong>Nom :</strong> {product.name}</p>
             <p><strong>Statut :</strong> {product.status}</p>
             <p><strong>Prix :</strong> {product.price} €</p>
 
-            <a
+            <Link
               href={`/admin/products/${product.id}`}
               className="text-blue-600 underline"
             >
               Voir le produit
-            </a>
+            </Link>
           </div>
         ))}
       </div>
@@ -357,7 +364,7 @@ export default function AdminPartnerDetail() {
 
         {Array.isArray(kyc?.documents) && kyc.documents.length > 0 ? (
           <ul className="list-disc ml-6">
-            {kyc.documents.map((doc: string, i: number) => (
+            {kyc.documents.map((doc, i) => (
               <li key={i}>
                 <a
                   href={doc}
