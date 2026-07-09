@@ -239,7 +239,6 @@ export default function HomePageClient(
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeaveCapture={undefined} // removed duplicate
         >
           <div className="relative h-[300px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden shadow-xl bg-black cursor-grab active:cursor-grabbing">
             <a href={`/products/${productsToShow[carouselIndex].slug}`}>
