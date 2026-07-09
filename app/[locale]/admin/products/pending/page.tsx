@@ -3,15 +3,27 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+interface PendingProduct {
+  id: string;
+  name: string;
+  price: number;
+  categoryName?: string;
+  partner?: {
+    name?: string;
+  };
+}
+
 export default function PendingProductsPage() {
   const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<PendingProduct[]>([]);
 
   async function load() {
     setLoading(true);
     const res = await fetch("/api/admin/products/pending");
     const data = await res.json();
-    setProducts(data);
+
+    // Toujours un tableau typé
+    setProducts(Array.isArray(data) ? data : []);
     setLoading(false);
   }
 
@@ -19,7 +31,7 @@ export default function PendingProductsPage() {
     load();
   }, []);
 
-  async function validate(productId) {
+  async function validate(productId: string) {
     const res = await fetch("/api/admin/products/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +49,7 @@ export default function PendingProductsPage() {
     load();
   }
 
-  async function reject(productId) {
+  async function reject(productId: string) {
     const reason = prompt("Raison du refus :");
 
     if (!reason) {
@@ -86,7 +98,7 @@ export default function PendingProductsPage() {
                 Prix : {p.price} €
               </p>
               <p className="text-sm text-gray-600">
-                Catégorie : {p.categoryName}
+                Catégorie : {p.categoryName || "—"}
               </p>
             </div>
 
