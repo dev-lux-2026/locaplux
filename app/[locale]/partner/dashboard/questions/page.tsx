@@ -3,12 +3,25 @@
 import { useEffect, useState } from "react";
 import Container from "@/components/Container";
 
+interface Question {
+  id: string;
+  message: string;
+  answer?: string;
+  product: {
+    name: string;
+    images?: string[];
+    category?: {
+      name: string;
+    };
+  };
+}
+
 export default function PartnerQuestionsPage() {
-  const [questions, setQuestions] = useState(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [answer, setAnswer] = useState("");
-  const [activeQuestion, setActiveQuestion] = useState(null);
+  const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,7 +29,7 @@ export default function PartnerQuestionsPage() {
     fetch("/api/questions/partner")
       .then((res) => res.json())
       .then((data) => {
-        setQuestions(data.questions || []);
+        setQuestions(Array.isArray(data.questions) ? data.questions : []);
         setLoading(false);
       });
   }, []);
