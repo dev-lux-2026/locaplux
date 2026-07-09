@@ -8,21 +8,44 @@ import { useState, useEffect, useRef } from "react";
 import Container from "@/components/Container";
 import SectionTitle from "@/components/SectionTitle";
 
-export default function HomePageClient({ onboardingIncomplete }) {
+interface Category {
+  id: string;
+  name: string;
+  image?: string;
+}
+
+interface Product {
+  id: string;
+  slug?: string;
+  name: string;
+  description?: string;
+  images?: string[];
+  prix_locaplux?: number;
+}
+
+interface Partner {
+  id: string;
+  slug: string;
+  publicName: string;
+  avatar?: string;
+}
+
+export default function HomePageClient(
+  { onboardingIncomplete }: { onboardingIncomplete: boolean }
+) {
   const { data: session, status } = useSession();
   const t = useTranslations("Home");
 
   const [isPaused, setIsPaused] = useState(false);
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [popularProducts, setPopularProducts] = useState<any[]>([]);
-  const [latestProducts, setLatestProducts] = useState<any[]>([]);
-
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
-  const [featuredPartners, setFeaturedPartners] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
+  const [latestProducts, setLatestProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [featuredPartners, setFeaturedPartners] = useState<Partner[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
-  const demoFeaturedProducts = [
+  const demoFeaturedProducts: Product[] = [
     {
       slug: "demo-1",
       name: "Produit Démo 1",
@@ -43,7 +66,7 @@ export default function HomePageClient({ onboardingIncomplete }) {
     },
   ];
 
-  const demoFeaturedPartners = [
+  const demoFeaturedPartners: Partner[] = [
     {
       id: "p1",
       slug: "partner-demo-1",
@@ -86,11 +109,8 @@ export default function HomePageClient({ onboardingIncomplete }) {
       .then((data) => setFeaturedPartners(Array.isArray(data) ? data : []));
   }, []);
 
-  const productsToShow =
-    featuredProducts.length > 0 ? featuredProducts : demoFeaturedProducts;
-
-  const partnersToShow =
-    featuredPartners.length > 0 ? featuredPartners : demoFeaturedPartners;
+  const productsToShow = featuredProducts.length > 0 ? featuredProducts : demoFeaturedProducts;
+  const partnersToShow = featuredPartners.length > 0 ? featuredPartners : demoFeaturedPartners;
 
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -133,29 +153,22 @@ export default function HomePageClient({ onboardingIncomplete }) {
     const delta = currentXRef.current - startXRef.current;
     const threshold = 50;
 
-    if (delta > threshold) {
-      goToPrev();
-    } else if (delta < -threshold) {
-      goToNext();
-    }
+    if (delta > threshold) goToPrev();
+    else if (delta < -threshold) goToNext();
 
     isDraggingRef.current = false;
     setIsPaused(false);
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.touches[0];
-    handleStart(touch.clientX);
+    handleStart(e.touches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.touches[0];
-    handleMove(touch.clientX);
+    handleMove(e.touches[0].clientX);
   };
 
-  const handleTouchEnd = () => {
-    handleEnd();
-  };
+  const handleTouchEnd = () => handleEnd();
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     handleStart(e.clientX);
@@ -166,14 +179,10 @@ export default function HomePageClient({ onboardingIncomplete }) {
     handleMove(e.clientX);
   };
 
-  const handleMouseUp = () => {
-    handleEnd();
-  };
+  const handleMouseUp = () => handleEnd();
 
   const handleMouseLeave = () => {
-    if (isDraggingRef.current) {
-      handleEnd();
-    }
+    if (isDraggingRef.current) handleEnd();
   };
 
   if (status === "loading") return null;
