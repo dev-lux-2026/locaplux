@@ -45,29 +45,29 @@ export default function HomePageClient(
   const [featuredPartners, setFeaturedPartners] = useState<Partner[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
-const demoFeaturedProducts: Product[] = [
-  {
-    id: "demo-1",
-    slug: "demo-1",
-    name: "Produit Démo 1",
-    description: "Description de test pour vérifier le carrousel.",
-    images: ["/images/slide1.jpg"],
-  },
-  {
-    id: "demo-2",
-    slug: "demo-2",
-    name: "Produit Démo 2",
-    description: "Encore un produit de test.",
-    images: ["/images/slide2.jpg"],
-  },
-  {
-    id: "demo-3",
-    slug: "demo-3",
-    name: "Produit Démo 3",
-    description: "Troisième produit pour tester le défilement.",
-    images: ["/images/slide3.jpg"],
-  },
-];
+  const demoFeaturedProducts: Product[] = [
+    {
+      id: "demo-1",
+      slug: "demo-1",
+      name: "Produit Démo 1",
+      description: "Description de test pour vérifier le carrousel.",
+      images: ["/images/slide1.jpg"],
+    },
+    {
+      id: "demo-2",
+      slug: "demo-2",
+      name: "Produit Démo 2",
+      description: "Encore un produit de test.",
+      images: ["/images/slide2.jpg"],
+    },
+    {
+      id: "demo-3",
+      slug: "demo-3",
+      name: "Produit Démo 3",
+      description: "Troisième produit pour tester le défilement.",
+      images: ["/images/slide3.jpg"],
+    },
+  ];
 
   const demoFeaturedPartners: Partner[] = [
     {
@@ -239,7 +239,7 @@ const demoFeaturedProducts: Product[] = [
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeaveCapture={undefined} // removed duplicate
         >
           <div className="relative h-[300px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden shadow-xl bg-black cursor-grab active:cursor-grabbing">
             <a href={`/products/${productsToShow[carouselIndex].slug}`}>
