@@ -27,22 +27,18 @@ export default async function VerifyEmailPage({ searchParams, params }: VerifyEm
     return <p>Token invalide ou expiré.</p>;
   }
 
-  // Vérifier l'utilisateur
   const user = await prisma.user.update({
     where: { email: record.identifier },
     data: { emailVerified: new Date() },
   });
 
-  // Supprimer le token
   await prisma.verificationToken.delete({ where: { token } });
 
-  // Connexion automatique via next-auth v5 (server-side)
   await signIn("credentials", {
     email: user.email,
     password: user.password,
     redirect: false,
   });
 
-  // Redirection localisée
   redirect(`/${locale}/account/onboarding/address`);
 }
