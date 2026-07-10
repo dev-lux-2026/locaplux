@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
-import { cookies } from "next/headers";
 
-export default async function VerifyEmailPage({ searchParams, params }) {
+type VerifyEmailProps = {
+  searchParams: {
+    token?: string;
+  };
+  params: {
+    locale: string;
+  };
+};
+
+export default async function VerifyEmailPage({ searchParams, params }: VerifyEmailProps) {
   const { locale } = params;
   const token = searchParams.token;
 
