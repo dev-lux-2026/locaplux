@@ -11,19 +11,22 @@ export default function EditProductPage(
   const { id } = params;
 
   const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<any>(null);
 
   const [form, setForm] = useState({
     name: "",
     description: "",
     price: "",
     categoryName: "",
-    images: [],
-    autoCategoryIdFromImage: null,
-    categoryIdFromText: null,
-    categoryResult: null,
+    images: [] as string[],
+    autoCategoryIdFromImage: null as number | null,
+    categoryIdFromText: null as number | null,
+    categoryResult: null as any,
   });
 
+  /* ------------------------------------------------------ */
+  /* LOAD PRODUCT                                            */
+  /* ------------------------------------------------------ */
   useEffect(() => {
     async function load() {
       const res = await fetch(`/api/products/${id}`);
@@ -47,6 +50,9 @@ export default function EditProductPage(
     load();
   }, [id]);
 
+  /* ------------------------------------------------------ */
+  /* IA AUTO-CATEGORY (TEXTE + IMAGE)                       */
+  /* ------------------------------------------------------ */
   useEffect(() => {
     async function detectCategory() {
       if (!form.name && !form.description) return;
@@ -73,7 +79,7 @@ export default function EditProductPage(
             categoryId: data.categoryId,
             confidence: data.confidence,
             source: data.source,
-            suggestions: data.suggestions?.map((s) => ({
+            suggestions: data.suggestions?.map((s: any) => ({
               ...s,
               label: s.category,
             })),
@@ -86,7 +92,10 @@ export default function EditProductPage(
     detectCategory();
   }, [form.name, form.description, form.autoCategoryIdFromImage]);
 
-  async function handleSubmit(e) {
+  /* ------------------------------------------------------ */
+  /* SUBMIT                                                 */
+  /* ------------------------------------------------------ */
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const res = await fetch("/api/partner/products/update", {
@@ -117,6 +126,9 @@ export default function EditProductPage(
 
   if (loading) return <p>Chargement...</p>;
 
+  /* ------------------------------------------------------ */
+  /* RENDER                                                 */
+  /* ------------------------------------------------------ */
   return (
     <div className="max-w-xl mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Modifier le produit</h1>
@@ -134,7 +146,7 @@ export default function EditProductPage(
             <p className="text-xs mt-1 text-green-700 dark:text-green-400">
               Autres possibles :{" "}
               {form.categoryResult.suggestions
-                .map((s) => s.label)
+                .map((s: any) => s.label)
                 .join(", ")}
             </p>
           )}

@@ -19,13 +19,13 @@ export default function PartnerPayouts() {
     );
   }
 
-  const statusLabels: any = {
+  const statusLabels: Record<string, string> = {
     paid: "Payé",
     pending: "En attente",
     processing: "En traitement",
   };
 
-  const statusColors: any = {
+  const statusColors: Record<string, string> = {
     paid: "bg-green-100 text-green-700 border-green-300",
     pending: "bg-yellow-100 text-yellow-700 border-yellow-300",
     processing: "bg-gray-100 text-gray-700 border-gray-300",

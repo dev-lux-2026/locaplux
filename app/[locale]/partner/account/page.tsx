@@ -23,7 +23,6 @@ export default function PartnerAccountPage() {
 
     const payload = {
       ...partner,
-      // normalisation simple côté client
       delivery_price_per_km:
         partner.delivery_price_per_km !== undefined &&
         partner.delivery_price_per_km !== null &&
@@ -96,7 +95,6 @@ export default function PartnerAccountPage() {
     );
   }
 
-  // pour l’input texte des pays, on affiche une version jointe
   const deliveryCountriesText =
     typeof partner.delivery_allowed_countries === "string"
       ? partner.delivery_allowed_countries

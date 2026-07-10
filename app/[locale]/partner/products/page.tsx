@@ -19,14 +19,14 @@ const damageLabels: Record<string, string> = {
   other: "Autre dommage",
 };
 
-const statusLabels: any = {
+const statusLabels: Record<string, string> = {
   pending: "En attente",
   approved: "En ligne",
   rejected: "Refusé",
   disabled: "Désactivé",
 };
 
-const statusStyles: any = {
+const statusStyles: Record<string, string> = {
   pending:
     "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700",
   approved:
@@ -39,7 +39,7 @@ const statusStyles: any = {
 
 export default function PartnerProducts() {
   const { readOnly } = usePartnerMode();
-  const { locale } = useParams();
+  const { locale } = useParams() as { locale: string };
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export default function PartnerProducts() {
 
         const data = JSON.parse(text);
         setProducts(data);
-      } catch (err) {
+      } catch {
         setError("Erreur réseau lors du chargement.");
       }
 

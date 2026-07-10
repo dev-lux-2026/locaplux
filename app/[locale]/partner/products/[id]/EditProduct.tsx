@@ -9,7 +9,7 @@ import { QRCodeCanvas } from "qrcode.react";
 
 export default function EditProduct({ id }: { id: string }) {
   const router = useRouter();
-  const { locale } = useParams(); // ← locale dynamique
+  const { locale } = useParams() as { locale: string };
   const { readOnly } = usePartnerMode();
 
   const [loading, setLoading] = useState(true);
@@ -199,7 +199,7 @@ export default function EditProduct({ id }: { id: string }) {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0B0C]">
       {toast && (
@@ -461,7 +461,15 @@ export default function EditProduct({ id }: { id: string }) {
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Stock disponible
                 </label>
-                <input                />
+                <input
+                  type="number"
+                  disabled={readOnly}
+                  value={product.stock}
+                  onChange={(e) =>
+                    setProduct({ ...product, stock: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
               </div>
             </div>
           </section>
