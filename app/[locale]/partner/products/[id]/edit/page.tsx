@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-export default function EditProductPage({ params }) {
+export default function EditProductPage(
+  { params }: { params: { id: string } }
+) {
   const router = useRouter();
   const { id } = params;
 
@@ -22,9 +24,6 @@ export default function EditProductPage({ params }) {
     categoryResult: null,
   });
 
-  /* ------------------------------------------------------ */
-  /* LOAD PRODUCT                                            */
-  /* ------------------------------------------------------ */
   useEffect(() => {
     async function load() {
       const res = await fetch(`/api/products/${id}`);
@@ -48,9 +47,6 @@ export default function EditProductPage({ params }) {
     load();
   }, [id]);
 
-  /* ------------------------------------------------------ */
-  /* IA AUTO-CATEGORY (TEXTE + IMAGE)                       */
-  /* ------------------------------------------------------ */
   useEffect(() => {
     async function detectCategory() {
       if (!form.name && !form.description) return;
@@ -79,9 +75,9 @@ export default function EditProductPage({ params }) {
             source: data.source,
             suggestions: data.suggestions?.map((s) => ({
               ...s,
-              label: s.category, // 🔥 dynamique
+              label: s.category,
             })),
-            label: data.category, // 🔥 dynamique
+            label: data.category,
           },
         }));
       }
@@ -90,9 +86,6 @@ export default function EditProductPage({ params }) {
     detectCategory();
   }, [form.name, form.description, form.autoCategoryIdFromImage]);
 
-  /* ------------------------------------------------------ */
-  /* SUBMIT                                                 */
-  /* ------------------------------------------------------ */
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -124,14 +117,10 @@ export default function EditProductPage({ params }) {
 
   if (loading) return <p>Chargement...</p>;
 
-  /* ------------------------------------------------------ */
-  /* RENDER                                                 */
-  /* ------------------------------------------------------ */
   return (
     <div className="max-w-xl mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Modifier le produit</h1>
 
-      {/* IA CATEGORY RESULT */}
       {form.categoryResult && (
         <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">
           <p className="text-sm font-medium text-green-800 dark:text-green-300">
