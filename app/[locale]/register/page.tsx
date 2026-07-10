@@ -48,7 +48,7 @@ export default function RegisterPage() {
     { code: "SE", name: "Suède" },
   ];
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (
