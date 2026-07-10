@@ -12,7 +12,7 @@ export default function SupportContactPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -28,7 +28,6 @@ export default function SupportContactPage() {
       setLoading(false);
 
       if (!res.ok) {
-        // 🔍 Erreurs Zod → message clair
         if (res.status === 400 && data.details) {
           const fieldErrors = data.details.fieldErrors;
 
@@ -49,15 +48,12 @@ export default function SupportContactPage() {
         return;
       }
 
-      // 🔥 Message de confirmation
       alert("Votre message a été envoyé. Nous vous répondrons rapidement.");
 
-      // 🔥 Redirection automatique après 2 secondes
       setTimeout(() => {
         window.location.href = "/register/partner";
       }, 2000);
 
-      // Reset du formulaire
       setForm({ email: "", subject: "", message: "" });
 
     } catch (err) {
@@ -83,7 +79,6 @@ export default function SupportContactPage() {
           onSubmit={handleSubmit}
           className="space-y-6 bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm"
         >
-          {/* 🔥 Message d’erreur global */}
           {error && (
             <p className="text-red-500 text-sm font-medium">{error}</p>
           )}
