@@ -5,8 +5,13 @@ import { redirect } from "next/navigation";
 export async function partnerGuard() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "partner") {
+  // TS strict : session.user peut être undefined
+  if (!session?.user) {
     redirect("/login");
+  }
+
+  if (session.user.role !== "partner") {
+    redirect("/");
   }
 
   return session;
