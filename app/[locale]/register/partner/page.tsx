@@ -89,20 +89,23 @@ export default function RegisterPartner() {
     }
   }, [form]);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
+function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  const { name, value } = e.target;
 
-    if (name === "country") {
-      if (!prefixManuallyEdited) {
-        const match = EU_COUNTRIES.find((c) => c.name === value);
-        if (match) {
-          setForm({ ...form, country: value, phonePrefix: match.prefix });
-          return;
-        }
+  if (name === "country") {
+    if (!prefixManuallyEdited) {
+      const match = EU_COUNTRIES.find((c) => c.name === value);
+      if (match) {
+        setForm({ ...form, country: value, phonePrefix: match.prefix });
+        return;
       }
-      setForm({ ...form, country: value });
-      return;
     }
+    setForm({ ...form, country: value });
+    return;
+  }
+
+  setForm({ ...form, [name]: value });
+}
 
     if (name === "phonePrefix") {
       setPrefixManuallyEdited(true);
