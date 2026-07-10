@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 
 export default function RegisterPartner() {
-  const { locale } = useParams(); // ← locale dynamique (fr, en, lu)
+  const { locale } = useParams();
 
   const EU_COUNTRIES = [
     { name: "Allemagne", prefix: "+49" },
@@ -67,7 +67,6 @@ export default function RegisterPartner() {
   const [loading, setLoading] = useState(false);
   const restoring = useRef(true);
 
-  // Charger sauvegarde
   useEffect(() => {
     const saved = localStorage.getItem("register-partner-form");
     if (saved) {
@@ -82,30 +81,26 @@ export default function RegisterPartner() {
     }, 50);
   }, []);
 
-  // Sauvegarde auto
   useEffect(() => {
     if (!restoring.current) {
       localStorage.setItem("register-partner-form", JSON.stringify(form));
     }
   }, [form]);
 
-function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-  const { name, value } = e.target;
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value } = e.target;
 
-  if (name === "country") {
-    if (!prefixManuallyEdited) {
-      const match = EU_COUNTRIES.find((c) => c.name === value);
-      if (match) {
-        setForm({ ...form, country: value, phonePrefix: match.prefix });
-        return;
+    if (name === "country") {
+      if (!prefixManuallyEdited) {
+        const match = EU_COUNTRIES.find((c) => c.name === value);
+        if (match) {
+          setForm({ ...form, country: value, phonePrefix: match.prefix });
+          return;
+        }
       }
+      setForm({ ...form, country: value });
+      return;
     }
-    setForm({ ...form, country: value });
-    return;
-  }
-
-  setForm({ ...form, [name]: value });
-}
 
     if (name === "phonePrefix") {
       setPrefixManuallyEdited(true);
@@ -127,7 +122,7 @@ function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     setForm({ ...form, [name]: value });
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!/^\+\d{1,4}$/.test(form.phonePrefix)) {
@@ -154,7 +149,7 @@ function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
 
       if (res.ok) {
         localStorage.removeItem("register-partner-form");
-        window.location.href = `/${locale}/register/partner/success`; // ← localisé
+        window.location.href = `/${locale}/register/partner/success`;
         return;
       }
 
@@ -403,7 +398,7 @@ function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
           >
             J’accepte les{" "}
             <a
-              href={`/${locale}/legal/cgv`} // ← localisé
+              href={`/${locale}/legal/cgv`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-black dark:hover:text-white"
@@ -426,7 +421,7 @@ function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
           </p>
 
           <a
-            href={`/${locale}/support/contact`} // ← localisé
+            href={`/${locale}/support/contact`}
             className="inline-flex items-center px-5 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
           >
             Contacter Locaplux
