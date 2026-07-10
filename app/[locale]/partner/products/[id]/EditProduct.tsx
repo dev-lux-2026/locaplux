@@ -1,5 +1,6 @@
 "use client";
 
+import ImageUploader from "@/components/ImageUploader";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePartnerMode } from "@/lib/context/PartnerModeContext";
