@@ -88,11 +88,12 @@ export default function NewProductPage() {
   /* ------------------------------------------------------ */
   /* UPLOAD DESKTOP                                         */
   /* ------------------------------------------------------ */
-  function handleUpload(img) {
-    setProduct((prev) => ({
-      ...prev,
-      images: [...prev.images, img.url],
-    }));
+ function handleUpload(img: { url: string }) {
+  setProduct((prev: any) => ({
+    ...prev,
+    images: [...(prev.images || []), img.url],
+  }));
+}
 
     if (img.autoCategory) {
       setAutoCategory(img.autoCategory);
