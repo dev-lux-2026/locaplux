@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PartnerModeProvider } from "@/lib/context/PartnerModeContext";
 
-export default function PartnerLayout({ children }) {
+export default function PartnerLayout(
+  { children }: { children: ReactNode }
+) {
   const [mode, setMode] = useState<string | null>(null);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerData, setPartnerData] = useState<any>(null);
