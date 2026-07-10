@@ -22,10 +22,9 @@ export default function NewProductPage() {
     stock: "",
     damage_type: "no_damage",
     damage_description: "",
-    images: [],
-    categoryId: null,
+    images: [] as string[],
+    categoryId: null as number | null,
 
-    // 🟦 NOUVEAU : options produit
     pickup_available: true,
     delivery_available: false,
   });
@@ -33,7 +32,7 @@ export default function NewProductPage() {
   /* ------------------------------------------------------ */
   /* CHARGEMENT PARAMÈTRES PARTENAIRE                        */
   /* ------------------------------------------------------ */
-  const [partner, setPartner] = useState(null);
+  const [partner, setPartner] = useState<any>(null);
 
   useEffect(() => {
     async function loadPartner() {
@@ -42,7 +41,6 @@ export default function NewProductPage() {
 
       setPartner(data);
 
-      // Pré-remplissage automatique
       setProduct((prev) => ({
         ...prev,
         pickup_available: data.default_pickup_available ?? true,
@@ -56,8 +54,8 @@ export default function NewProductPage() {
   /* ------------------------------------------------------ */
   /* AUTO-DETECTION IA TEXTE                                */
   /* ------------------------------------------------------ */
-  const [autoCategory, setAutoCategory] = useState(null);
-  const [debug, setDebug] = useState(null);
+  const [autoCategory, setAutoCategory] = useState<any>(null);
+  const [debug, setDebug] = useState<any>(null);
 
   useEffect(() => {
     if (!product.name && !product.description) return;
@@ -88,25 +86,26 @@ export default function NewProductPage() {
   /* ------------------------------------------------------ */
   /* UPLOAD DESKTOP                                         */
   /* ------------------------------------------------------ */
- function handleUpload(img: { url: string }) {
-  setProduct((prev: any) => ({
-    ...prev,
-    images: [...(prev.images || []), img.url],
-  }));
-}
+  function handleUpload(img: { url: string; autoCategory?: any; debug?: any }) {
+    setProduct((prev: any) => ({
+      ...prev,
+      images: [...(prev.images || []), img.url],
+    }));
 
     if (img.autoCategory) {
       setAutoCategory(img.autoCategory);
-      setProduct((prev) => ({
+      setProduct((prev: any) => ({
         ...prev,
         categoryId: img.autoCategory.id,
       }));
     }
 
-    if (img.debug) setDebug(img.debug);
+    if (img.debug) {
+      setDebug(img.debug);
+    }
   }
 
-  function handleDelete(url) {
+  function handleDelete(url: string) {
     setProduct((prev) => ({
       ...prev,
       images: prev.images.filter((i) => i !== url),
@@ -116,7 +115,7 @@ export default function NewProductPage() {
   /* ------------------------------------------------------ */
   /* MOBILE UPLOAD                                          */
   /* ------------------------------------------------------ */
-  const [mobileSession, setMobileSession] = useState(null);
+  const [mobileSession, setMobileSession] = useState<string | null>(null);
 
   function generateMobileSession() {
     const id = crypto.randomUUID();
@@ -149,9 +148,9 @@ export default function NewProductPage() {
   /* SUBMIT                                                 */
   /* ------------------------------------------------------ */
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<any>(null);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
 
@@ -218,18 +217,18 @@ export default function NewProductPage() {
             <button
               type="button"
               onClick={generateMobileSession}
-              className="px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
+              className="px-4 py-2.5 bg-black dark:bg:white text-white dark:text-black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
             >
               Ajouter depuis mon téléphone
             </button>
 
             {mobileSession && (
-              <div className="mt-6 p-6 bg-gray-50 dark:bg-[#1A1A1C] border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col items-center">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+              <div className="mt-6 p-6 bg-gray-50 dark:bg-[#1A1A1C] border border-gray-200 dark:border:white/10 rounded-2xl flex flex-col items-center">
+                <h3 className="text-base font-semibold text-gray-900 dark:text:white mb-3">
                   Scannez ce QR code
                 </h3>
 
-                <div className="p-4 bg-white dark:bg-[#0F0F10] rounded-2xl border border-gray-300 dark:border-white/10 shadow-sm">
+                <div className="p-4 bg-white dark:bg-[#0F0F10] rounded-2xl border border-gray-300 dark:border:white/10 shadow-sm">
                   <QRCodeCanvas
                     value={`${window.location.origin}/partner/products/capture?session=${mobileSession}`}
                     size={200}
@@ -240,8 +239,8 @@ export default function NewProductPage() {
           </section>
 
           {/* INFORMATIONS */}
-          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border:white/10 rounded-2xl p-6 shadow-sm space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text:white">
               Informations
             </h2>
 
@@ -257,7 +256,7 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, name: e.target.value })
                   }
-                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
 
@@ -271,15 +270,15 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, description: e.target.value })
                   }
-                  className="w-full h-32 px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full h-32 px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
             </div>
           </section>
 
           {/* CATÉGORIE IA */}
-          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border:white/10 rounded-2xl p-6 shadow-sm space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text:white">
               Catégorie
             </h2>
 
@@ -330,23 +329,23 @@ export default function NewProductPage() {
                   }));
                 }
               }}
-              className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
+              className="px-4 py-2 bg-black dark:bg:white text-white dark:text:black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
             >
               Re‑détecter la catégorie
             </button>
           </section>
 
           {/* OPTIONS RETRAIT / LIVRAISON */}
-          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border:white/10 rounded-2xl p-6 shadow-sm space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text:white">
               Options de mise à disposition
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* RETRAIT */}
-              <div className="flex items-center justify-between border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between border border-gray-200 dark:border:white/10 rounded-xl px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-gray-900 dark:text:white">
                     Retrait sur place
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -377,9 +376,9 @@ export default function NewProductPage() {
               </div>
 
               {/* LIVRAISON */}
-              <div className="flex items-center justify-between border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between border border-gray-200 dark:border:white/10 rounded-xl px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-gray-900 dark:text:white">
                     Livraison
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -412,8 +411,8 @@ export default function NewProductPage() {
           </section>
 
           {/* PRIX / STOCK / DOMMAGES */}
-          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border:white/10 rounded-2xl p-6 shadow-sm space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text:white">
               Prix, Stock & État
             </h2>
 
@@ -429,7 +428,7 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, prix_normal: e.target.value })
                   }
-                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
 
@@ -444,7 +443,7 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, prix_locaplux: e.target.value })
                   }
-                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
 
@@ -459,7 +458,7 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, prix_achat: e.target.value })
                   }
-                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
 
@@ -474,7 +473,7 @@ export default function NewProductPage() {
                   onChange={(e) =>
                     setProduct({ ...product, stock: e.target.value })
                   }
-                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               </div>
             </div>
@@ -490,7 +489,7 @@ export default function NewProductPage() {
                 onChange={(e) =>
                   setProduct({ ...product, damage_type: e.target.value })
                 }
-                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
               >
                 <option value="no_damage">Aucun dommage</option>
                 <option value="exhibition_damage">Dommage d’exposition</option>
@@ -512,7 +511,7 @@ export default function NewProductPage() {
                       damage_description: e.target.value,
                     })
                   }
-                  className="mt-3 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                  className="mt-3 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border:white/10 text-gray-900 dark:text:white"
                 />
               )}
             </div>
@@ -523,7 +522,7 @@ export default function NewProductPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition disabled:opacity-50"
+              className="px-6 py-3 bg-black dark:bg:white text-white dark:text:black rounded-xl text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition disabled:opacity-50"
             >
               {saving ? "Création…" : "Créer le produit"}
             </button>
