@@ -23,8 +23,8 @@ export default function SearchPage() {
       .then((data) => setCategories(data));
   }, []);
 
-  async function handleSearch(e) {
-    e.preventDefault();
+async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
     setLoading(true);
 
     const params = new URLSearchParams({
