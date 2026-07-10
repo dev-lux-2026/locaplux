@@ -5,22 +5,26 @@ import Container from "@/components/Container";
 import { detectForbiddenContent } from "@/utils/messageFilterClient";
 import DeliveryPriceCalculator from "@/components/DeliveryPriceCalculator";
 
-export default function ProductPage({ params }) {
+export default function ProductPage({
+  params,
+}: {
+  params: { locale: string; id: string };
+}) {
   const { id } = params;
 
-  const [product, setProduct] = useState(null);
-  const [similar, setSimilar] = useState([]);
+  const [product, setProduct] = useState<any>(null);
+  const [similar, setSimilar] = useState<any[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState("");
-  const [files, setFiles] = useState(null);
+  const [files, setFiles] = useState<FileList | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   const [unlocked, setUnlocked] = useState(false);
-  const [partnerInfo, setPartnerInfo] = useState(null);
+  const [partnerInfo, setPartnerInfo] = useState<any>(null);
 
   /* ------------------------------------------------------ */
   /* LOAD PRODUCT                                           */
@@ -82,7 +86,7 @@ export default function ProductPage({ params }) {
         {
           id: product.id,
           name: product.name,
-          price: product.prix_locaplux, // 🔥 corrigé
+          price: product.prix_locaplux,
           images: product.images || [],
           quantity: 1,
         },
@@ -199,7 +203,7 @@ export default function ProductPage({ params }) {
           </div>
 
           <div className="grid grid-cols-4 gap-3">
-            {product.images?.map((img, i) => (
+            {product.images?.map((img: string, i: number) => (
               <div
                 key={i}
                 className="h-20 bg-gray-100 dark:bg-[#1F1F22] rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition"
@@ -431,10 +435,10 @@ export default function ProductPage({ params }) {
               gap-6
             "
           >
-            {similar.map((p) => (
+            {similar.map((p: any) => (
               <a
                 key={p.id}
-                href={`/products/${p.id}`} // 🔥 corrigé
+                href={`/products/${p.id}`}
                 className="
                   border border-gray-200 dark:border-white/10 
                   rounded-xl p-4 shadow-sm 
@@ -444,7 +448,7 @@ export default function ProductPage({ params }) {
                 "
               >
                 <img
-                  src={p.images?.[0] || "/placeholder.jpg"} // 🔥 corrigé
+                  src={p.images?.[0] || "/placeholder.jpg"}
                   className="w-full h-40 object-cover rounded-lg mb-3"
                 />
 
@@ -453,7 +457,7 @@ export default function ProductPage({ params }) {
                 </p>
 
                 <p className="text-[#1A3A5F] dark:text-[#D4AF37] font-semibold mt-3 text-sm">
-                  {p.prix_locaplux} € {/* 🔥 corrigé */}
+                  {p.prix_locaplux} €
                 </p>
               </a>
             ))}
