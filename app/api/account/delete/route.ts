@@ -14,7 +14,7 @@ export async function POST() {
 
   try {
     // Suppression des données personnelles
-    await prisma.message.deleteMany({ where: { userId } });
+    await prisma.message.deleteMany({ where: { senderId: userId } });
     await prisma.question.deleteMany({ where: { userId } });
     await prisma.wishlist.deleteMany({ where: { userId } });
     await prisma.address.deleteMany({ where: { userId } });
