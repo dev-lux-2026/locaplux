@@ -13,13 +13,20 @@ export async function POST() {
   const userId = session.user.id;
 
   try {
-    // Suppression des données personnelles
+    // Suppression des messages
     await prisma.message.deleteMany({ where: { senderId: userId } });
-    await prisma.question.deleteMany({ where: { userId } });
+
+    // Suppression des questions où l'utilisateur est buyer
+    await prisma.question.deleteMany({ where: { buyerId: userId } });
+
+    // Suppression des questions où l'utilisateur est partner
+    await prisma.question.deleteMany({ where: { partnerId: userId } });
+
+    // Suppression wishlist + adresses
     await prisma.wishlist.deleteMany({ where: { userId } });
     await prisma.address.deleteMany({ where: { userId } });
 
-    // Anonymisation du compte (obligation légale pour les commandes)
+    // Anonymisation du compte
     await prisma.user.update({
       where: { id: userId },
       data: {
