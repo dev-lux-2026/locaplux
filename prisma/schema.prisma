@@ -33,6 +33,7 @@ model User {
   freeDaysLimit              Int?
   createdAt                  DateTime                   @default(now())
   updatedAt                  DateTime                   @updatedAt
+  deletedAt                  DateTime?
   city                       String?
   company                    String?
   country                    String?
