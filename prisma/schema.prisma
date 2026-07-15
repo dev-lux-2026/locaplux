@@ -79,6 +79,7 @@ model User {
   ordersAsBuyer              Order[]                    @relation("OrderBuyer")
   partnerApplication         PartnerApplication?
   products                   Product[]
+  wishlists                  Wishlist[]
   ProductValidationHistory   ProductValidationHistory[]
   buyerQuestions             Question[]                 @relation("BuyerQuestions")
   partnerQuestions           Question[]                 @relation("PartnerQuestions")
@@ -147,6 +148,19 @@ model Product {
   partner            User                       @relation(fields: [partnerId], references: [id])
   validationHistory  ProductValidationHistory[]
   questions          Question[]
+  wishlists          Wishlist[]
+
+  @@schema("public")
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@schema("public")
 }
