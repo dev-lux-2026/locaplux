@@ -57,12 +57,14 @@ export async function GET(req: Request) {
 
   const inactiveDate = subDays(now, inactive);
 
+  // Active partners (PartnerApplication)
   const activePartners = await prisma.partnerApplication.count({
-  where: { createdAt: { gte: inactiveDate } },
-});
+    where: { createdAt: { gte: inactiveDate } },
+  });
 
-  const inactivePartners = await prisma.partner.count({
-    where: { lastActivityAt: { lt: inactiveDate } },
+  // Inactive partners (PartnerApplication)
+  const inactivePartners = await prisma.partnerApplication.count({
+    where: { createdAt: { lt: inactiveDate } },
   });
 
   const activeProducts = await prisma.product.count({
@@ -188,56 +190,28 @@ export async function GET(req: Request) {
     partner: o.partner?.publicName ?? "Inconnu",
   }));
 
-  // RecentPartners
-  const recentPartners = await prisma.partner.findMany({
+  // RecentPartners (PartnerApplication)
+  const recentPartners = await prisma.partnerApplication.findMany({
     orderBy: { createdAt: "desc" },
     take: 10,
     select: {
       id: true,
-      publicName: true,
+      company: true,
       createdAt: true,
       status: true,
     },
   });
 
-  // PartnersBySector
-  const partnersFull = await prisma.partner.findMany({
-    include: {
-      products: { include: { category: true } },
-    },
+  // PartnersBySector (via Product)
+  const products = await prisma.product.findMany({
+    include: { category: true },
   });
 
-  const partnerSectors: { partnerId: number; sector: string }[] = [];
-
-  for (const p of partnersFull) {
-    const counts = new Map<string, number>();
-
-    for (const product of p.products) {
-      const cat = product.category?.name ?? "Autres";
-      counts.set(cat, (counts.get(cat) ?? 0) + 1);
-    }
-
-    if (counts.size === 0) {
-      partnerSectors.push({ partnerId: p.id, sector: "Autres" });
-      continue;
-    }
-
-    let topSector = "Autres";
-    let topCount = 0;
-
-    for (const [sector, count] of counts.entries()) {
-      if (count > topCount) {
-        topCount = count;
-        topSector = sector;
-      }
-    }
-
-    partnerSectors.push({ partnerId: p.id, sector: topSector });
-  }
-
   const sectorCounts = new Map<string, number>();
-  for (const ps of partnerSectors) {
-    sectorCounts.set(ps.sector, (sectorCounts.get(ps.sector) ?? 0) + 1);
+
+  for (const product of products) {
+    const sector = product.category?.name ?? "Autres";
+    sectorCounts.set(sector, (sectorCounts.get(sector) ?? 0) + 1);
   }
 
   const partnersBySector = Array.from(sectorCounts.entries()).map(
