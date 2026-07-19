@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
   // KPIs
   const orders = await prisma.order.findMany({
-    where: { createdAt: { gte: start }, status: "PAID" },
+    where: { createdAt: { gte: start }, status: "confirmed" },
     select: { total: true },
   });
 
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
   const previousStart = subDays(start, start.getTime() - now.getTime());
 
   const previousOrders = await prisma.order.findMany({
-    where: { createdAt: { gte: previousStart, lt: start }, status: "PAID" },
+    where: { createdAt: { gte: previousStart, lt: start }, status: "confirmed" },
     select: { total: true },
   });
 
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
 
   // OrdersPerDay
   const ordersRaw = await prisma.order.findMany({
-    where: { createdAt: { gte: start }, status: "PAID" },
+    where: { createdAt: { gte: start }, status: "confirmed" },
     select: { createdAt: true },
   });
 
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
   // SalesByCategory
   const categorySalesRaw = await prisma.orderItem.findMany({
     where: {
-      order: { createdAt: { gte: start }, status: "PAID" },
+      order: { createdAt: { gte: start }, status: "confirmed" },
     },
     select: {
       total: true,
@@ -129,7 +129,7 @@ export async function GET(req: Request) {
   // SalesByPartner
   const partnerSalesRaw = await prisma.orderItem.findMany({
     where: {
-      order: { createdAt: { gte: start }, status: "PAID" },
+      order: { createdAt: { gte: start }, status: "confirmed" },
     },
     select: {
       total: true,
@@ -170,7 +170,7 @@ export async function GET(req: Request) {
 
   // RecentOrders
   const recentOrders = await prisma.order.findMany({
-    where: { status: "PAID" },
+    where: { status: "confirmed" },
     orderBy: { createdAt: "desc" },
     take: 10,
     select: {
