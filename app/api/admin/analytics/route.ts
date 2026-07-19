@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 
   // SalesPerDay
   const salesRaw = await prisma.order.findMany({
-    where: { createdAt: { gte: start }, status: "PAID" },
+    where: { createdAt: { gte: start }, status: "confirmed" },
     select: { total: true, createdAt: true },
   });
 
