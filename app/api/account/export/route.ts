@@ -17,8 +17,8 @@ export async function GET() {
     where: { id: userId },
     include: {
   messages: true,
-  questionsBuyer: true,
-  questionsPartner: true,
+  buyerQuestions: true,
+  partnerQuestions: true,
   wishlists: true,
 }
   });
