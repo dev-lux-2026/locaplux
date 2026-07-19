@@ -16,11 +16,14 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-  messages: true,
-  buyerQuestions: true,
-  partnerQuestions: true,
-  wishlists: true,
-}
+      messages: true,
+      buyerQuestions: true,
+      partnerQuestions: true,
+      wishlists: true,
+      addresses: true,
+      ordersAsBuyer: true,
+      ordersAsPartner: true,
+    },
   });
 
   if (!user) {
@@ -36,10 +39,12 @@ export async function GET() {
       name: user.name,
       createdAt: user.createdAt,
     },
-    orders: user.orders,
+    ordersAsBuyer: user.ordersAsBuyer,
+    ordersAsPartner: user.ordersAsPartner,
     messages: user.messages,
-    questions: user.questions,
-    wishlist: user.wishlist,
+    buyerQuestions: user.buyerQuestions,
+    partnerQuestions: user.partnerQuestions,
+    wishlists: user.wishlists,
     addresses: user.addresses,
   };
 
