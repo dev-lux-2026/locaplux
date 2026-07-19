@@ -6,7 +6,7 @@ import {
   MARKETPLACE_FREE_DAYS_LIMIT,
 } from "@/lib/marketplaceConfig";
 
-export async function GET() {
+export async function GET(req) {
   const products = await prisma.product.count();
   const partners = await prisma.user.count({ where: { role: "partner" } });
   const users = await prisma.user.count({ where: { role: "user" } });

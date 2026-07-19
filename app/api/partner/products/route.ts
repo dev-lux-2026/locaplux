@@ -8,7 +8,7 @@ import { productCreateSchema } from "@/lib/validation/products";
 /* ------------------------------------------------------ */
 /* GET — Récupérer les produits du partenaire             */
 /* ------------------------------------------------------ */
-export async function GET() {
+export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
 

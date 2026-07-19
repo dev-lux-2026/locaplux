@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { logAdminAction } from "@/app/api/admin/log";
 
-export async function PATCH(req, { params }) {
+export async function PATCH(req, context) {
   const id = params.id;
   const { status, adminId, comment } = await req.json();
 

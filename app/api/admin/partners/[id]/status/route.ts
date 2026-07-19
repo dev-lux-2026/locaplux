@@ -10,7 +10,7 @@ import {
 import { createPartnerActivationToken } from "@/lib/auth/createPartnerActivationToken";
 import { handlePartnerStatusChange } from "@/lib/events/partnerEvents";
 
-export async function PATCH(req, context) {
+export async function PATCH(req) {
   const { id } = context.params;
   const { status, comment } = await req.json();
 

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function PATCH(req, { params }) {
+export async function PATCH(req, context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.id) {

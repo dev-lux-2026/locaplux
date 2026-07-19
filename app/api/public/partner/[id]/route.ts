@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(req, { params }) {
+export async function GET(req, context) {
   const { id } = params;
 
   const partner = await prisma.user.findUnique({

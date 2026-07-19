@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { emailOrderStatusUpdate } from "@/lib/emails/order/orderStatusUpdate";
 
-export async function POST(req, { params }) {
+export async function POST(req, context) {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.email) {

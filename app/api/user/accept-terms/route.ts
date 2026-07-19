@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { CURRENT_TERMS_VERSION } from "@/lib/terms";
 
-export async function POST() {
+export async function POST(req) {
   const session = await getServerSession();
 
   if (!session?.user?.email) {

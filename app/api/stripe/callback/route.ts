@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export async function GET() {
+export async function GET(req) {
   const session = await getServerSession();
 
   if (!session || session.user.role !== "partner") {
