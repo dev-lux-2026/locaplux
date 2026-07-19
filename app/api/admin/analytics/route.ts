@@ -57,9 +57,9 @@ export async function GET(req: Request) {
 
   const inactiveDate = subDays(now, inactive);
 
-  const activePartners = await prisma.partner.count({
-    where: { lastActivityAt: { gte: inactiveDate } },
-  });
+  const activePartners = await prisma.partnerApplication.count({
+  where: { createdAt: { gte: inactiveDate } },
+});
 
   const inactivePartners = await prisma.partner.count({
     where: { lastActivityAt: { lt: inactiveDate } },
