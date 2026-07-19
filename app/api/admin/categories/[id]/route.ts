@@ -1,8 +1,11 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(req, { params }) {
-  const id = Number(params.id);
+export async function GET(
+  req: Request,
+  context: { params: { id: string } }
+) {
+  const id = Number(context.params.id);
 
   const category = await prisma.category.findUnique({
     where: { id },
@@ -20,8 +23,11 @@ export async function GET(req, { params }) {
   return NextResponse.json(category);
 }
 
-export async function PATCH(req, { params }) {
-  const id = Number(params.id);
+export async function PATCH(
+  req: Request,
+  context: { params: { id: string } }
+) {
+  const id = Number(context.params.id);
   const { name, validated } = await req.json();
 
   const updated = await prisma.category.update({
@@ -35,8 +41,11 @@ export async function PATCH(req, { params }) {
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req, { params }) {
-  const id = Number(params.id);
+export async function DELETE(
+  req: Request,
+  context: { params: { id: string } }
+) {
+  const id = Number(context.params.id);
 
   // Vérifier si la catégorie contient des produits
   const count = await prisma.product.count({
