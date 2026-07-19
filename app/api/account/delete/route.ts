@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -22,8 +22,10 @@ export async function POST(req) {
     // Suppression des questions où l'utilisateur est partner
     await prisma.question.deleteMany({ where: { partnerId: userId } });
 
-    // Suppression wishlist + adresses
-    await prisma.wishlist.deleteMany({ where: { userId } });
+    // ❗ IMPORTANT : Wishlist n'existe pas dans ton schema Prisma
+    // await prisma.wishlist.deleteMany({ where: { userId } });
+
+    // Suppression des adresses
     await prisma.address.deleteMany({ where: { userId } });
 
     // Anonymisation du compte
