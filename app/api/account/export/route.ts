@@ -16,11 +16,9 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      orders: true,
       messages: true,
       questions: true,
-      wishlist: true,
-      addresses: true,
+      wishlists: true,
     },
   });
 
