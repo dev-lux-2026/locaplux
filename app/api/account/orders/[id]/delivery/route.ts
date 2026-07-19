@@ -10,11 +10,21 @@ export async function GET(
   const order = await prisma.order.findUnique({
     where: { id },
     select: {
-      deliveryStatus: true,
-      deliveryMode: true,
-      deliveryDistance: true,
-      deliveryPrice: true,
-      deliveryConfirmed: true,
+      id: true,
+      status: true,
+      total: true,
+      createdAt: true,
+      updatedAt: true,
+      paidAt: true,
+      paymentIntentId: true,
+      city: true,
+      country: true,
+      number: true,
+      postal: true,
+      street: true,
+      commissionAmount: true,
+      commissionRate: true,
+      partnerAmount: true,
     },
   });
 
