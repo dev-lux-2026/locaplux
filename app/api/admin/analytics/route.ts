@@ -57,14 +57,20 @@ export async function GET(req: Request) {
 
   const inactiveDate = subDays(now, inactive);
 
-  // Active partners (PartnerApplication)
-  const activePartners = await prisma.partnerApplication.count({
-    where: { createdAt: { gte: inactiveDate } },
+  // Active partners (User)
+  const activePartners = await prisma.user.count({
+    where: {
+      role: "partner",
+      createdAt: { gte: inactiveDate },
+    },
   });
 
-  // Inactive partners (PartnerApplication)
-  const inactivePartners = await prisma.partnerApplication.count({
-    where: { createdAt: { lt: inactiveDate } },
+  // Inactive partners (User)
+  const inactivePartners = await prisma.user.count({
+    where: {
+      role: "partner",
+      createdAt: { lt: inactiveDate },
+    },
   });
 
   // Products
@@ -114,7 +120,8 @@ export async function GET(req: Request) {
       order: { createdAt: { gte: start }, status: "confirmed" },
     },
     select: {
-      total: true,
+      quantity: true,
+      price: true,
       product: { select: { category: { select: { name: true } } } },
     },
   });
@@ -122,7 +129,8 @@ export async function GET(req: Request) {
   const categoryMap = new Map<string, number>();
   for (const item of categorySalesRaw) {
     const cat = item.product.category?.name ?? "Autres";
-    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + item.total);
+    const total = item.quantity * item.price;
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + total);
   }
 
   const salesByCategory = Array.from(categoryMap.entries())
@@ -135,7 +143,8 @@ export async function GET(req: Request) {
       order: { createdAt: { gte: start }, status: "confirmed" },
     },
     select: {
-      total: true,
+      quantity: true,
+      price: true,
       product: {
         select: {
           partner: { select: { id: true, publicName: true } },
@@ -147,7 +156,8 @@ export async function GET(req: Request) {
   const partnerMap = new Map<string, number>();
   for (const item of partnerSalesRaw) {
     const name = item.product.partner?.publicName ?? "Inconnu";
-    partnerMap.set(name, (partnerMap.get(name) ?? 0) + item.total);
+    const total = item.quantity * item.price;
+    partnerMap.set(name, (partnerMap.get(name) ?? 0) + total);
   }
 
   const salesByPartner = Array.from(partnerMap.entries())
