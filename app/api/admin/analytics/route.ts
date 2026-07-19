@@ -67,12 +67,13 @@ export async function GET(req: Request) {
     where: { createdAt: { lt: inactiveDate } },
   });
 
+  // Products
   const activeProducts = await prisma.product.count({
-    where: { isActive: true },
+    where: { active: true },
   });
 
   const inactiveProducts = await prisma.product.count({
-    where: { isActive: false },
+    where: { active: false },
   });
 
   // SalesPerDay
