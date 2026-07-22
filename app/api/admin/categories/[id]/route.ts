@@ -1,4 +1,3 @@
-// TEST GIT
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -6,10 +5,8 @@ export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
-
   const category = await prisma.category.findUnique({
-    where: { id },
+    where: { id: Number(params.id) },
     include: {
       products: {
         select: { id: true, name: true, status: true },
@@ -28,11 +25,10 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
   const { name, validated } = await req.json();
 
   const updated = await prisma.category.update({
-    where: { id },
+    where: { id: Number(params.id) },
     data: {
       name,
       validated,
@@ -48,7 +44,6 @@ export async function DELETE(
 ) {
   const id = Number(params.id);
 
-  // Vérifier si la catégorie contient des produits
   const count = await prisma.product.count({
     where: { categoryId: id },
   });
