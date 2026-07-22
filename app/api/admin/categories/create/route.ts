@@ -1,11 +1,10 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
-  // Récupération des données envoyées par l’admin
   const body = await req.json();
 
-  // Contrôle strict des champs attendus
   const {
     name,
     name_fr,
@@ -26,9 +25,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Création de la catégorie
+  // Génération d'un ID UUID car Prisma n'a pas de @default(uuid())
+  const id = randomUUID();
+
   const category = await prisma.category.create({
     data: {
+      id, // obligatoire
       name,
       name_fr: name_fr ?? null,
       name_en: name_en ?? null,
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
       root,
       parent,
       active: true,
-      validated: false, // Par défaut non validée
+      validated: false,
     },
   });
 
