@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// ─────────────────────────────────────────────
+// GET — Récupérer une catégorie par ID
+// ─────────────────────────────────────────────
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -21,16 +24,37 @@ export async function GET(
   return NextResponse.json(category);
 }
 
+// ─────────────────────────────────────────────
+// PATCH — Mettre à jour une catégorie
+// ─────────────────────────────────────────────
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const { name, validated } = await req.json();
+  const id = params.id;
+  const body = await req.json();
+
+  const {
+    name,
+    name_fr,
+    name_en,
+    name_lu,
+    root,
+    parent,
+    active,
+    validated,
+  } = body;
 
   const updated = await prisma.category.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       name,
+      name_fr,
+      name_en,
+      name_lu,
+      root,
+      parent,
+      active,
       validated,
     },
   });
@@ -38,24 +62,32 @@ export async function PATCH(
   return NextResponse.json(updated);
 }
 
+// ─────────────────────────────────────────────
+// DELETE — Supprimer une catégorie
+// ─────────────────────────────────────────────
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
+  const id = params.id;
+
   // Vérifier si la catégorie contient des produits
   const count = await prisma.product.count({
-    where: { categoryId: params.id },
+    where: { categoryId: id },
   });
 
   if (count > 0) {
     return NextResponse.json(
-      { error: "Impossible de supprimer une catégorie contenant des produits" },
+      {
+        error:
+          "Impossible de supprimer une catégorie contenant des produits.",
+      },
       { status: 400 }
     );
   }
 
   await prisma.category.delete({
-    where: { id: params.id },
+    where: { id },
   });
 
   return NextResponse.json({ success: true });
