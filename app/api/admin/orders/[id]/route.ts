@@ -1,8 +1,14 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(req, context) {
-  const id = Number(params.id);
+// ─────────────────────────────────────────────
+// GET — Récupérer une commande par ID
+// ─────────────────────────────────────────────
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id; // UUID string → pas de Number()
 
   const order = await prisma.order.findUnique({
     where: { id },
