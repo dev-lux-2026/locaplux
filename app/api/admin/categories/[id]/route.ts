@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const category = await prisma.category.findUnique({
-    where: { id: Number(params.id) },
+    where: { id: params.id },
     include: {
       products: {
         select: { id: true, name: true, status: true },
@@ -28,7 +28,7 @@ export async function PATCH(
   const { name, validated } = await req.json();
 
   const updated = await prisma.category.update({
-    where: { id: Number(params.id) },
+    where: { id: params.id },
     data: {
       name,
       validated,
@@ -42,10 +42,9 @@ export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
-
+  // Vérifier si la catégorie contient des produits
   const count = await prisma.product.count({
-    where: { categoryId: id },
+    where: { categoryId: params.id },
   });
 
   if (count > 0) {
@@ -56,7 +55,7 @@ export async function DELETE(
   }
 
   await prisma.category.delete({
-    where: { id },
+    where: { id: params.id },
   });
 
   return NextResponse.json({ success: true });
