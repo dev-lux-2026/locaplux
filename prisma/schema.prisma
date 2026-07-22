@@ -114,6 +114,7 @@ model Category {
   root      String
   parent    String
   active    Boolean   @default(true)
+  validated Boolean?  @default(false)
   createdAt DateTime? @default(now()) @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
   products  Product[]
