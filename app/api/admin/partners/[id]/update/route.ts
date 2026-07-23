@@ -20,7 +20,7 @@ export async function PATCH(
 
       // Champs business
       address: body.address,
-      tva: body.tva,
+      vat: body.tva,
       website: body.website,
       description: body.description,
       deliveryRadius: body.deliveryRadius,
