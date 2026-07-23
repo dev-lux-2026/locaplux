@@ -94,7 +94,10 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
 }
 
 // DELETE — Interdit
-export async function DELETE(req) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   return NextResponse.json(
     { error: "Suppression interdite — utilisez PATCH pour suspendre/bannir" },
     { status: 400 }
