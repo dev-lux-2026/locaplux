@@ -28,7 +28,7 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
 
 export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const { status, adminComment, adminId } = await req.json();
+  const { status, adminComment } = await req.json();
 
   if (!["approved", "rejected"].includes(status)) {
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
@@ -64,22 +64,28 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   });
 
   // Log admin
- await logAdminAction({
-  partnerId: id,
-  action: `kyc:${status}`,
-  comment: adminComment || null,
-});
+  await logAdminAction({
+    partnerId: id,
+    action: `kyc:${status}`,
+    comment: adminComment || null,
+  });
 
   // ✔️ Email automatique via système premium
   const displayName = partner.publicName || partner.company || partner.email;
 
   if (status === "approved") {
-    await sendPartnerKycApprovedEmail(partner.email, displayName);
+    const createPasswordUrl = `${process.env.NEXT_PUBLIC_URL}/create-password?user=${id}`;
+
+    await sendPartnerKycApprovedEmail(
+      partner.email ?? "",
+      displayName,
+      createPasswordUrl
+    );
   }
 
   if (status === "rejected") {
     await sendPartnerKycRejectedEmail(
-      partner.email,
+      partner.email ?? "",
       displayName,
       adminComment || "Votre dossier n’a pas été validé."
     );
