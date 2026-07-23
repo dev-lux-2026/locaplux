@@ -28,11 +28,10 @@ export async function PATCH(
   });
 
   await logAdminAction({
-    adminId: body.adminId || "system",
-    partnerId: id,
-    action: "update",
-    comment: "Mise à jour des informations partenaire",
-  });
+  partnerId: id,
+  action: "update",
+  comment: "Mise à jour des informations partenaire",
+});
 
   return NextResponse.json(updated);
 }
