@@ -42,7 +42,9 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
           id: true,
           name: true,
           status: true,
-          price: true,
+          prix_normal: true,
+          prix_locaplux: true,
+          prix_achat: true,
         },
       },
 
