@@ -64,12 +64,11 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   });
 
   // Log admin
-  await logAdminAction({
-    adminId: adminId || "system",
-    partnerId: id,
-    action: `kyc:${status}`,
-    comment: adminComment || null,
-  });
+ await logAdminAction({
+  partnerId: id,
+  action: `kyc:${status}`,
+  comment: adminComment || null,
+});
 
   // ✔️ Email automatique via système premium
   const displayName = partner.publicName || partner.company || partner.email;
