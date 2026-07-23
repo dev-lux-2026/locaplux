@@ -1,21 +1,20 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(req) {
+// GET — Liste des commandes
+export async function GET(req: Request) {
   const orders = await prisma.order.findMany({
     include: {
-      user: {
-        select: { id: true, email: true, name: true },
-      },
+      user: true,
       items: {
         include: {
-          product: {
-            select: { id: true, name: true, price: true },
-          },
+          product: true,
         },
       },
     },
-    orderBy: { id: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 
   return NextResponse.json(orders);
