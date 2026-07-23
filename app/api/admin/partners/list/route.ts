@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const partners = await prisma.user.findMany({
     where: { role: "partner" },
     orderBy: { createdAt: "desc" },
@@ -11,7 +11,6 @@ export async function GET(req) {
       status: true,
       createdAt: true,
 
-      // 🔥 Champs essentiels pour la LISTE admin
       publicName: true,
       company: true,
       vat: true,
@@ -28,15 +27,12 @@ export async function GET(req) {
 
       website: true,
 
-      // Limites gratuites
       freeProductLimit: true,
       freeDaysLimit: true,
       freeUntil: true,
 
-      // Commission personnalisée
       commissionRate: true,
 
-      // Nombre de produits
       _count: { select: { products: true } },
     },
   });
