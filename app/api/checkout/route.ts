@@ -5,7 +5,7 @@ import { haversine } from "@/app/utils/haversine";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const { cart, clientLat, clientLng, customer } = await req.json();
 
   if (!cart || cart.length === 0) {
