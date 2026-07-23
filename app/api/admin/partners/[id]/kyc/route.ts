@@ -71,7 +71,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   });
 
   // ✔️ Email automatique via système premium
-  const displayName = partner.publicName || partner.company || partner.email;
+  const displayName = partner.publicName || partner.company || partner.email || "";
 
   if (status === "approved") {
     const createPasswordUrl = `${process.env.NEXT_PUBLIC_URL}/create-password?user=${id}`;
