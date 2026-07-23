@@ -1,20 +1,20 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function PATCH(req, context) {
-  const id = Number(params.id);
+// PATCH — Mettre à jour le statut d’une commande
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id; // UUID string
+
   const { status } = await req.json();
 
-  const valid = [
-    "processing",
-    "shipped",
-    "delivered",
-    "cancelled",
-    "refunded",
-  ];
-
-  if (!valid.includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  if (!status) {
+    return NextResponse.json(
+      { error: "Le champ 'status' est obligatoire." },
+      { status: 400 }
+    );
   }
 
   const updated = await prisma.order.update({

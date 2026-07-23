@@ -1,28 +1,28 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// ─────────────────────────────────────────────
-// PATCH — Mettre à jour le statut d’une commande
-// ─────────────────────────────────────────────
-export async function PATCH(
+// GET — Récupérer une commande par ID
+export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = params.id; // UUID string → pas de Number()
+  const id = params.id; // UUID string
 
-  const { status } = await req.json();
-
-  if (!status) {
-    return NextResponse.json(
-      { error: "Le champ 'status' est obligatoire." },
-      { status: 400 }
-    );
-  }
-
-  const updated = await prisma.order.update({
+  const order = await prisma.order.findUnique({
     where: { id },
-    data: { status },
+    include: {
+      user: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
   });
 
-  return NextResponse.json(updated);
+  if (!order) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(order);
 }
