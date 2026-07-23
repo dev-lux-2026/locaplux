@@ -10,8 +10,11 @@ import {
 import { createPartnerActivationToken } from "@/lib/auth/createPartnerActivationToken";
 import { handlePartnerStatusChange } from "@/lib/events/partnerEvents";
 
-export async function PATCH(req) {
-  const { id } = context.params;
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
   const { status, comment } = await req.json();
 
   const validStatuses = [
@@ -48,7 +51,8 @@ export async function PATCH(req) {
     comment: comment || null,
   });
 
-  const displayName = partner.publicName || partner.company || partner.email;
+  const displayName =
+    partner.publicName || partner.company || partner.email || "";
 
   // APPROVED → créer token + envoyer email
   if (status === "approved") {
@@ -57,7 +61,7 @@ export async function PATCH(req) {
     const createPasswordUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}`;
 
     await sendPartnerKycApprovedEmail(
-      partner.email,
+      partner.email ?? "",
       displayName,
       createPasswordUrl
     );
@@ -66,14 +70,14 @@ export async function PATCH(req) {
   // REJECTED → email rejet
   if (status === "rejected") {
     await sendPartnerKycRejectedEmail(
-      partner.email,
+      partner.email ?? "",
       displayName,
       "Votre dossier n’a pas été accepté."
     );
   }
 
   // 🔥 Appeler les événements partenaires (emails, workflows, etc.)
-  await handlePartnerStatusChange(updated);
+  await handlePartnerStatusChange(id, status, comment);
 
   return NextResponse.json(updated);
 }
