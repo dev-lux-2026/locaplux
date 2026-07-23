@@ -77,7 +77,7 @@ export async function PATCH(
   }
 
   // 🔥 Appeler les événements partenaires (emails, workflows, etc.)
-  await handlePartnerStatusChange(id, status, comment);
+  await handlePartnerStatusChange(updated);
 
   return NextResponse.json(updated);
 }
