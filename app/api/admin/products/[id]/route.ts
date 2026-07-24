@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(req, context) {
-  const id = params.id;
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
   const product = await prisma.product.findUnique({
     where: { id },
@@ -16,6 +19,7 @@ export async function GET(req, context) {
       images: true,
       createdAt: true,
       updatedAt: true,
+
       partner: {
         select: {
           id: true,
@@ -23,6 +27,7 @@ export async function GET(req, context) {
           email: true,
         },
       },
+
       category: {
         select: {
           id: true,
@@ -33,7 +38,10 @@ export async function GET(req, context) {
   });
 
   if (!product) {
-    return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Produit introuvable" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json(product);
