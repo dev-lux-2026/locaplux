@@ -13,7 +13,12 @@ export async function GET(
       id: true,
       name: true,
       description: true,
-      price: true,
+
+      // ✔ Champs existants
+      prix_normal: true,
+      prix_locaplux: true,
+      prix_achat: true,
+
       stock: true,
       status: true,
       images: true,
