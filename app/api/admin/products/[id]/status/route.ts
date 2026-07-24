@@ -8,10 +8,8 @@ export async function PATCH(
 ) {
   const { id } = params;
 
-  // Lecture du body
   const { status, comment } = await req.json();
 
-  // Vérification simple du statut (sécurité)
   if (!status) {
     return NextResponse.json(
       { error: "Le statut est requis." },
@@ -19,7 +17,6 @@ export async function PATCH(
     );
   }
 
-  // Mise à jour du produit
   const updatedProduct = await prisma.product.update({
     where: { id },
     data: { status },
@@ -31,8 +28,8 @@ export async function PATCH(
     },
   });
 
-  // Log admin automatique (NextAuth récupère adminId)
   await logAdminAction({
+    adminId: "", // ✔ requis par le type, remplacé automatiquement par NextAuth
     partnerId: updatedProduct.partnerId,
     action: "product_status_update",
     comment:
