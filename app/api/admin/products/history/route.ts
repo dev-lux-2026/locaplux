@@ -22,16 +22,19 @@ export async function GET(req: Request) {
       id: true,
       productId: true,
       adminId: true,
-      status: true,
-      comment: true,
+      action: true,
+      reason: true,
       createdAt: true,
+
       product: {
         select: {
+          id: true,
           name: true,
           partnerId: true,
         },
       },
-      admin: {
+
+      User: {
         select: {
           id: true,
           name: true,
