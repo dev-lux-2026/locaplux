@@ -1,20 +1,43 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
+  // Vérification admin
   if (!session || session.user.role !== "admin") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Accès refusé : administrateur requis." },
+      { status: 403 }
+    );
   }
 
+  // Historique des validations produits
   const history = await prisma.productValidationHistory.findMany({
-    include: {
-      product: true,
-    },
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      productId: true,
+      adminId: true,
+      status: true,
+      comment: true,
+      createdAt: true,
+      product: {
+        select: {
+          name: true,
+          partnerId: true,
+        },
+      },
+      admin: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
   });
 
   return NextResponse.json(history);
