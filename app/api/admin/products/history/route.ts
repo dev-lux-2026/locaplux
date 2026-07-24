@@ -6,8 +6,9 @@ import { authOptions } from "@/lib/auth";
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
-  // Vérification admin
-  if (!session || session.user.role !== "admin") {
+  // Vérification admin (sécurisée pour TypeScript strict)
+  const role = session?.user?.role;
+  if (role !== "admin") {
     return NextResponse.json(
       { error: "Accès refusé : administrateur requis." },
       { status: 403 }
