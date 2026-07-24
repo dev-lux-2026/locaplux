@@ -1,23 +1,55 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "admin") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  // Vérification admin (sécurisée pour TypeScript strict)
+  const role = session?.user?.role;
+  if (role !== "admin") {
+    return NextResponse.json(
+      { error: "Accès refusé : administrateur requis." },
+      { status: 403 }
+    );
   }
 
+  // Produits en attente de validation
   const products = await prisma.product.findMany({
     where: { status: "pending" },
-    include: {
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      stock: true,
+      active: true,
+      status: true,
+      images: true,
+      createdAt: true,
+      updatedAt: true,
+
+      prix_normal: true,
+      prix_locaplux: true,
+      prix_achat: true,
+
       partner: {
-        select: { id: true, name: true, email: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
       },
     },
-    orderBy: { updatedAt: "desc" },
   });
 
   return NextResponse.json(products);
