@@ -7,10 +7,14 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
-      productId: true,
+      title: true,
+      price: true,
+      duration: true,
       createdAt: true,
-      expiresAt: true,
-      type: true,
+      updatedAt: true,
+      expiresAt: true, // ✔ maintenant valide
+      partnerId: true,
+      productId: true,
       product: {
         select: {
           id: true,
@@ -18,6 +22,13 @@ export async function GET(req: Request) {
           slug: true,
           images: true,
           partnerId: true,
+        },
+      },
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
     },
