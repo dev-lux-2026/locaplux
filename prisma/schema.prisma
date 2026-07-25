@@ -66,6 +66,7 @@ model User {
   default_delivery_available Boolean?                   @default(true)
   lat                        Float?
   lng                        Float?
+  deletedAt                  DateTime?                  @db.Timestamptz(6)
   addresses                  Address[]
   adminLogs                  AdminLog[]                 @relation("AdminLogs")
   partnerLogs                AdminLog[]                 @relation("PartnerLogs")
