@@ -33,7 +33,6 @@ model User {
   freeDaysLimit              Int?
   createdAt                  DateTime                   @default(now())
   updatedAt                  DateTime                   @updatedAt
-  deletedAt                  DateTime?
   city                       String?
   company                    String?
   country                    String?
@@ -80,12 +79,12 @@ model User {
   ordersAsBuyer              Order[]                    @relation("OrderBuyer")
   partnerApplication         PartnerApplication?
   products                   Product[]
-  wishlists                  Wishlist[]
   ProductValidationHistory   ProductValidationHistory[]
   buyerQuestions             Question[]                 @relation("BuyerQuestions")
   partnerQuestions           Question[]                 @relation("PartnerQuestions")
   supportTickets             SupportTicket[]
   offer                      Offer?                     @relation(fields: [offerId], references: [id])
+  Wishlist                   Wishlist[]
   passwordResetTokens        PasswordResetToken[]
 
   @@schema("public")
@@ -108,15 +107,15 @@ model PasswordResetToken {
 model Category {
   id        String    @id(map: "categories_pkey")
   name      String
-  name_fr   String?
-  name_en   String?
-  name_lu   String?
   root      String
   parent    String
   active    Boolean   @default(true)
-  validated Boolean?  @default(false)
   createdAt DateTime? @default(now()) @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
+  name_fr   String?
+  name_en   String?
+  name_lu   String?
+  validated Boolean?  @default(false)
   products  Product[]
 
   @@schema("public")
@@ -150,34 +149,34 @@ model Product {
   partner            User                       @relation(fields: [partnerId], references: [id])
   validationHistory  ProductValidationHistory[]
   questions          Question[]
-  wishlists          Wishlist[]
+  Wishlist           Wishlist[]
 
   @@schema("public")
 }
 
 model Wishlist {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  userid    String
+  productid String
+  createdat DateTime? @default(now()) @db.Timestamptz(6)
+  Product   Product   @relation(fields: [productid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "wishlist_product_fk")
+  User      User      @relation(fields: [userid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "wishlist_user_fk")
 
   @@schema("public")
 }
 
 model Boost {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
   price     Int
   duration  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   partnerId String?
   productId String?
-  partner   User?    @relation(fields: [partnerId], references: [id])
-  product   Product? @relation(fields: [productId], references: [id])
+  expiresAt DateTime? @db.Timestamptz(6)
+  partner   User?     @relation(fields: [partnerId], references: [id])
+  product   Product?  @relation(fields: [productId], references: [id])
 
   @@schema("public")
 }
@@ -449,30 +448,31 @@ model audit_log_entries {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model custom_oauth_providers {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_type         String
-  identifier            String    @unique
-  name                  String
-  client_id             String
-  client_secret         String
-  acceptable_client_ids String[]  @default([])
-  scopes                String[]  @default([])
-  pkce_enabled          Boolean   @default(true)
-  attribute_mapping     Json      @default("{}")
-  authorization_params  Json      @default("{}")
-  enabled               Boolean   @default(true)
-  email_optional        Boolean   @default(false)
-  issuer                String?
-  discovery_url         String?
-  skip_nonce_check      Boolean   @default(false)
-  cached_discovery      Json?
-  discovery_cached_at   DateTime? @db.Timestamptz(6)
-  authorization_url     String?
-  token_url             String?
-  userinfo_url          String?
-  jwks_uri              String?
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_type           String
+  identifier              String    @unique
+  name                    String
+  client_id               String
+  client_secret           String
+  acceptable_client_ids   String[]  @default([])
+  scopes                  String[]  @default([])
+  pkce_enabled            Boolean   @default(true)
+  attribute_mapping       Json      @default("{}")
+  authorization_params    Json      @default("{}")
+  enabled                 Boolean   @default(true)
+  email_optional          Boolean   @default(false)
+  issuer                  String?
+  discovery_url           String?
+  skip_nonce_check        Boolean   @default(false)
+  cached_discovery        Json?
+  discovery_cached_at     DateTime? @db.Timestamptz(6)
+  authorization_url       String?
+  token_url               String?
+  userinfo_url            String?
+  jwks_uri                String?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime  @default(now()) @db.Timestamptz(6)
+  custom_claims_allowlist String[]  @default([])
 
   @@index([created_at])
   @@index([enabled])
