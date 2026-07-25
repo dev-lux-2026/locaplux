@@ -19,7 +19,7 @@ export async function GET(req: Request) {
       messages: true,
       buyerQuestions: true,
       partnerQuestions: true,
-      wishlists: true,
+      wishlist: true,
       addresses: true,
       ordersAsBuyer: true,
       ordersAsPartner: true,
