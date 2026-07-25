@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
-export async function GET(req) {
-  return NextResponse.json({ message: "Products API root" });
+export async function GET(req: Request) {
+  return NextResponse.json({
+    message: "Products API root",
+  });
 }
