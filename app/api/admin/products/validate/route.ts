@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
   // --- Auth admin ---
   const session = await getServerSession(authOptions);
-  const role = session?.user?.role; // ✔ sécurisé strict TS
+  const role = session?.user?.role;
 
   if (role !== "admin") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
@@ -80,7 +80,6 @@ export async function POST(req: Request) {
     where: { id: productId },
     data: {
       status: newStatus,
-      // ❌ adminReason supprimé (n'existe pas dans ton modèle)
     },
   });
 
@@ -88,7 +87,7 @@ export async function POST(req: Request) {
   await prisma.productValidationHistory.create({
     data: {
       productId,
-      adminId: session!.user!.id, // ✔ safe car admin déjà vérifié
+      adminId: String(session.user.id), // ✔ FIX FINAL
       action,
       reason: reason || null,
     },
