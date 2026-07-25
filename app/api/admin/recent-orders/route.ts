@@ -6,9 +6,9 @@ export async function GET(req: Request) {
     take: 5,
     orderBy: { createdAt: "desc" },
     include: {
-      buyer: true,
-      partner: true,
-      products: true,
+      user: true,       // ✔ l’acheteur (OrderBuyer)
+      partner: true,    // ✔ le partenaire (OrderPartner)
+      items: true,      // ✔ les produits de la commande
     },
   });
 
