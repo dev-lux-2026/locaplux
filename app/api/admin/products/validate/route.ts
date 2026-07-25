@@ -15,7 +15,7 @@ import { emailProductRejected } from "@/lib/emails/product/productRejected";
 const productValidationSchema = z.object({
   productId: z.string().min(1),
   action: z.enum(["approve", "reject"]),
-  reason: z.string().optional(), // utile pour refus
+  reason: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,7 +41,9 @@ export async function POST(req: Request) {
 
   // --- Auth admin ---
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") {
+  const role = session?.user?.role; // ✔ Sécurisé pour TS strict
+
+  if (role !== "admin") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
@@ -86,7 +88,7 @@ export async function POST(req: Request) {
   await prisma.productValidationHistory.create({
     data: {
       productId,
-      adminId: session.user.id,
+      adminId: session!.user!.id, // ✔ Sécurisé car admin garanti
       action,
       reason: reason || null,
     },
