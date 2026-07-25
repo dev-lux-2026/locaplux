@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const { email } = await req.json();
 
   if (!email) {
