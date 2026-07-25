@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     messages: user.messages,
     buyerQuestions: user.buyerQuestions,
     partnerQuestions: user.partnerQuestions,
-    wishlists: user.wishlists,
+    Wishlist: user.Wishlist,
     addresses: user.addresses,
   };
 
