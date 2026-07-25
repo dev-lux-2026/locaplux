@@ -47,6 +47,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
+  // --- Admin ID sécurisé ---
+  const adminId = session?.user?.id;
+  if (!adminId) {
+    return NextResponse.json(
+      { error: "Admin ID manquant" },
+      { status: 500 }
+    );
+  }
+
   // --- Zod Validation ---
   const json = await req.json();
   const parsed = productValidationSchema.safeParse(json);
@@ -87,7 +96,7 @@ export async function POST(req: Request) {
   await prisma.productValidationHistory.create({
     data: {
       productId,
-      adminId: String(session.user.id), // ✔ FIX FINAL
+      adminId: adminId, // ✔ FIX FINAL
       action,
       reason: reason || null,
     },
