@@ -2,14 +2,12 @@ import withNextIntl from 'next-intl/plugin';
 
 const withIntl = withNextIntl('./src/i18n/request.ts');
 
-export default withIntl({
-  reactStrictMode: true
-});
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
 };
 
-module.exports = nextConfig;
+export default withIntl(nextConfig);
