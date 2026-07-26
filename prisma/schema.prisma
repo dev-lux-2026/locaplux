@@ -52,6 +52,7 @@ model User {
   averageResponseTime        Int?
   responseTimeUpdatedAt      DateTime?                  @default(now()) @db.Timestamptz(6)
   preferredLanguage          String?                    @default("fr")
+  preferences                Json?
   acceptedTermsAt            DateTime?                  @default(now()) @db.Timestamp(6)
   acceptedPartnerTermsAt     DateTime?                  @db.Timestamp(6)
   termsVersion               Int?                       @default(1)
