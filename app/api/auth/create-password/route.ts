@@ -61,6 +61,14 @@ export async function POST(req: Request) {
 
     const user = result.user;
 
+    // Protection TS strict → user peut être undefined
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Utilisateur introuvable." },
+        { status: 404 }
+      );
+    }
+
     // Hacher le mot de passe
     const hashed = await bcrypt.hash(password, 10);
 
