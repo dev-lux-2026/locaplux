@@ -3,9 +3,9 @@ import { sendPartnerKycApprovedEmail } from "@/lib/emails/partner/sendPartnerEma
 
 export async function POST(req: Request) {
   try {
-    const { to, name } = await req.json();
+    const { to, name, createPasswordUrl } = await req.json();
 
-    await sendPartnerKycApprovedEmail(to, name);
+    await sendPartnerKycApprovedEmail(to, name, createPasswordUrl);
 
     return NextResponse.json({ success: true });
   } catch (error) {
