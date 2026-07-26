@@ -3,7 +3,13 @@ import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { haversine } from "@/app/utils/haversine";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+
+if (!stripeSecret) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+}
+
+const stripe = new Stripe(stripeSecret);
 
 export async function POST(req: Request) {
   const { cart, clientLat, clientLng, customer } = await req.json();
@@ -21,10 +27,8 @@ export async function POST(req: Request) {
 
   const line_items = [];
 
-  // On suppose 1 seul produit par commande (comme Locaplux)
   const item = cart[0];
 
-  // 1) Récupérer le produit
   const { data: product } = await supabase
     .from("Product")
     .select("id, name, price, userId, delivery_available")
@@ -38,7 +42,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // 2) Ajouter le produit au checkout
   line_items.push({
     price_data: {
       currency: "eur",
@@ -54,7 +57,6 @@ export async function POST(req: Request) {
   let deliveryPrice = 0;
   let distanceKm = 0;
 
-  // 3) Si livraison → calculer prix
   if (product.delivery_available) {
     const { data: partner } = await supabase
       .from("User")
@@ -77,13 +79,12 @@ export async function POST(req: Request) {
       );
     }
 
-  // 4) Distance
-distanceKm = haversine(
-  partner.lat,
-  partner.lng,
-  clientLat,
-  clientLng
-);
+    distanceKm = haversine(
+      partner.lat,
+      partner.lng,
+      clientLat,
+      clientLng
+    );
 
     if (partner.delivery_max_km && distanceKm > partner.delivery_max_km) {
       return NextResponse.json(
@@ -92,7 +93,6 @@ distanceKm = haversine(
       );
     }
 
-    // 5) Prix livraison
     deliveryPrice =
       distanceKm * (partner.delivery_price_per_km || 0.8);
 
@@ -102,7 +102,6 @@ distanceKm = haversine(
     if (partner.delivery_max_price)
       deliveryPrice = Math.min(deliveryPrice, partner.delivery_max_price);
 
-    // 6) Ajouter la livraison comme line_item Stripe
     line_items.push({
       price_data: {
         currency: "eur",
@@ -115,7 +114,6 @@ distanceKm = haversine(
     });
   }
 
-  // 7) Créer la commande dans Supabase AVANT Stripe
   const { data: order, error: orderError } = await supabase
     .from("Order")
     .insert({
@@ -123,7 +121,6 @@ distanceKm = haversine(
       status: "pending",
       total: product.price + deliveryPrice,
 
-      // Infos client
       customerFirstName: customer?.firstName || null,
       customerLastName: customer?.lastName || null,
       customerEmail: customer?.email || null,
@@ -134,7 +131,6 @@ distanceKm = haversine(
       customerCity: customer?.city || null,
       customerCountry: customer?.country || null,
 
-      // Livraison
       deliveryPrice,
       deliveryDistance: distanceKm,
       deliveryMode: product.delivery_available ? "delivery" : "pickup",
@@ -152,7 +148,6 @@ distanceKm = haversine(
     );
   }
 
-  // 8) Créer la session Stripe
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items,
@@ -160,7 +155,7 @@ distanceKm = haversine(
     success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
     cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
     metadata: {
-      orderId: order.id, // 🔥 essentiel pour le webhook
+      orderId: order.id,
     },
   });
 
