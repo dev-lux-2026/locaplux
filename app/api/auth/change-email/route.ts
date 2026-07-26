@@ -37,10 +37,12 @@ export async function POST(req: Request) {
     data: { email },
   });
 
-  // Supprimer anciens tokens
-  await prisma.verificationToken.deleteMany({
-    where: { identifier: unverifiedUser.email },
-  });
+  // Supprimer anciens tokens (seulement si l'ancien email existe)
+  if (unverifiedUser.email) {
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: unverifiedUser.email },
+    });
+  }
 
   // Générer un nouveau token
   const token = randomUUID();
@@ -74,6 +76,5 @@ export async function POST(req: Request) {
     }),
   });
 
-  // 🔥 Redirection premium vers la page "email mis à jour"
   return NextResponse.redirect(new URL("/register/email-updated", req.url));
 }
