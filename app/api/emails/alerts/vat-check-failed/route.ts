@@ -3,9 +3,14 @@ import { sendVatCheckFailedAlert } from "@/lib/emails/alerts/sendVatCheckFailed"
 
 export async function POST(req: Request) {
   try {
-    const { to, vatNumber, companyName } = await req.json();
+    const { company, publicName, vat, email } = await req.json();
 
-    await sendVatCheckFailedAlert(to, vatNumber, companyName);
+    await sendVatCheckFailedAlert({
+      company,
+      publicName,
+      vat,
+      email,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
