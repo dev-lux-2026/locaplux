@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -11,18 +11,22 @@ export async function POST(req) {
   }
 
   const userId = session.user.id;
-  const { preferredLanguage } = await req.json();
+  const body = await req.json();
 
-  if (!preferredLanguage) {
+  const { preferences } = body;
+
+  if (!preferences) {
     return NextResponse.json(
-      { error: "Langue manquante" },
+      { error: "Préférences manquantes" },
       { status: 400 }
     );
   }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { preferredLanguage },
+    data: {
+      preferences,
+    },
   });
 
   return NextResponse.json({ success: true });
