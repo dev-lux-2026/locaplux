@@ -13,9 +13,12 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        price: true,
         status: true,
         images: true,
+        isFree: true,
+        prix_normal: true,
+        prix_locaplux: true,
+        prix_achat: true,
       },
       orderBy: { createdAt: "desc" },
     });
