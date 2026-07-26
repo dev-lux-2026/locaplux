@@ -38,12 +38,14 @@ export async function POST(req: Request) {
 
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user?.email) {
+  if (!session || !session.user?.email || !session.user?.id) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  const userId = session.user.id;
+
   // --- Anti‑fraude commandes ---
-  const fraudCheck = antiFraudOrder(ip, session.user.id);
+  const fraudCheck = antiFraudOrder(ip, userId);
 
   if (!fraudCheck.ok) {
     return NextResponse.json(
