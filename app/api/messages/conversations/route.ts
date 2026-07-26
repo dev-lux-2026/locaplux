@@ -13,6 +13,10 @@ export async function GET(req: Request) {
     where: { email: session.user.email },
   });
 
+  if (!user) {
+    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+  }
+
   const conversations = await prisma.conversation.findMany({
     where: {
       OR: [
