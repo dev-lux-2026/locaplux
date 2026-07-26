@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const email = req.nextUrl.searchParams.get("email");
 
   if (!email) {
