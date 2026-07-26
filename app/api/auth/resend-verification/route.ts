@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
 export async function GET(req: Request) {
-  const email = req.nextUrl.searchParams.get("email");
+  const url = new URL(req.url);
+  const email = url.searchParams.get("email");
 
   if (!email) {
     return NextResponse.json({ error: "Email manquant" }, { status: 400 });
