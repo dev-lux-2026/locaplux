@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const { to, productId } = await req.json();
 
-    await emailProductDisabledEmail(to, productId);
+    await emailProductDisabled(to, productId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
