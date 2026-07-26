@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -36,7 +36,7 @@ export async function POST(req) {
     }
   }
 
-  // Supprimer anciennes adresses (optionnel mais propre)
+  // Supprimer anciennes adresses
   await prisma.address.deleteMany({
     where: { userId },
   });
