@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(req, context) {
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
 
-    const category = await prisma.category.findUnique({
-      where: { id },
-    });
-
-    if (!category) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 });
-    }
-
     const products = await prisma.product.findMany({
-      where: {
-        categoryId: id,
-        status: "approved",
+      where: { categoryId: id },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        status: true,
+        images: true,
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        category: true,
-        partner: true,
-      },
     });
 
-    return NextResponse.json(products);
+    return NextResponse.json({ products });
   } catch (error) {
-    console.error("Error fetching category products:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("Erreur GET /categories/[id]/products :", error);
+    return NextResponse.json(
+      { error: "Erreur interne." },
+      { status: 500 }
+    );
   }
 }
