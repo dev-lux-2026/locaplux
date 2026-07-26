@@ -3,9 +3,9 @@ import { sendOrderShippedEmail } from "@/lib/emails/order/sendOrderEmails";
 
 export async function POST(req: Request) {
   try {
-    const { to, orderId, tracking } = await req.json();
+    const { to, orderId } = await req.json();
 
-    await sendOrderShippedEmail(to, orderId, tracking);
+    await sendOrderShippedEmail(to, orderId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
