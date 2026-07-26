@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
 
@@ -63,7 +63,7 @@ export async function POST(req) {
       );
     }
 
-    // Génération d’un mot de passe aléatoire (vendeur validé ensuite par admin)
+    // Génération d’un mot de passe aléatoire
     const generatedPassword = randomUUID().slice(0, 12);
     const hashed = await bcrypt.hash(generatedPassword, 10);
 
