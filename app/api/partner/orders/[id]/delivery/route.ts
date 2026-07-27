@@ -3,19 +3,22 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function PATCH(req, context) {
+export async function PATCH(req: Request, context: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = context.params; // ✅ correction ici
     const { status } = await req.json();
 
     const allowedStatuses = ["pending_delivery", "delivered", "cancelled"];
     if (!allowedStatuses.includes(status)) {
-      return NextResponse.json({ error: "Invalid delivery status" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid delivery status" },
+        { status: 400 }
+      );
     }
 
     const order = await prisma.order.findUnique({
@@ -32,7 +35,10 @@ export async function PATCH(req, context) {
     }
 
     if (order.deliveryStatus === "delivered") {
-      return NextResponse.json({ error: "Order already delivered" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Order already delivered" },
+        { status: 400 }
+      );
     }
 
     const updated = await prisma.order.update({
@@ -46,6 +52,9 @@ export async function PATCH(req, context) {
     return NextResponse.json({ success: true, order: updated });
   } catch (error) {
     console.error("DELIVERY UPDATE ERROR:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
