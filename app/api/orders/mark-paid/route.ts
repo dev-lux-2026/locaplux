@@ -6,14 +6,12 @@ export async function POST(req: Request) {
   // --- Rate Limit Protection ---
   const ip = req.headers.get("x-forwarded-for") || "unknown";
 
-  // Ici on peut être encore plus strict : 5 requêtes/minute max
   if (!rateLimit(ip)) {
     return NextResponse.json(
       { error: "Trop de requêtes. Veuillez patienter une minute." },
       { status: 429 }
     );
   }
-  // -----------------------------
 
   const { orderId } = await req.json();
 
@@ -27,7 +25,7 @@ export async function POST(req: Request) {
   const order = await prisma.order.update({
     where: { id: orderId },
     data: {
-      status: "paid",
+      status: "confirmed", // ⭐ valeur valide de TON enum OrderStatus
       paidAt: new Date(),
     },
   });
