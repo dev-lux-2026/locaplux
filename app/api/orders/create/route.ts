@@ -34,7 +34,6 @@ export async function POST(req: Request) {
       { status: 429 }
     );
   }
-  // -----------------------------
 
   const session = await getServerSession(authOptions);
 
@@ -53,7 +52,6 @@ export async function POST(req: Request) {
       { status: 429 }
     );
   }
-  // -----------------------------
 
   // --- Zod Validation ---
   const json = await req.json();
@@ -67,7 +65,6 @@ export async function POST(req: Request) {
   }
 
   const { items } = parsed.data;
-  // -----------------------
 
   // Récupération de l’acheteur
   const buyer = await prisma.user.findUnique({
@@ -86,7 +83,11 @@ export async function POST(req: Request) {
 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    include: { partner: true },
+    select: {
+      id: true,
+      price: true,
+      partner: true,
+    },
   });
 
   if (products.length !== items.length) {
