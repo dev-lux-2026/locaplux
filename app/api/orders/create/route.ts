@@ -15,10 +15,8 @@ import { antiFraudOrder } from "@/lib/security/antiFraud";
 import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
 
 export async function POST(req: Request) {
-  // --- IP extraction ---
   const ip = req.headers.get("x-forwarded-for") || "unknown";
 
-  // --- Rate Limit Protection ---
   if (!rateLimit(ip)) {
     return NextResponse.json(
       { error: "Trop de requêtes. Veuillez patienter une minute." },
@@ -26,7 +24,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Anti‑abuse IP global ---
   const abuseCheck = antiAbuseIP(ip);
   if (!abuseCheck.ok) {
     return NextResponse.json(
@@ -43,9 +40,7 @@ export async function POST(req: Request) {
 
   const userId = session.user.id;
 
-  // --- Anti‑fraude commandes ---
   const fraudCheck = antiFraudOrder(ip, userId);
-
   if (!fraudCheck.ok) {
     return NextResponse.json(
       { error: fraudCheck.reason },
@@ -53,7 +48,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // --- Zod Validation ---
   const json = await req.json();
   const parsed = orderCreateSchema.safeParse(json);
 
@@ -66,7 +60,6 @@ export async function POST(req: Request) {
 
   const { items } = parsed.data;
 
-  // Récupération de l’acheteur
   const buyer = await prisma.user.findUnique({
     where: { email: session.user.email },
   });
@@ -78,14 +71,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // Vérification des produits + calcul total
   const productIds = items.map((i) => i.productId);
 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
     select: {
       id: true,
-      price: true,
+      prix_locaplux: true,
       partner: true,
     },
   });
@@ -97,15 +89,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // ⚠️ Locaplux = 1 vendeur par commande
   const partner = products[0].partner;
 
   const total = products.reduce((sum, product) => {
     const item = items.find((i) => i.productId === product.id);
-    return sum + product.price * item.quantity;
+    return sum + (product.prix_locaplux ?? 0) * item.quantity;
   }, 0);
 
-  // ⭐ Création de la commande
   const order = await prisma.order.create({
     data: {
       userId: buyer.id,
@@ -115,7 +105,7 @@ export async function POST(req: Request) {
         create: items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
-          price: products.find((p) => p.id === i.productId)!.price,
+          price: products.find((p) => p.id === i.productId)!.prix_locaplux ?? 0,
         })),
       },
     },
@@ -126,7 +116,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // ⭐⭐ Notification SSE
   eventBus.emit("notification", {
     type: "ORDER_CREATED",
     userId: order.partnerId,
@@ -137,7 +126,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // ⭐ Création automatique de la conversation
   await prisma.conversation.create({
     data: {
       orderId: order.id,
@@ -146,7 +134,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // Emails premium
   const buyerEmail = order.user.email;
   const partnerEmail = order.partner.email;
 
