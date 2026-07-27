@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const boosts = await prisma.boost.findMany({
     where: {
       partnerId,
-      endDate: { gte: new Date() },
+      expiresAt: { gte: new Date() }, // ← CHAMP EXACT DU MODÈLE
     },
     include: {
       product: true,
