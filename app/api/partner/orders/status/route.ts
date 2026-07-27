@@ -4,14 +4,13 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { emailOrderStatusUpdate } from "@/lib/emails/order/orderStatusUpdate";
 
-export async function POST(req: Request, context: { params?: { id?: string } }) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Lecture du body JSON
   const body = await req.json();
   const { orderId, status } = body;
 
@@ -30,7 +29,6 @@ export async function POST(req: Request, context: { params?: { id?: string } }) 
     );
   }
 
-  // Vérifier que la commande existe
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -43,19 +41,17 @@ export async function POST(req: Request, context: { params?: { id?: string } }) 
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  // Vérifier que le partenaire est bien propriétaire de la commande
   if (order.partnerId !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Mise à jour du statut
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: { status },
   });
 
-  // Envoi email
-  await emailOrderStatusUpdate(order.user.email, updated);
+  // ✔ Correction : 3 arguments
+  await emailOrderStatusUpdate(order.user.email, updated, status);
 
   return NextResponse.json({ success: true, order: updated });
 }
