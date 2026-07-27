@@ -6,7 +6,12 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createServerClient({ cookies });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies }
+  );
+
   const { rating, comment, orderId } = await req.json();
 
   if (!rating || !orderId) {
@@ -24,7 +29,6 @@ export async function POST(
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  // Vérifier que la commande appartient à l'utilisateur
   const { data: order, error: orderError } = await supabase
     .from("Order")
     .select("id, partner_id, buyer_id")
@@ -52,7 +56,6 @@ export async function POST(
     );
   }
 
-  // Vérifier si un avis existe déjà
   const { data: existing } = await supabase
     .from("partner_reviews")
     .select("id")
@@ -93,7 +96,11 @@ export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createServerClient({ cookies });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies }
+  );
 
   const { data, error } = await supabase
     .from("partner_reviews")
