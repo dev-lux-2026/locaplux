@@ -100,6 +100,7 @@ export async function POST(req: Request) {
 
   const order = await prisma.order.create({
     data: {
+      id: crypto.randomUUID(), // ⭐ FIX UUID REQUIRED
       userId: buyer.id,
       partnerId: partner.id,
       total,
