@@ -45,12 +45,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (!order.user.email) {
+    return NextResponse.json(
+      { error: "User email missing for notification" },
+      { status: 400 }
+    );
+  }
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: { status },
   });
 
-  // ✔ Correction : 3 arguments
+  // ✔ Correction : email garanti comme string
   await emailOrderStatusUpdate(order.user.email, updated, status);
 
   return NextResponse.json({ success: true, order: updated });
