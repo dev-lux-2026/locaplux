@@ -10,6 +10,7 @@ export async function POST(req: Request) {
 
     // Normalisation du rôle pour TS strict
     const role = session?.user?.role ?? "";
+    const userId = session?.user?.id ?? "";
 
     // Seuls admin OU partenaire propriétaire peuvent modifier une commande
     if (!session || !["admin", "partner"].includes(role)) {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     }
 
     // Si partenaire : vérifier qu'il est bien propriétaire de la commande
-    if (role === "partner" && session.user.id !== order.partnerId) {
+    if (role === "partner" && userId !== order.partnerId) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
