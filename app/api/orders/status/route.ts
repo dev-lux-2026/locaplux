@@ -8,8 +8,11 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
+    // Normalisation du rôle pour TS strict
+    const role = session?.user?.role ?? "";
+
     // Seuls admin OU partenaire propriétaire peuvent modifier une commande
-    if (!session || !["admin", "partner"].includes(session.user?.role)) {
+    if (!session || !["admin", "partner"].includes(role)) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
@@ -24,11 +27,14 @@ export async function POST(req: Request) {
     });
 
     if (!order) {
-      return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Commande introuvable" },
+        { status: 404 }
+      );
     }
 
     // Si partenaire : vérifier qu'il est bien propriétaire de la commande
-    if (session.user.role === "partner" && session.user.id !== order.partnerId) {
+    if (role === "partner" && session.user.id !== order.partnerId) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
