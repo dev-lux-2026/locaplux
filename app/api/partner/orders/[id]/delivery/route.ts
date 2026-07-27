@@ -23,7 +23,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
 
     const order = await prisma.order.findUnique({
       where: { id },
-      select: { id: true, partnerId: true, status: true }, // ✔ correction ici
+      select: { id: true, partnerId: true, status: true },
     });
 
     if (!order) {
@@ -34,7 +34,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (order.status === "delivered") { // ✔ correction ici
+    if (order.status === "delivered") {
       return NextResponse.json(
         { error: "Order already delivered" },
         { status: 400 }
@@ -44,8 +44,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
     const updated = await prisma.order.update({
       where: { id },
       data: {
-        status,
-        deliveryConfirmed: status === "delivered",
+        status, // ✔ seul champ valide
       },
     });
 
