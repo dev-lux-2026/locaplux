@@ -57,8 +57,8 @@ export async function POST(req: Request) {
     data: { status },
   });
 
-  // ✔ Correction : email garanti comme string
-  await emailOrderStatusUpdate(order.user.email, updated, status);
+  // ✔ Correction : la fonction attend un string, pas un objet
+  await emailOrderStatusUpdate(order.user.email, status, order.id);
 
   return NextResponse.json({ success: true, order: updated });
 }
