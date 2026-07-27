@@ -10,7 +10,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = context.params; // ✅ correction ici
+    const { id } = context.params;
     const { status } = await req.json();
 
     const allowedStatuses = ["pending_delivery", "delivered", "cancelled"];
@@ -23,7 +23,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
 
     const order = await prisma.order.findUnique({
       where: { id },
-      select: { id: true, partnerId: true, deliveryStatus: true },
+      select: { id: true, partnerId: true, status: true }, // ✔ correction ici
     });
 
     if (!order) {
@@ -34,7 +34,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (order.deliveryStatus === "delivered") {
+    if (order.status === "delivered") { // ✔ correction ici
       return NextResponse.json(
         { error: "Order already delivered" },
         { status: 400 }
@@ -44,7 +44,7 @@ export async function PATCH(req: Request, context: { params: { id: string } }) {
     const updated = await prisma.order.update({
       where: { id },
       data: {
-        deliveryStatus: status,
+        status,
         deliveryConfirmed: status === "delivered",
       },
     });
