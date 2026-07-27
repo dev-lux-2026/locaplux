@@ -4,50 +4,58 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { emailOrderStatusUpdate } from "@/lib/emails/order/orderStatusUpdate";
 
-export async function POST(req, context) {
+export async function POST(req: Request, context: { params?: { id?: string } }) {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.email) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const partner = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
+  // Lecture du body JSON
+  const body = await req.json();
+  const { orderId, status } = body;
 
-  if (!partner || partner.role !== "partner") {
-    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  if (!orderId || !status) {
+    return NextResponse.json(
+      { error: "Missing orderId or status" },
+      { status: 400 }
+    );
   }
 
+  const allowedStatuses = ["pending", "confirmed", "delivered", "cancelled"];
+  if (!allowedStatuses.includes(status)) {
+    return NextResponse.json(
+      { error: "Invalid status value" },
+      { status: 400 }
+    );
+  }
+
+  // Vérifier que la commande existe
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
-    include: { user: true },
+    where: { id: orderId },
+    include: {
+      user: true,
+      items: true,
+    },
   });
 
-  if (!order || order.partnerId !== partner.id) {
-    return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  const { status } = await req.json();
-
-  const allowed = ["shipped", "delivered", "cancelled"];
-
-  if (!allowed.includes(status)) {
-    return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
+  // Vérifier que le partenaire est bien propriétaire de la commande
+  if (order.partnerId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Mise à jour du statut
   const updated = await prisma.order.update({
-    where: { id: params.id },
+    where: { id: orderId },
     data: { status },
-    include: { user: true },
   });
 
-  // Email client
-  await emailOrderStatusUpdate(
-    updated.user.email,
-    updated.id,
-    status
-  );
+  // Envoi email
+  await emailOrderStatusUpdate(order.user.email, updated);
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ success: true, order: updated });
 }
