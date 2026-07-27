@@ -3,17 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   try {
-    // 🔥 Récupération correcte de la session côté serveur
     const session = await getServerSession(authOptions);
 
-    // 🔥 Vérification du rôle (normalisé en minuscules)
-    if (!session || session.user.role?.toLowerCase() !== "partner") {
+    const role = session?.user?.role?.toLowerCase() ?? "";
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerId = session.user.id;
+    const partnerId = session.user!.id;
 
     /* -------------------------------------------------------------------------- */
     /*                                   STATS                                    */
@@ -60,10 +59,6 @@ export async function GET(req) {
       monthlyVisits: 1234,
       conversionRate: 4.7,
     };
-
-    /* -------------------------------------------------------------------------- */
-    /*                                   RETURN                                    */
-    /* -------------------------------------------------------------------------- */
 
     return NextResponse.json({
       stats: {
