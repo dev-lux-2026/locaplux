@@ -17,8 +17,12 @@ export async function GET(req: Request) {
     where: { partnerId },
     orderBy: { createdAt: "desc" },
     include: {
-      buyer: true,
-      product: true,
+      user: true, // ← l’acheteur
+      items: {
+        include: {
+          product: true, // ← produit via OrderItem
+        },
+      },
     },
   });
 
