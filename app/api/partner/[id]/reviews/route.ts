@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies }
-  );
+  const supabase = createMiddlewareClient({ cookies });
 
   const { rating, comment, orderId } = await req.json();
 
@@ -96,11 +92,7 @@ export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies }
-  );
+  const supabase = createMiddlewareClient({ cookies });
 
   const { data, error } = await supabase
     .from("partner_reviews")
