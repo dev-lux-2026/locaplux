@@ -15,7 +15,8 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "partner") {
+    const role = session?.user?.role ?? "";
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -24,7 +25,7 @@ export async function GET(
       include: { category: true },
     });
 
-    if (!product || product.partnerId !== session.user.id) {
+    if (!product || product.partnerId !== session.user!.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -49,7 +50,8 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "partner") {
+    const role = session?.user?.role ?? "";
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,7 +59,7 @@ export async function PATCH(
       where: { id: params.id },
     });
 
-    if (!product || product.partnerId !== session.user.id) {
+    if (!product || product.partnerId !== session.user!.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -76,7 +78,6 @@ export async function PATCH(
 
     const data = parsed.data;
 
-    // Vérification logique prix
     if (
       data.prix_normal &&
       data.prix_locaplux &&
@@ -123,7 +124,8 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "partner") {
+    const role = session?.user?.role ?? "";
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -131,13 +133,10 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    if (!product || product.partnerId !== session.user.id) {
+    if (!product || product.partnerId !== session.user!.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    /* ------------------------------------------------------ */
-    /* 1. Suppression Cloudinary                              */
-    /* ------------------------------------------------------ */
     if (product.images && product.images.length > 0) {
       for (const url of product.images) {
         try {
@@ -149,9 +148,6 @@ export async function DELETE(
       }
     }
 
-    /* ------------------------------------------------------ */
-    /* 2. Suppression du produit Prisma                       */
-    /* ------------------------------------------------------ */
     await prisma.product.delete({
       where: { id: params.id },
     });
