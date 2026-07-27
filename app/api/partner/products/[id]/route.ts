@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { productUpdateSchema } from "@/lib/validation/products";
 import cloudinary from "@/lib/cloudinary";
@@ -12,8 +13,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = await getToken({ req });
-    if (!token || token.role !== "partner") {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,7 +24,7 @@ export async function GET(
       include: { category: true },
     });
 
-    if (!product || product.partnerId !== token.id) {
+    if (!product || product.partnerId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -45,8 +47,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = await getToken({ req });
-    if (!token || token.role !== "partner") {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -54,7 +57,7 @@ export async function PATCH(
       where: { id: params.id },
     });
 
-    if (!product || product.partnerId !== token.id) {
+    if (!product || product.partnerId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -118,8 +121,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = await getToken({ req });
-    if (!token || token.role !== "partner") {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -127,7 +131,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    if (!product || product.partnerId !== token.id) {
+    if (!product || product.partnerId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -137,13 +141,7 @@ export async function DELETE(
     if (product.images && product.images.length > 0) {
       for (const url of product.images) {
         try {
-          // Extraire le public_id Cloudinary depuis l’URL
-          const publicId = url
-            .split("/")
-            .slice(-1)[0]
-            .split(".")[0];
-
-          // Supprimer l’image dans le dossier mobile-capture
+          const publicId = url.split("/").slice(-1)[0].split(".")[0];
           await cloudinary.uploader.destroy(`mobile-capture/${publicId}`);
         } catch (err) {
           console.error("Erreur suppression Cloudinary:", err);
