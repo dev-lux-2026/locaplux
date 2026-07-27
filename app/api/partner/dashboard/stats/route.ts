@@ -1,32 +1,34 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "partner") {
+
+  const role = session?.user?.role ?? "";
+  if (!session || role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const partnerId = session.user.id;
+  const partnerId = session.user!.id;
 
-  const stats = await prisma.order.groupBy({
-    by: ["createdAt"],
-    where: { partnerId, status: "confirmed" },
-    _sum: {
-      total: true,
-      commissionAmount: true,
-      partnerAmount: true,
-    },
+  const products = await prisma.product.count({
+    where: { partnerId },
   });
 
-  const formatted = stats.map((s) => ({
-    month: s.createdAt.toISOString().slice(0, 7),
-    total: s._sum.total ?? 0,
-    commission: s._sum.commissionAmount ?? 0,
-    partner: s._sum.partnerAmount ?? 0,
-  }));
+  const orders = await prisma.order.count({
+    where: { partnerId },
+  });
 
-  return NextResponse.json(formatted);
+  const revenue = await prisma.order.aggregate({
+    where: { partnerId },
+    _sum: { total: true },
+  });
+
+  return NextResponse.json({
+    products,
+    orders,
+    revenue: revenue._sum.total || 0,
+  });
 }

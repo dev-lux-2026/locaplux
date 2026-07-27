@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export async function GET(req) {
-  const session = await getServerSession();
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "partner") {
+  const role = session?.user?.role ?? "";
+  if (!session || role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const partnerId = session.user.id;
+  const partnerId = session.user!.id;
 
   const products = await prisma.product.count({
     where: { partnerId },
