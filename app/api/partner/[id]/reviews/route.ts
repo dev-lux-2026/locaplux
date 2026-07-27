@@ -1,30 +1,25 @@
 import { NextResponse } from "next/server";
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createMiddlewareClient({ cookies });
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const { rating, comment, orderId } = await req.json();
+  const { rating, comment, orderId, userId } = await req.json();
 
-  if (!rating || !orderId) {
+  if (!rating || !orderId || !userId) {
     return NextResponse.json(
-      { error: "Note et commande obligatoires." },
+      { error: "Note, commande et utilisateur obligatoires." },
       { status: 400 }
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
-  }
-
+  // Vérifier que la commande appartient à l'utilisateur
   const { data: order, error: orderError } = await supabase
     .from("Order")
     .select("id, partner_id, buyer_id")
@@ -38,7 +33,7 @@ export async function POST(
     );
   }
 
-  if (order.buyer_id !== user.id) {
+  if (order.buyer_id !== userId) {
     return NextResponse.json(
       { error: "Vous ne pouvez pas noter cette commande." },
       { status: 403 }
@@ -52,11 +47,12 @@ export async function POST(
     );
   }
 
+  // Vérifier si un avis existe déjà
   const { data: existing } = await supabase
     .from("partner_reviews")
     .select("id")
     .eq("order_id", orderId)
-    .eq("buyer_id", user.id)
+    .eq("buyer_id", userId)
     .maybeSingle();
 
   if (existing) {
@@ -70,7 +66,7 @@ export async function POST(
     .from("partner_reviews")
     .insert({
       partner_id: params.id,
-      buyer_id: user.id,
+      buyer_id: userId,
       order_id: orderId,
       rating,
       comment,
@@ -92,7 +88,10 @@ export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createMiddlewareClient({ cookies });
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const { data, error } = await supabase
     .from("partner_reviews")
