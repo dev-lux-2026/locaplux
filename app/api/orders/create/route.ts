@@ -93,6 +93,8 @@ export async function POST(req: Request) {
 
   const total = products.reduce((sum, product) => {
     const item = items.find((i) => i.productId === product.id);
+    if (!item) return sum;
+
     return sum + (product.prix_locaplux ?? 0) * item.quantity;
   }, 0);
 
@@ -105,7 +107,8 @@ export async function POST(req: Request) {
         create: items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
-          price: products.find((p) => p.id === i.productId)!.prix_locaplux ?? 0,
+          price:
+            products.find((p) => p.id === i.productId)?.prix_locaplux ?? 0,
         })),
       },
     },
