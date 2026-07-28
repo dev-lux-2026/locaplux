@@ -1,6 +1,7 @@
 // app/api/partner/products/new/route.ts — VERSION ULTRA‑PREMIUM
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 import { rateLimit } from "@/lib/rateLimit";
@@ -48,12 +49,15 @@ export async function POST(req: Request) {
     );
   }
 
-  const token = await getToken({ req });
-  if (!token || token.role !== "partner") {
+  // ✔ Correction : getServerSession au lieu de getToken
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role ?? "";
+
+  if (!session || role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const partnerId = token.id;
+  const partnerId = session.user!.id;
 
   const json = await req.json();
   const parsed = productCreateSchema.safeParse(json);
@@ -111,7 +115,6 @@ export async function POST(req: Request) {
       damage_type: data.damage_type,
       damage_description: data.damage_description || null,
 
-      // ⭐ Assignation automatique (catégorie toujours existante)
       categoryId: finalCategoryId,
 
       status: "pending",
