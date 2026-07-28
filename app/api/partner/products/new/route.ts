@@ -1,4 +1,3 @@
-// app/api/partner/products/new/route.ts — VERSION ULTRA‑PREMIUM
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -49,7 +48,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // ✔ Correction : getServerSession au lieu de getToken
   const session = await getServerSession(authOptions);
   const role = session?.user?.role ?? "";
 
@@ -73,7 +71,6 @@ export async function POST(req: Request) {
 
   const origin = req.headers.get("origin") || "http://localhost:3000";
 
-  // ⭐ AUTO-CATEGORY (texte + image + IA locale)
   const autoRes = await fetch(`${origin}/api/auto-category`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -98,7 +95,9 @@ export async function POST(req: Request) {
 
   const product = await prisma.product.create({
     data: {
-      partnerId,
+      partner: {
+        connect: { id: partnerId },
+      },
 
       name: data.name,
       slug,
