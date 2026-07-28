@@ -39,9 +39,6 @@ export async function POST(req: Request) {
         {
           folder: "mobile-capture",
           resource_type: "image",
-          // Active l'auto-tagging Cloudinary si configuré
-          // categorization: "google_tagging", // optionnel
-          // auto_tagging: 0.6, // optionnel
         },
         (error, result) => {
           if (error || !result) return reject(error);
@@ -56,7 +53,6 @@ export async function POST(req: Request) {
     /* ------------------------------------------------------ */
     /* 2. Extraction des tags Cloudinary                      */
     /* ------------------------------------------------------ */
-    // Cloudinary peut renvoyer les tags dans plusieurs champs selon config
     const tags: string[] =
       result.tags ||
       result.info?.categorization?.google_tagging?.data?.map((t: any) => t.tag) ||
@@ -68,8 +64,8 @@ export async function POST(req: Request) {
     let autoCategoryId = null;
 
     if (tags.length > 0) {
-      const imageIA = inferCategoryFromImageTags(tags);
-      autoCategoryId = imageIA.final.categoryId;
+      const imageIA = await inferCategoryFromImageTags(tags); // ✔ await obligatoire
+      autoCategoryId = imageIA.final.categoryId;             // ✔ imageIA est maintenant un objet
     }
 
     /* ------------------------------------------------------ */
