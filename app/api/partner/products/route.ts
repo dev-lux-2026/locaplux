@@ -137,8 +137,10 @@ export async function POST(req: Request) {
         damage_type,
         damage_description: damage_description || null,
 
-        // ⭐ FIX CRITIQUE : Prisma n’accepte PAS null ici
-        categoryId: categoryId ?? undefined,
+        // ⭐ FIX : Prisma n'accepte PAS categoryId dans create()
+        ...(categoryId
+          ? { category: { connect: { id: categoryId } } }
+          : {}),
 
         pickup_available: pickup_available ?? true,
         delivery_available: delivery_available ?? false,
