@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   }
 
   const products = await prisma.product.findMany({
-    where: { partnerId: Number(partnerId) },
+    where: { partnerId }, // ✔ string, conforme au modèle Prisma
     include: { category: true },
   });
 
