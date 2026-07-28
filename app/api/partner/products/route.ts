@@ -31,21 +31,17 @@ export async function GET(req: Request) {
       id: p.id,
       name: p.name,
 
-      // ⭐ PRIX COMPLETS
       prix_normal: p.prix_normal,
       prix_locaplux: p.prix_locaplux,
       prix_achat: p.prix_achat,
 
-      // ⭐ STOCK & DOMMAGES
       stock: p.stock,
       damage_type: p.damage_type,
       damage_description: p.damage_description,
 
-      // ⭐ OPTIONS RETRAIT / LIVRAISON
       pickup_available: p.pickup_available,
       delivery_available: p.delivery_available,
 
-      // ⭐ MÉTADONNÉES
       status: p.status,
       createdAt: p.createdAt,
       imageUrl: p.images?.[0] || null,
@@ -78,7 +74,6 @@ export async function POST(req: Request) {
     const partnerId = session.user!.id;
     const json = await req.json();
 
-    // --- Validation Zod ---
     const parsed = productCreateSchema.safeParse(json);
     if (!parsed.success) {
       return NextResponse.json(
@@ -101,13 +96,10 @@ export async function POST(req: Request) {
       damage_type,
       damage_description,
       categoryId,
-
-      // ⭐ NOUVEAU
       pickup_available,
       delivery_available,
     } = parsed.data;
 
-    // --- Vérification logique ---
     if (prix_locaplux > prix_normal) {
       return NextResponse.json(
         { error: "Le prix Locaplux ne peut pas dépasser le prix normal." },
@@ -115,7 +107,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- Génération du slug ---
     const slugBase = name
       .toLowerCase()
       .normalize("NFD")
@@ -125,11 +116,10 @@ export async function POST(req: Request) {
 
     const slug = `${slugBase}-${Date.now()}`;
 
-    // --- Création du produit ---
     const product = await prisma.product.create({
       data: {
         partner: {
-          connect: { id: partnerId }, // ✔ obligatoire pour Prisma
+          connect: { id: partnerId },
         },
 
         name,
@@ -147,9 +137,9 @@ export async function POST(req: Request) {
         damage_type,
         damage_description: damage_description || null,
 
-        categoryId: categoryId ?? null,
+        // ⭐ FIX CRITIQUE : Prisma n’accepte PAS null ici
+        categoryId: categoryId ?? undefined,
 
-        // ⭐ NOUVEAU : RETRAIT / LIVRAISON
         pickup_available: pickup_available ?? true,
         delivery_available: delivery_available ?? false,
 
