@@ -8,15 +8,16 @@ import { productCreateSchema } from "@/lib/validation/products";
 /* ------------------------------------------------------ */
 /* GET — Récupérer les produits du partenaire             */
 /* ------------------------------------------------------ */
-export async function GET(req) {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
+    const role = session?.user?.role ?? "";
 
-    if (!session || session.user.role !== "partner") {
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerId = session.user.id;
+    const partnerId = session.user!.id;
 
     const products = await prisma.product.findMany({
       where: { partnerId },
@@ -68,12 +69,13 @@ export async function GET(req) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
+    const role = session?.user?.role ?? "";
 
-    if (!session || session.user.role !== "partner") {
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerId = session.user.id;
+    const partnerId = session.user!.id;
     const json = await req.json();
 
     // --- Validation Zod ---
@@ -126,6 +128,10 @@ export async function POST(req: Request) {
     // --- Création du produit ---
     const product = await prisma.product.create({
       data: {
+        partner: {
+          connect: { id: partnerId }, // ✔ obligatoire pour Prisma
+        },
+
         name,
         slug,
         description: description || null,
@@ -142,7 +148,6 @@ export async function POST(req: Request) {
         damage_description: damage_description || null,
 
         categoryId: categoryId ?? null,
-        partnerId,
 
         // ⭐ NOUVEAU : RETRAIT / LIVRAISON
         pickup_available: pickup_available ?? true,
