@@ -2,8 +2,25 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export async function POST(req: Request) {
-  const { name, description, prix_locaplux, images, categoryName } = await req.json();
+  const { name, description, prix_locaplux, images, categoryName, partnerId } =
+    await req.json();
+
+  if (!partnerId) {
+    return NextResponse.json(
+      { error: "partnerId manquant" },
+      { status: 400 }
+    );
+  }
 
   // 1) Vérifier si la catégorie existe
   let category = await prisma.category.findFirst({
@@ -29,10 +46,12 @@ export async function POST(req: Request) {
     data: {
       id: randomUUID(),
       name,
+      slug: slugify(name),     // 🔥 obligatoire
       description,
-      prix_locaplux,     // 🔥 FIX ICI
+      prix_locaplux,
       images,
       categoryId: category.id,
+      partnerId,               // 🔥 obligatoire
       active: true,
       status: "pending",
     },
