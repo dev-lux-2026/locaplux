@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.email) {
@@ -33,7 +33,7 @@ export async function GET(req) {
   });
 
   // Regroupement par produit
-  const grouped = {};
+  const grouped: Record<string, any> = {};
 
   for (const item of items) {
     const pid = item.productId;
