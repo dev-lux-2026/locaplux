@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
-  const { name, description, price, images, categoryName } = await req.json();
+  const { name, description, prix_locaplux, images, categoryName } = await req.json();
 
   // 1) Vérifier si la catégorie existe
   let category = await prisma.category.findFirst({
@@ -14,10 +14,10 @@ export async function POST(req: Request) {
   if (!category) {
     category = await prisma.category.create({
       data: {
-        id: randomUUID(),        // 🔥 obligatoire
+        id: randomUUID(),
         name: categoryName,
-        root: categoryName,      // 🔥 obligatoire
-        parent: categoryName,    // 🔥 obligatoire
+        root: categoryName,
+        parent: categoryName,
         validated: false,
         active: true,
       },
@@ -27,11 +27,14 @@ export async function POST(req: Request) {
   // 3) Créer le produit lié à la catégorie
   const product = await prisma.product.create({
     data: {
+      id: randomUUID(),
       name,
       description,
-      price,
+      prix_locaplux,     // 🔥 FIX ICI
       images,
       categoryId: category.id,
+      active: true,
+      status: "pending",
     },
   });
 
