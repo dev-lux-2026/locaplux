@@ -19,7 +19,10 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Utilisateur introuvable" },
+        { status: 404 }
+      );
     }
 
     const previousStatus = user.status;
@@ -30,7 +33,8 @@ export async function POST(req: Request) {
     });
 
     if (previousStatus !== newStatus) {
-      await handlePartnerStatusChange(updatedUser, previousStatus);
+      // 🔥 FIX : handlePartnerStatusChange n'accepte qu'un seul argument
+      await handlePartnerStatusChange(updatedUser);
     }
 
     return NextResponse.json({ success: true, user: updatedUser });
