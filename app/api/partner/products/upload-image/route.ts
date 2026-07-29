@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import cloudinary from "@/lib/cloudinary";
 
 import { rateLimit } from "@/lib/rateLimit";
@@ -29,14 +30,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- Auth partenaire ---
-    const token = await getToken({ req });
+    // --- Auth partenaire (FIX) ---
+    const session = await getServerSession(authOptions);
+    const role = session?.user?.role ?? "";
 
-    if (!token || token.role !== "partner") {
+    if (!session || role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerId = token.id;
+    const partnerId = session.user!.id;
 
     // --- Lecture du formData ---
     const formData = await req.formData();
@@ -87,7 +89,7 @@ export async function POST(req: Request) {
         {
           folder: `partners/${partnerId}/products`,
           resource_type: "image",
-          auto_tagging: 0.7, // 🔥 active la détection d’objets Cloudinary
+          auto_tagging: 0.7,
         },
         (error, result) => {
           if (error || !result) return reject(error);
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
       url: result.secure_url,
       publicId: result.public_id,
       tags,
-      autoCategoryId, // 🔥 envoyé au front
+      autoCategoryId,
     });
 
   } catch (err) {
