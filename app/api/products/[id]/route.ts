@@ -74,7 +74,7 @@ export async function GET(
     partner: {
       id: product.partner?.id,
       publicName: product.partner?.publicName,
-      isPro: product.partner?.role === "pro",
+      isPro: product.partner?.role === "partner",
     },
 
     status: product.status,
