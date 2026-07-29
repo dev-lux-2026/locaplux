@@ -30,7 +30,7 @@ export async function GET(
   }
 
   // Empêcher l’accès aux produits non validés ou inactifs
-  if (product.status !== "validated" || !product.active) {
+  if (product.status !== "approved" || !product.active) {
     return NextResponse.json(
       { error: "Produit non disponible" },
       { status: 403 }
