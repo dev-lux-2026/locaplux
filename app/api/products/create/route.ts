@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
   const { name, description, price, images, categoryName } = await req.json();
@@ -13,11 +14,12 @@ export async function POST(req: Request) {
   if (!category) {
     category = await prisma.category.create({
       data: {
+        id: randomUUID(),        // 🔥 obligatoire
         name: categoryName,
-        root: categoryName,      // 🔥 obligatoire (String)
-        parent: categoryName,    // 🔥 obligatoire (String)
-        validated: false,        // admin devra valider
-        active: true,            // conforme au modèle
+        root: categoryName,      // 🔥 obligatoire
+        parent: categoryName,    // 🔥 obligatoire
+        validated: false,
+        active: true,
       },
     });
   }
