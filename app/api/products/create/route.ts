@@ -14,7 +14,10 @@ export async function POST(req: Request) {
     category = await prisma.category.create({
       data: {
         name: categoryName,
-        validated: false, // admin devra valider
+        root: categoryName,      // 🔥 obligatoire (String)
+        parent: categoryName,    // 🔥 obligatoire (String)
+        validated: false,        // admin devra valider
+        active: true,            // conforme au modèle
       },
     });
   }
