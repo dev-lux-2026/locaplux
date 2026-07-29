@@ -29,7 +29,6 @@ export async function GET(
     );
   }
 
-  // Empêcher l’accès aux produits non validés ou inactifs
   if (product.status !== "approved" || !product.active) {
     return NextResponse.json(
       { error: "Produit non disponible" },
@@ -37,7 +36,6 @@ export async function GET(
     );
   }
 
-  // Empêcher l’accès aux produits sans image
   if (!product.images || product.images.length === 0) {
     return NextResponse.json(
       { error: "Produit incomplet (pas d’image)" },
@@ -45,7 +43,6 @@ export async function GET(
     );
   }
 
-  // Empêcher l’accès aux produits sans catégorie
   if (!product.category) {
     return NextResponse.json(
       { error: "Produit sans catégorie" },
@@ -68,7 +65,6 @@ export async function GET(
     condition: product.condition,
     damage_type: product.damage_type,
     damage_description: product.damage_description,
-    reason: product.reason,
 
     category: {
       id: product.category.id,
