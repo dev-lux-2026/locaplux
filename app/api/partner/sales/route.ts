@@ -18,12 +18,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
-  // Récupérer tous les items vendus par ce partenaire
   const items = await prisma.orderItem.findMany({
     where: {
       order: {
         partnerId: partner.id,
-        status: { not: "cancelled" }, // On exclut les commandes annulées
+        status: { not: "cancelled" },
       },
     },
     include: {
@@ -32,7 +31,6 @@ export async function GET(req: Request) {
     },
   });
 
-  // Regroupement par produit
   const grouped: Record<string, any> = {};
 
   for (const item of items) {
@@ -43,7 +41,7 @@ export async function GET(req: Request) {
         productId: pid,
         productName: item.product.name,
         productSlug: item.product.slug,
-        productPrice: item.product.price,
+        productPrice: item.product.prix_locaplux, // 🔥 FIX ICI
         stock: item.product.stock,
         active: item.product.active,
         totalQuantity: 0,
@@ -63,7 +61,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // Convertir Set → number
   const result = Object.values(grouped).map((p: any) => ({
     ...p,
     ordersCount: p.orders.size,
