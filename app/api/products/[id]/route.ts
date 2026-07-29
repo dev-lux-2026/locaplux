@@ -1,8 +1,11 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(req) {
-  const { id } = context.params;
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id;
 
   if (!id) {
     return NextResponse.json(
@@ -26,7 +29,7 @@ export async function GET(req) {
     );
   }
 
-  // ❌ Empêcher l’accès aux produits non validés ou inactifs
+  // Empêcher l’accès aux produits non validés ou inactifs
   if (product.status !== "validated" || !product.active) {
     return NextResponse.json(
       { error: "Produit non disponible" },
@@ -34,7 +37,7 @@ export async function GET(req) {
     );
   }
 
-  // ❌ Empêcher l’accès aux produits sans image
+  // Empêcher l’accès aux produits sans image
   if (!product.images || product.images.length === 0) {
     return NextResponse.json(
       { error: "Produit incomplet (pas d’image)" },
@@ -42,7 +45,7 @@ export async function GET(req) {
     );
   }
 
-  // ❌ Empêcher l’accès aux produits sans catégorie
+  // Empêcher l’accès aux produits sans catégorie
   if (!product.category) {
     return NextResponse.json(
       { error: "Produit sans catégorie" },
