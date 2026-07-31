@@ -14,7 +14,7 @@ const stripe = new Stripe(STRIPE_KEY);
 export async function GET(req: Request) {
   const session = await getServerSession();
 
-  if (!session || session.user.role !== "partner") {
+  if (!session?.user?.role || session.user.role !== "partner") {
     return NextResponse.redirect("/login");
   }
 
