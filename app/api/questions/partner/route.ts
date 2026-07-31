@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -15,7 +15,7 @@ export async function GET(req) {
     }
 
     const questions = await prisma.question.findMany({
-      where: { partnerId: session.user.id },
+      where: { buyerId: session.user.id },
       orderBy: { createdAt: "desc" },
       include: {
         product: {
