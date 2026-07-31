@@ -29,11 +29,6 @@ export async function GET(req: Request) {
   const account = await stripe.accounts.retrieve(user.stripeAccountId);
 
   if (account.details_submitted) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { stripeVerified: true },
-    });
-
     return NextResponse.redirect("/partner/dashboard");
   }
 
