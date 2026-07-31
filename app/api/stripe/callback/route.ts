@@ -3,9 +3,15 @@ import prisma from "@/lib/prisma";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 
-export async function GET(req) {
+if (!STRIPE_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+}
+
+const stripe = new Stripe(STRIPE_KEY);
+
+export async function GET(req: Request) {
   const session = await getServerSession();
 
   if (!session || session.user.role !== "partner") {
@@ -22,7 +28,6 @@ export async function GET(req) {
 
   const account = await stripe.accounts.retrieve(user.stripeAccountId);
 
-  // Si le compte est validé → statut vendeur actif
   if (account.details_submitted) {
     await prisma.user.update({
       where: { id: user.id },
