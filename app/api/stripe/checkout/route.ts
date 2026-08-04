@@ -70,9 +70,9 @@ export async function POST(req: Request) {
     }
 
     const grossTotal = items.reduce((sum: number, i: any) => {
-      const product = products.find((p) => p.id === i.productId)!;
-      return sum + product.price * i.quantity;
-    }, 0);
+  const product = products.find((p) => p.id === i.productId)!;
+  return sum + product.prix_locaplux * i.quantity;
+}, 0);
 
     const commissionRate =
       products.every((p) => p.isFree) ? 0 : partner.commissionRate ?? 0.12;
