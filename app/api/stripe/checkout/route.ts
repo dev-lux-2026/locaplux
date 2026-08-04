@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       }
     }
 
+    // Un seul partenaire par commande
     const partner = products[0].partner;
 
     if (!partner.stripeAccountId) {
@@ -69,20 +70,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // Calcul du total
     const grossTotal = items.reduce((sum: number, i: any) => {
-  const product = products.find((p) => p.id === i.productId)!;
-  return sum + product.prix_locaplux * i.quantity;
-}, 0);
+      const product = products.find((p) => p.id === i.productId)!;
+      const price = product.prix_locaplux ?? 0;
+      return sum + price * i.quantity;
+    }, 0);
 
+    // Commission
     const commissionRate =
       products.every((p) => p.isFree) ? 0 : partner.commissionRate ?? 0.12;
 
     const commissionAmount = Math.round(grossTotal * commissionRate * 100) / 100;
     const partnerAmount = Math.round((grossTotal - commissionAmount) * 100) / 100;
 
+    // Création de la commande
     const order = await prisma.order.create({
       data: {
-        userId: partner.id,
+        userId: partner.id, // à remplacer par l’acheteur réel plus tard
         partnerId: partner.id,
         total: grossTotal,
         status: "pending",
@@ -98,12 +103,13 @@ export async function POST(req: Request) {
           create: items.map((i: any) => ({
             productId: i.productId,
             quantity: i.quantity,
-            price: products.find((p) => p.id === i.productId)!.price,
+            price: products.find((p) => p.id === i.productId)!.prix_locaplux ?? 0,
           })),
         },
       },
     });
 
+    // Session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -113,13 +119,15 @@ export async function POST(req: Request) {
       },
       line_items: items.map((i: any) => {
         const product = products.find((p) => p.id === i.productId)!;
+        const price = product.prix_locaplux ?? 0;
+
         return {
           price_data: {
             currency: "eur",
             product_data: {
               name: product.name,
             },
-            unit_amount: product.price * 100,
+            unit_amount: price * 100,
           },
           quantity: i.quantity,
         };
