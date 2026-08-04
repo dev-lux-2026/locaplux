@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
@@ -62,7 +60,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1 vendeur par commande
     const partner = products[0].partner;
 
     if (!partner.stripeAccountId) {
@@ -72,24 +69,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Calcul du total et de la commission
     const grossTotal = items.reduce((sum: number, i: any) => {
       const product = products.find((p) => p.id === i.productId)!;
       return sum + product.price * i.quantity;
     }, 0);
 
-    // Commission : 0 si produit gratuit, sinon commissionRate du partenaire
-    // (on part du principe que tous les produits de la commande ont le même partenaire)
     const commissionRate =
       products.every((p) => p.isFree) ? 0 : partner.commissionRate ?? 0.12;
 
     const commissionAmount = Math.round(grossTotal * commissionRate * 100) / 100;
     const partnerAmount = Math.round((grossTotal - commissionAmount) * 100) / 100;
 
-    // Création de la commande (commission stockée pour cohérence)
     const order = await prisma.order.create({
       data: {
-        userId: partner.id, // à remplacer par l’acheteur réel plus tard
+        userId: partner.id,
         partnerId: partner.id,
         total: grossTotal,
         status: "pending",
