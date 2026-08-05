@@ -202,7 +202,7 @@ model PartnerApplication {
 }
 
 model Order {
-  id               String            @id @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
   status           OrderStatus       @default(pending)
   total            Int
   createdAt        DateTime          @default(now())
