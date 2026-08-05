@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req) {
   const session = await getServerSession();
@@ -34,7 +34,7 @@ export async function POST(req) {
     account: user.stripeAccountId,
     refresh_url: `${process.env.NEXTAUTH_URL}/partner/stripe`,
     return_url: `${process.env.NEXTAUTH_URL}/api/stripe/callback`,
-    type: "account_onboarding",
+    type: "account_onboarding`,
   });
 
   return NextResponse.json({ url: link.url });
