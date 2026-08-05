@@ -60,7 +60,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Un seul partenaire par commande
     const partner = products[0].partner;
 
     if (!partner.stripeAccountId) {
@@ -70,25 +69,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // Calcul du total
     const grossTotal = items.reduce((sum: number, i: any) => {
       const product = products.find((p) => p.id === i.productId)!;
       const price = product.prix_locaplux ?? 0;
       return sum + price * i.quantity;
     }, 0);
 
-    // Commission
     const commissionRate =
       products.every((p) => p.isFree) ? 0 : partner.commissionRate ?? 0.12;
 
     const commissionAmount = Math.round(grossTotal * commissionRate * 100) / 100;
     const partnerAmount = Math.round((grossTotal - commissionAmount) * 100) / 100;
 
-    // Création de la commande
+    // Création de la commande — version 100% compatible Prisma strict
     const order = await prisma.order.create({
       data: {
-        userId: partner.id, // à remplacer par l’acheteur réel plus tard
-        partnerId: partner.id,
+        user: { connect: { id: partner.id } },     // ✔ relation correcte
+        partner: { connect: { id: partner.id } },  // ✔ relation correcte
         total: grossTotal,
         status: "pending",
         commissionRate,
@@ -101,7 +98,7 @@ export async function POST(req: Request) {
         country,
         items: {
           create: items.map((i: any) => ({
-            productId: i.productId,
+            product: { connect: { id: i.productId } }, // ✔ relation correcte
             quantity: i.quantity,
             price: products.find((p) => p.id === i.productId)!.prix_locaplux ?? 0,
           })),
@@ -109,7 +106,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
