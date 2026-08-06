@@ -105,18 +105,13 @@ export async function POST(req: Request) {
       order.partnerAmount ??
       Math.round((recalculatedTotal - commissionAmount) * 100) / 100;
 
-    // 🔥 Mise à jour de la commande (LIVRAISON + PAIEMENT)
+    // 🔥 Mise à jour de la commande (PAIEMENT)
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
         status: "confirmed",
         paidAt: new Date(),
         paymentIntentId,
-
-        // 🔥 AJOUT LIVRAISON
-        deliveryPaid: true,
-        deliveryConfirmed: true,
-        deliveryStatus: "pending_delivery",
 
         // 🔥 TOTAL PRODUIT (la livraison est déjà stockée dans Supabase)
         total: recalculatedTotal,
