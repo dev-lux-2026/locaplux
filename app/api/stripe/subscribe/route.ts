@@ -6,23 +6,22 @@ import prisma from "@/lib/prisma";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
-  // Récupérer le token NextAuth
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  if (!token || !token.user || token.user.role !== "partner") {
+  // Vérification correcte du JWT NextAuth
+  if (!token || token.role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Récupérer l'utilisateur via Prisma
+  // Récupération correcte de l'utilisateur via Prisma
   const user = await prisma.user.findUnique({
-    where: { id: token.user.id },
+    where: { id: token.id },
   });
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Créer la session Stripe
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
