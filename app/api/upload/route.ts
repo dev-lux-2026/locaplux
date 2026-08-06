@@ -1,5 +1,5 @@
 // app/api/upload/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import cloudinary from "@/lib/cloudinary";
 import { rateLimit } from "@/lib/rateLimit";
@@ -7,7 +7,7 @@ import { antiAbuseIP } from "@/lib/security/antiAbuseIP";
 import { normalize, inferCategoryUnified } from "@/lib/autoCategory";
 import { getImageTags } from "@/lib/vision/getImageTags";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for") || "unknown";
 
@@ -26,7 +26,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const token = await getToken({ req });
+    // ⭐ FIX : NextRequest → getToken fonctionne
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
     if (!token || token.role !== "partner") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -97,7 +99,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        url: imageUrl,          // Image originale
+        url: imageUrl,
         publicId,
         imageTags,
         autoCategory: {
