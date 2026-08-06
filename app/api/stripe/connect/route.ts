@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(req: Request) {
   const session = await getServerSession();
 
-  if (!session || session.user.role !== "partner") {
+  if (!session || !session.user || session.user.role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
