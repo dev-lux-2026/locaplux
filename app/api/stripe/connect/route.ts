@@ -8,6 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(req: Request) {
   const session = await getServerSession();
 
+  // Vérification stricte TS
   if (!session || !session.user || session.user.role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -16,11 +17,16 @@ export async function POST(req: Request) {
     where: { id: session.user.id },
   });
 
+  // Vérification stricte TS
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
   // Créer un compte Stripe si pas encore créé
   if (!user.stripeAccountId) {
     const account = await stripe.accounts.create({
       type: "express",
-      email: user.email,
+      email: user.email ?? "", // TS safe
     });
 
     user = await prisma.user.update({
@@ -31,7 +37,7 @@ export async function POST(req: Request) {
 
   // Créer un lien d’onboarding
   const link = await stripe.accountLinks.create({
-    account: user.stripeAccountId,
+    account: user.stripeAccountId!, // TS safe car vérifié plus haut
     refresh_url: `${process.env.NEXTAUTH_URL}/partner/stripe`,
     return_url: `${process.env.NEXTAUTH_URL}/api/stripe/callback`,
     type: "account_onboarding",
