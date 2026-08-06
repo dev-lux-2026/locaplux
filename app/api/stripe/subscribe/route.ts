@@ -8,14 +8,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  // Vérification correcte du JWT NextAuth
   if (!token || token.role !== "partner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Récupération correcte de l'utilisateur via Prisma
   const user = await prisma.user.findUnique({
-    where: { id: String(token.id) },   // ⭐ FIX ICI
+    where: { id: String(token.id) },
   });
 
   if (!user) {
@@ -25,7 +23,7 @@ export async function POST(req: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
-    customer_email: user.email,
+    customer_email: user.email ?? undefined, // ⭐ FIX email null
     line_items: [
       {
         price: process.env.STRIPE_PRO_PRICE_ID!,
