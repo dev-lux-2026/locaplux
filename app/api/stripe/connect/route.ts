@@ -34,7 +34,7 @@ export async function POST(req) {
     account: user.stripeAccountId,
     refresh_url: `${process.env.NEXTAUTH_URL}/partner/stripe`,
     return_url: `${process.env.NEXTAUTH_URL}/api/stripe/callback`,
-    type: "account_onboarding`,
+    type: "account_onboarding",
   });
 
   return NextResponse.json({ url: link.url });
