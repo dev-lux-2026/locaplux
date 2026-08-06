@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   // Récupération correcte de l'utilisateur via Prisma
   const user = await prisma.user.findUnique({
-    where: { id: token.id },
+    where: { id: String(token.id) },   // ⭐ FIX ICI
   });
 
   if (!user) {
