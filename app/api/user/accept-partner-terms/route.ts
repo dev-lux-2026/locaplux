@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { CURRENT_PARTNER_TERMS_VERSION } from "@/lib/terms";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const session = await getServerSession();
 
   if (!session?.user?.email) {
@@ -14,7 +14,7 @@ export async function POST(req) {
     where: { email: session.user.email },
     data: {
       acceptedPartnerTermsAt: new Date(),
-      partnerTermsVersion: CURRENT_PARTNER_TERMS_VERSION, // 🔥 version CGV partenaires
+      partnerTermsVersion: CURRENT_PARTNER_TERMS_VERSION,
     },
   });
 
