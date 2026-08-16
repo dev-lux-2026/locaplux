@@ -204,7 +204,7 @@ export default function HomePageClient(
       {!session ? (
         <BuyerIntro />
       ) : (
-        <HomeConnected userName={session.user?.name || null} />
+        <HomeConnected userName={session.user?.name || ""} />
       )}
 
       <Container>
