@@ -3,7 +3,11 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
-export default function HomeConnected({ userName }) {
+export default function HomeConnected({
+  userName,
+}: {
+  userName: string;
+}) {
   const t = useTranslations("HomeConnected");
 
   const SUGGESTION_ITEMS = useMemo(
