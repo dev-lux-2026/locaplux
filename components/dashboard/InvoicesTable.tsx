@@ -1,4 +1,15 @@
-export default function InvoicesTable({ invoices }) {
+export default function InvoicesTable({
+  invoices,
+}: {
+  invoices: {
+    id: string;
+    type: string;
+    amount: number;
+    vat: number;
+    total: number;
+    createdAt: string | Date;
+  }[];
+}) {
   return (
     <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
       <h2 className="text-lg font-semibold mb-4">Factures</h2>
