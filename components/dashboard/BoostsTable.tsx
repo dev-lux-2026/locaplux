@@ -1,4 +1,16 @@
-export default function BoostsTable({ boosts }) {
+export default function BoostsTable({
+  boosts,
+}: {
+  boosts: {
+    id: string;
+    type: string;
+    startDate: string | Date;
+    endDate: string | Date;
+    product?: {
+      name?: string;
+    };
+  }[];
+}) {
   return (
     <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
       <h2 className="text-lg font-semibold mb-4">Boosts actifs</h2>
