@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 
-export default function ImageUploader({ onUpload, onDelete, images }) {
+export default function ImageUploader({
+  onUpload,
+  onDelete,
+  images,
+}: {
+  onUpload: (data: { url: string; autoCategory?: any }) => void;
+  onDelete: (img: any) => void;
+  images: any[];
+}) {
   const [uploading, setUploading] = useState(false);
 
-  async function handleFile(e) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -15,8 +23,8 @@ export default function ImageUploader({ onUpload, onDelete, images }) {
     fd.append("file", file);
 
     // 🔥 IMPORTANT : on envoie aussi name + description si tu veux l’IA texte
-    const nameInput = document.querySelector("input[name='name']");
-    const descInput = document.querySelector("textarea[name='description']");
+    const nameInput = document.querySelector("input[name='name']") as HTMLInputElement | null;
+    const descInput = document.querySelector("textarea[name='description']") as HTMLTextAreaElement | null;
 
     fd.append("name", nameInput?.value || "");
     fd.append("description", descInput?.value || "");
@@ -32,7 +40,6 @@ export default function ImageUploader({ onUpload, onDelete, images }) {
     console.log("UPLOAD RESULT:", data);
 
     if (data.url) {
-      // 🔥 On renvoie aussi la catégorie auto détectée
       onUpload({
         url: data.url,
         autoCategory: data.autoCategory,
