@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-export default function QuestionModal({ productId, onClose }) {
+export default function QuestionModal({
+  productId,
+  onClose,
+}: {
+  productId: string;
+  onClose: () => void;
+}) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
