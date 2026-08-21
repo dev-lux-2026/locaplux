@@ -1,6 +1,16 @@
-export default function OrdersTable({ orders }) {
+export default function OrdersTable({
+  orders,
+}: {
+  orders: {
+    id: string;
+    createdAt: string | Date;
+    total: number;
+    commissionAmount: number;
+    partnerAmount: number;
+  }[];
+}) {
   return (
-    <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
+    <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6 leading-tight">
       <h2 className="text-lg font-semibold mb-4">Ventes récentes</h2>
 
       <table className="w-full text-sm">
