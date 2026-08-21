@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // ✅ FIX TS strict: AdapterUser n’a pas emailVerified
+        // 🔥 FIX TS strict: AdapterUser n’a pas emailVerified
         const u = user as any;
 
         token.id = u.id;
@@ -75,6 +75,9 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token) {
+        // 🔥 FIX TS strict: session.user peut être undefined
+        session.user = session.user ?? ({} as any);
+
         session.user.id = token.id as string;
         session.user.emailVerified = token.emailVerified as boolean;
         session.user.role = token.role as string;
