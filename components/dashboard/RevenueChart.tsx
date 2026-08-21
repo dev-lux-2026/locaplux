@@ -1,8 +1,24 @@
 "use client";
 
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-export default function RevenueChart({ data }) {
+export default function RevenueChart({
+  data,
+}: {
+  data: {
+    month: string;
+    total: number;
+    commission: number;
+    partner: number;
+  }[];
+}) {
   return (
     <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
       <h2 className="text-lg font-semibold mb-4">Revenus & Commissions</h2>
