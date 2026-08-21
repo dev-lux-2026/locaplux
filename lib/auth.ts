@@ -33,9 +33,10 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
+        // ✅ FIX TS strict: user.password peut être null
         const isValid = await bcrypt.compare(
           credentials.password,
-          user.password ?? ""   // ✅ FIX TS STRICT
+          user.password ?? ""
         );
 
         if (!isValid) return null;
@@ -62,9 +63,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.emailVerified = user.emailVerified ?? false;
-        token.role = user.role;
+        // ✅ FIX TS strict: AdapterUser n’a pas emailVerified
+        const u = user as any;
+
+        token.id = u.id;
+        token.emailVerified = u.emailVerified ?? false;
+        token.role = u.role;
       }
       return token;
     },
