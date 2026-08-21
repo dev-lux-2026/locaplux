@@ -1,4 +1,10 @@
-export default function KpiCard({ label, value }) {
+export default function KpiCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
   return (
     <div className="rounded-xl bg-white dark:bg-neutral-900 shadow-sm border border-neutral-200 dark:border-neutral-800 p-6 flex flex-col gap-2">
       <span className="text-sm text-neutral-500">{label}</span>
