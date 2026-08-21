@@ -4,7 +4,6 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
 
-// 🔥 AJOUT : export signIn pour verify-email
 export { signIn } from "next-auth/react";
 
 export const authOptions: NextAuthOptions = {
@@ -33,7 +32,6 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
-        // ✅ FIX TS strict: user.password peut être null
         const isValid = await bcrypt.compare(
           credentials.password,
           user.password ?? ""
@@ -63,9 +61,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // 🔥 FIX TS strict: AdapterUser n’a pas emailVerified
         const u = user as any;
-
         token.id = u.id;
         token.emailVerified = u.emailVerified ?? false;
         token.role = u.role;
@@ -75,13 +71,16 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token) {
-        // 🔥 FIX TS strict: session.user peut être undefined
-        session.user = session.user ?? ({} as any);
+        // 🔥 FIX FINAL : cast propre et définitif
+        const user = session.user as any;
 
-        session.user.id = token.id as string;
-        session.user.emailVerified = token.emailVerified as boolean;
-        session.user.role = token.role as string;
+        user.id = token.id as string;
+        user.emailVerified = token.emailVerified as boolean;
+        user.role = token.role as string;
+
+        session.user = user;
       }
+
       return session;
     },
   },
