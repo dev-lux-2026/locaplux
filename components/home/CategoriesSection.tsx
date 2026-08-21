@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 
-export default function CategoriesSection({ categories = [] }) {
+export default function CategoriesSection({
+  categories = [],
+}: {
+  categories: {
+    id: string;
+    name: string;
+    image?: string | null;
+  }[];
+}) {
   return (
     <div
       className="
@@ -27,7 +35,7 @@ export default function CategoriesSection({ categories = [] }) {
           "
         >
           <img
-            src={cat.image}
+            src={cat.image || "/placeholder.png"}
             alt={cat.name}
             className="
               object-cover rounded-md
