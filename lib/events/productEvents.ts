@@ -1,6 +1,6 @@
 import * as productEmails from "@/lib/emails/product";
 
-export async function handleProductStatusChange(product, previousStatus) {
+export async function handleProductStatusChange(product: any, previousStatus: any) {
   const { status, partner } = product;
 
   switch (status) {
