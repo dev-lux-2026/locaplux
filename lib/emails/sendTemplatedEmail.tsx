@@ -17,7 +17,8 @@ export async function sendTemplatedEmail({
   content: React.ReactNode;
 }) {
   try {
-    const html = render(
+    // FIX: render() retourne une Promise → on attend le résultat
+    const html = await render(
       <EmailTemplate title={title}>{content}</EmailTemplate>
     );
 
