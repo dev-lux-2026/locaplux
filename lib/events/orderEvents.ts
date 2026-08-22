@@ -1,6 +1,6 @@
 import * as orderEmails from "@/lib/emails/order";
 
-export async function handleOrderStatusChange(order, previousStatus) {
+export async function handleOrderStatusChange(order: any, previousStatus: any) {
   const { status, user, partner } = order;
 
   switch (status) {
