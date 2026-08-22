@@ -4,7 +4,7 @@ import {
 } from "@/lib/emails/partner/sendPartnerEmails";
 import { createPartnerActivationToken } from "@/lib/auth/createPartnerActivationToken";
 
-export async function handlePartnerStatusChange(partner) {
+export async function handlePartnerStatusChange(partner: any) {
   const { status, email, id, publicName, company } = partner;
 
   const displayName = publicName || company || email;
