@@ -1,12 +1,13 @@
 import { sendTemplatedEmail } from "../sendTemplatedEmail";
+import { EmailTemplate } from "../emailTemplate";
 
 export async function emailProductDisabled(to: string, productName: string) {
-  await sendTemplatedEmail({
+  return sendTemplatedEmail({
     to,
     subject: "Votre produit a été désactivé",
     title: "Produit désactivé",
     content: (
-      <>
+      <EmailTemplate title="Produit désactivé">
         <p>Bonjour,</p>
 
         <p>
@@ -17,7 +18,7 @@ export async function emailProductDisabled(to: string, productName: string) {
           Bien à vous,<br />
           L’équipe Locaplux
         </p>
-      </>
+      </EmailTemplate>
     ),
   });
 }

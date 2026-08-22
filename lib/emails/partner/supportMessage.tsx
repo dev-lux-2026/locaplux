@@ -1,5 +1,5 @@
-// /lib/emails/partner/supportMessage.ts
 import * as React from "react";
+import { EmailTemplate } from "../emailTemplate";
 
 export const PartnerSupportMessageEmail = ({
   name,
@@ -10,11 +10,21 @@ export const PartnerSupportMessageEmail = ({
   email: string;
   message: string;
 }) => (
-  <div>
-    <p>Nouveau message de support :</p>
-    <p><strong>Nom :</strong> {name}</p>
-    <p><strong>Email :</strong> {email}</p>
-    <p><strong>Message :</strong></p>
+  <EmailTemplate title="Message de support">
+    <p>Nouveau message de support partenaire :</p>
+
+    <p>
+      <strong>Nom :</strong> {name}
+    </p>
+
+    <p>
+      <strong>Email :</strong> {email}
+    </p>
+
+    <p>
+      <strong>Message :</strong>
+    </p>
+
     <p>{message}</p>
-  </div>
+  </EmailTemplate>
 );

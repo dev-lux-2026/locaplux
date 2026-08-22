@@ -1,5 +1,5 @@
-// /lib/emails/partner/partnerKycRejected.ts
 import * as React from "react";
+import { EmailTemplate } from "../emailTemplate";
 
 export const PartnerKycRejectedEmail = ({
   name,
@@ -8,15 +8,20 @@ export const PartnerKycRejectedEmail = ({
   name: string;
   reason: string;
 }) => (
-  <div>
+  <EmailTemplate title="Validation refusée">
     <p>Bonjour {name},</p>
+
     <p>
       Après vérification, nous ne pouvons malheureusement pas valider votre
       compte partenaire.
     </p>
-    <p>Raison : {reason}</p>
+
+    <p>
+      <strong>Raison :</strong> {reason}
+    </p>
+
     <p>
       Vous pouvez corriger vos informations et soumettre une nouvelle demande.
     </p>
-  </div>
+  </EmailTemplate>
 );
