@@ -1,4 +1,3 @@
-// /lib/emails/partner/partnerKycApproved.tsx
 import * as React from "react";
 import { EmailTemplate } from "@/lib/emails/emailTemplate";
 import { LOGO_BASE64 } from "@/lib/emails/logoBase64";
@@ -15,17 +14,12 @@ export const PartnerKycApprovedEmail = ({
   completeProfileUrl,
 }: PartnerKycApprovedEmailProps) => {
   return (
-    <EmailTemplate logoBase64={LOGO_BASE64}>
+    <EmailTemplate title="Compte validé" logoBase64={LOGO_BASE64}>
       <p>Bonjour {name},</p>
 
-      <p>
-        Félicitations ! Votre compte partenaire Locaplux vient d’être validé.
-      </p>
+      <p>Félicitations ! Votre compte partenaire Locaplux vient d’être validé.</p>
 
-      <p>
-        Vous pouvez maintenant activer votre compte et accéder à votre espace
-        partenaire.
-      </p>
+      <p>Vous pouvez maintenant activer votre compte et accéder à votre espace partenaire.</p>
 
       <div style={{ textAlign: "center", margin: "30px 0" }}>
         <a
@@ -46,10 +40,7 @@ export const PartnerKycApprovedEmail = ({
 
       {completeProfileUrl && (
         <>
-          <p>
-            Il manque encore quelques informations facultatives à votre profil.
-            Vous pouvez les compléter ici :
-          </p>
+          <p>Vous pouvez compléter les informations facultatives de votre profil ici :</p>
 
           <div style={{ textAlign: "center", marginTop: "20px" }}>
             <a
@@ -70,8 +61,7 @@ export const PartnerKycApprovedEmail = ({
       )}
 
       <p style={{ color: "#999", fontSize: "13px", marginTop: "40px" }}>
-        Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet
-        email.
+        Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet email.
       </p>
     </EmailTemplate>
   );
