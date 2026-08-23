@@ -22,7 +22,7 @@ export async function partnerGuard() {
   if (role === "admin") {
     return {
       mode: "admin-overwatch",
-      userId: session.user.id,
+      userId: session?.user?.id,   // ⭐ FIX ICI
       role: "admin"
     };
   }
