@@ -12,13 +12,12 @@ export async function logAdminAction({
   comment?: string | null;
 }) {
   try {
-    // 🔐 Récupère automatiquement l’admin connecté
     const session = await getServerSession(authOptions);
     const adminId = session?.user?.id ?? null;
 
     await prisma.adminLog.create({
       data: {
-        adminId: adminId ?? undefined,   // ⭐ FIX ICI
+        adminId: adminId ?? null,   // ⭐ FIX FINAL
         partnerId,
         action,
         comment,
