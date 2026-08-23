@@ -18,7 +18,7 @@ export async function logAdminAction({
 
     await prisma.adminLog.create({
       data: {
-        adminId, // ✔ sécurisé automatiquement
+        adminId: adminId ?? undefined,   // ⭐ FIX ICI
         partnerId,
         action,
         comment,
