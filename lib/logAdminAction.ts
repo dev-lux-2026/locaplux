@@ -13,11 +13,17 @@ export async function logAdminAction({
 }) {
   try {
     const session = await getServerSession(authOptions);
-    const adminId = session?.user?.id; // ⭐ jamais null
+
+    // Si pas de session → impossible de logger un admin
+    if (!session?.user?.id) {
+      throw new Error("Admin ID missing — cannot log admin action");
+    }
+
+    const adminId = session.user.id; // ⭐ toujours une string
 
     await prisma.adminLog.create({
       data: {
-        adminId: adminId ?? undefined, // ⭐ conforme Prisma
+        adminId,        // ⭐ conforme Prisma (String obligatoire)
         partnerId,
         action,
         comment,
