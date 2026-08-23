@@ -9,7 +9,7 @@ export async function partnerGuard() {
     redirect("/login");
   }
 
-  const role = session.user.role?.toLowerCase();
+  const role = session?.user?.role?.toLowerCase();
 
   if (role === "partner") {
     return {
