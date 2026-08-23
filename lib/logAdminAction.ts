@@ -13,11 +13,11 @@ export async function logAdminAction({
 }) {
   try {
     const session = await getServerSession(authOptions);
-    const adminId = session?.user?.id ?? null;
+    const adminId = session?.user?.id; // ⭐ jamais null
 
     await prisma.adminLog.create({
       data: {
-        adminId: adminId ?? null,   // ⭐ FIX FINAL
+        adminId: adminId ?? undefined, // ⭐ conforme Prisma
         partnerId,
         action,
         comment,
