@@ -14,7 +14,7 @@ export async function partnerGuard() {
   if (role === "partner") {
     return {
       mode: "partner",
-      userId: session.user.id,
+      userId: session?.user?.id,
       role: "partner"
     };
   }
