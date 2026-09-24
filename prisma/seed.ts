@@ -9,7 +9,10 @@ async function main() {
     data: { 
       name: "Électronique",
       root: "Électronique",
-      parent: "Électronique"
+      parent: "Électronique",
+      name_fr: "Électronique",
+      name_en: "Electronics",
+      name_lu: "Elektronik"
     },
   });
 
@@ -17,7 +20,10 @@ async function main() {
     data: { 
       name: "Maison",
       root: "Maison",
-      parent: "Maison"
+      parent: "Maison",
+      name_fr: "Maison",
+      name_en: "Home",
+      name_lu: "Doheem"
     },
   });
 
@@ -25,14 +31,17 @@ async function main() {
     data: { 
       name: "Sport",
       root: "Sport",
-      parent: "Sport"
+      parent: "Sport",
+      name_fr: "Sport",
+      name_en: "Sport",
+      name_lu: "Sport"
     },
   });
 
   // --- 2) Partenaire ---
   const partner = await prisma.user.create({
     data: {
-      name: "Test Partner",
+      name: "Locaplux Démo Partner",
       email: "partner@test.com",
       role: "partner",
       status: "approved"
@@ -56,7 +65,7 @@ async function main() {
 
   await prisma.product.create({
     data: {
-      name: "Aspirateur Dyson",
+      name: "Aspirateur Dyson V10",
       price: 499,
       stock: 5,
       images: [
@@ -70,7 +79,7 @@ async function main() {
 
   await prisma.product.create({
     data: {
-      name: "Vélo de route",
+      name: "Vélo de route carbone",
       price: 1299,
       stock: 3,
       images: [
