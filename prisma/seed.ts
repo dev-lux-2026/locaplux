@@ -7,6 +7,7 @@ async function main() {
   // --- 1) Catégories ---
   const cat1 = await prisma.category.create({
     data: { 
+      id: crypto.randomUUID(),
       name: "Électronique",
       root: "Électronique",
       parent: "Électronique",
@@ -18,6 +19,7 @@ async function main() {
 
   const cat2 = await prisma.category.create({
     data: { 
+      id: crypto.randomUUID(),
       name: "Maison",
       root: "Maison",
       parent: "Maison",
@@ -29,6 +31,7 @@ async function main() {
 
   const cat3 = await prisma.category.create({
     data: { 
+      id: crypto.randomUUID(),
       name: "Sport",
       root: "Sport",
       parent: "Sport",
@@ -41,6 +44,7 @@ async function main() {
   // --- 2) Partenaire ---
   const partner = await prisma.user.create({
     data: {
+      id: crypto.randomUUID(),
       name: "Locaplux Démo Partner",
       email: "partner@test.com",
       role: "partner",
@@ -51,6 +55,7 @@ async function main() {
   // --- 3) Produits ---
   await prisma.product.create({
     data: {
+      id: crypto.randomUUID(),
       name: "iPhone 14",
       price: 999,
       stock: 10,
@@ -65,6 +70,7 @@ async function main() {
 
   await prisma.product.create({
     data: {
+      id: crypto.randomUUID(),
       name: "Aspirateur Dyson V10",
       price: 499,
       stock: 5,
@@ -79,6 +85,7 @@ async function main() {
 
   await prisma.product.create({
     data: {
+      id: crypto.randomUUID(),
       name: "Vélo de route carbone",
       price: 1299,
       stock: 3,
