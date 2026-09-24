@@ -6,7 +6,7 @@ async function main() {
 
   // --- 1) Catégories ---
   const cat1 = await prisma.category.create({
-    data: { name: "Électronique", slug: "electronique" },
+    data: { name: "Électronique" },
   });
 
   const cat2 = await prisma.category.create({
