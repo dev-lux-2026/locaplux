@@ -6,15 +6,27 @@ async function main() {
 
   // --- 1) Catégories ---
   const cat1 = await prisma.category.create({
-    data: { name: "Électronique" },
+    data: { 
+      name: "Électronique",
+      root: "Électronique",
+      parent: "Électronique"
+    },
   });
 
   const cat2 = await prisma.category.create({
-    data: { name: "Maison", slug: "maison" },
+    data: { 
+      name: "Maison",
+      root: "Maison",
+      parent: "Maison"
+    },
   });
 
   const cat3 = await prisma.category.create({
-    data: { name: "Sport", slug: "sport" },
+    data: { 
+      name: "Sport",
+      root: "Sport",
+      parent: "Sport"
+    },
   });
 
   // --- 2) Partenaire ---
@@ -23,8 +35,7 @@ async function main() {
       name: "Test Partner",
       email: "partner@test.com",
       role: "partner",
-      status: "approved",
-      slug: "test-partner",
+      status: "approved"
     },
   });
 
@@ -32,7 +43,6 @@ async function main() {
   await prisma.product.create({
     data: {
       name: "iPhone 14",
-      slug: "iphone-14",
       price: 999,
       stock: 10,
       images: [
@@ -47,7 +57,6 @@ async function main() {
   await prisma.product.create({
     data: {
       name: "Aspirateur Dyson",
-      slug: "dyson-v10",
       price: 499,
       stock: 5,
       images: [
@@ -62,7 +71,6 @@ async function main() {
   await prisma.product.create({
     data: {
       name: "Vélo de route",
-      slug: "velo-route",
       price: 1299,
       stock: 3,
       images: [
