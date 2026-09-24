@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import securityMiddleware from './middleware-security';
 
@@ -7,7 +8,7 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'always'
 });
 
-export default async function middleware(req) {
+export default async function middleware(req: NextRequest) {
   // 1) Exécuter VRAIMENT le middleware i18n
   const intlResponse = await intlMiddleware(req);
 
