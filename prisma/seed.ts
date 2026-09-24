@@ -57,12 +57,19 @@ async function main() {
     data: {
       id: crypto.randomUUID(),
       name: "iPhone 14",
-      price: 999,
+      slug: "iphone-14",
       stock: 10,
       images: [
         "https://picsum.photos/seed/iphone/600/600"
       ],
+      active: true,
       status: "approved",
+      isFree: false,
+
+      prix_normal: 999,
+      prix_locaplux: 899,
+      prix_achat: 750,
+
       categoryId: cat1.id,
       partnerId: partner.id,
     },
@@ -72,12 +79,19 @@ async function main() {
     data: {
       id: crypto.randomUUID(),
       name: "Aspirateur Dyson V10",
-      price: 499,
+      slug: "dyson-v10",
       stock: 5,
       images: [
         "https://picsum.photos/seed/dyson/600/600"
       ],
+      active: true,
       status: "approved",
+      isFree: false,
+
+      prix_normal: 499,
+      prix_locaplux: 450,
+      prix_achat: 300,
+
       categoryId: cat2.id,
       partnerId: partner.id,
     },
@@ -87,12 +101,19 @@ async function main() {
     data: {
       id: crypto.randomUUID(),
       name: "Vélo de route carbone",
-      price: 1299,
+      slug: "velo-route",
       stock: 3,
       images: [
         "https://picsum.photos/seed/velo/600/600"
       ],
+      active: true,
       status: "approved",
+      isFree: false,
+
+      prix_normal: 1299,
+      prix_locaplux: 1199,
+      prix_achat: 900,
+
       categoryId: cat3.id,
       partnerId: partner.id,
     },
