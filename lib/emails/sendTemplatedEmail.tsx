@@ -1,9 +1,15 @@
-// /lib/emails/sendTemplatedEmail.ts
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { EmailTemplate } from "./emailTemplate";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// 🔒 Sécurisation : empêcher un crash si la clé manque
+if (!process.env.RESEND_API_KEY) {
+  console.error("❌ RESEND_API_KEY manquante");
+  throw new Error("Missing RESEND_API_KEY");
+}
+
+// 🔒 TypeScript strict : la clé est garantie non undefined
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function sendTemplatedEmail({
   to,
@@ -17,7 +23,6 @@ export async function sendTemplatedEmail({
   content: React.ReactNode;
 }) {
   try {
-    // FIX: render() retourne une Promise → on attend le résultat
     const html = await render(
       <EmailTemplate title={title}>{content}</EmailTemplate>
     );
