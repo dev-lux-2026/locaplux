@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
@@ -30,10 +29,7 @@ async function buffer(readable: ReadableStream<Uint8Array>) {
 }
 
 export async function POST(req: Request) {
-  // --- Rate Limit Protection (Stripe Special) ---
   const ip = req.headers.get("x-forwarded-for") || "stripe";
-
-  // Stripe peut envoyer beaucoup d’événements → limite élargie
   const allowed = rateLimit(ip);
 
   const buf = await buffer(req.body!);
@@ -75,7 +71,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Mise à jour du stock
     for (const item of order.items) {
       const newStock = item.product.stock - item.quantity;
 
@@ -88,13 +83,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // Recalcul du total (hors livraison)
     const recalculatedTotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    // Recalcul commission
     const commissionRate =
       order.commissionRate ?? order.partner.commissionRate ?? 0.12;
 
@@ -106,25 +99,19 @@ export async function POST(req: Request) {
       order.partnerAmount ??
       Math.round((recalculatedTotal - commissionAmount) * 100) / 100;
 
-    // 🔥 Mise à jour de la commande (PAIEMENT)
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
         status: "confirmed",
         paidAt: new Date(),
         paymentIntentId,
-
-        // 🔥 TOTAL PRODUIT (la livraison est déjà stockée dans Supabase)
         total: recalculatedTotal,
-
-        // 🔥 COMMISSION
         commissionRate,
         commissionAmount,
         partnerAmount,
       },
     });
 
-    // Enregistrement de la commission
     await prisma.commission.create({
       data: {
         orderId: updatedOrder.id,
@@ -134,7 +121,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Facture par vente
     const vatRate = 0.17;
     const vat = Math.round(commissionAmount * vatRate * 100) / 100;
     const totalInvoice = commissionAmount + vat;
