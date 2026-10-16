@@ -9,13 +9,6 @@ const intlMiddleware = createMiddleware({
 });
 
 export default async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
-
-  // Autoriser la page d'entrée (ne pas rediriger / vers /fr)
-  if (pathname === "/") {
-    return intlMiddleware(req);
-  }
-
   // 1) Exécuter VRAIMENT le middleware i18n
   const intlResponse = await intlMiddleware(req);
 
