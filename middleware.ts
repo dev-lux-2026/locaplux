@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import securityMiddleware from './middleware-security';
 import lockMiddleware from './middleware-lock';

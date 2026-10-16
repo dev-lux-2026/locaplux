@@ -2,40 +2,40 @@ import {NextResponse} from "next/server";
 import type {NextRequest} from "next/server";
 import {getToken} from "next-auth/jwt";
 
-// Autoriser la page de verrouillage
-if (pathname === "/_lock" || pathname.startsWith("/_lock")) {
-  return intlResponse;
-}
-
-// --- ORIGINES AUTORISÉES ---
-const allowedOrigins = [
-  "http://localhost",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://127.0.0.1",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3001",
-  process.env.NEXT_PUBLIC_BASE_URL
-].filter(Boolean);
-
-// --- BOTS ---
-const blockedUserAgents = [
-  /bot/i,
-  /crawl/i,
-  /spider/i,
-  /wget/i,
-  /curl/i,
-  /python/i,
-  /scraper/i
-];
-
-// --- EXTENSIONS DANGEREUSES ---
-const blockedExtensions = [".php", ".asp", ".aspx", ".exe", ".sh", ".bat", ".cmd"];
-
 export default async function securityMiddleware(req: NextRequest, intlResponse: NextResponse) {
   const origin = req.headers.get("origin") || "";
   const ua = req.headers.get("user-agent") || "";
   const pathname = req.nextUrl.pathname;
+
+  // --- Autoriser la page de verrouillage ---
+  if (pathname === "/_lock" || pathname.startsWith("/_lock")) {
+    return intlResponse;
+  }
+
+  // --- ORIGINES AUTORISÉES ---
+  const allowedOrigins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    process.env.NEXT_PUBLIC_BASE_URL
+  ].filter(Boolean);
+
+  // --- BOTS ---
+  const blockedUserAgents = [
+    /bot/i,
+    /crawl/i,
+    /spider/i,
+    /wget/i,
+    /curl/i,
+    /python/i,
+    /scraper/i
+  ];
+
+  // --- EXTENSIONS DANGEREUSES ---
+  const blockedExtensions = [".php", ".asp", ".aspx", ".exe", ".sh", ".bat", ".cmd"];
 
   // --- 2) Autoriser les requêtes internes ---
   if (!origin) return intlResponse;
