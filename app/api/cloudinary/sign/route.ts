@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import cloudinary from "@/lib/cloudinary";
 import { NextResponse } from "next/server";
 

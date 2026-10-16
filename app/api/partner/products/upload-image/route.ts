@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // minor update to trigger rebuild
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";

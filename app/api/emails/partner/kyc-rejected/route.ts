@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { sendPartnerKycRejectedEmail } from "@/lib/emails/partner/sendPartnerEmails";
 

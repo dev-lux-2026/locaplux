@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { emailProductRejected } from "@/lib/emails/product/productRejected";
 import { supabase } from "@/lib/supabase";

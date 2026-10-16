@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // /app/api/auth/validate-token/route.ts
 import { NextResponse } from "next/server";
 import { validatePartnerActivationToken } from "@/lib/tokens";
