@@ -12,18 +12,18 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // Autoriser la maintenance
+  // 1) Autoriser la maintenance SANS next-intl
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
-  // Autoriser l'admin AVANT next-intl
-  if (pathname.startsWith("/320750")) {
+  // 2) Autoriser l'admin AVANT next-intl
+  if (pathname.startsWith("/admin")) {
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
 
-  // Bloquer tout le reste → maintenance
+  // 3) Bloquer tout le reste → maintenance
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
   return NextResponse.redirect(url);
