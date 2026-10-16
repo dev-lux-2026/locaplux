@@ -2,6 +2,11 @@ import {NextResponse} from "next/server";
 import type {NextRequest} from "next/server";
 import {getToken} from "next-auth/jwt";
 
+// Autoriser la page de verrouillage
+if (pathname === "/_lock" || pathname.startsWith("/_lock")) {
+  return intlResponse;
+}
+
 // --- ORIGINES AUTORISÉES ---
 const allowedOrigins = [
   "http://localhost",
