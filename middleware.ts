@@ -12,12 +12,12 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // Autoriser la page maintenance
+  // Autoriser la maintenance
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
-  // Autoriser l'admin pour toi
+  // Autoriser l'admin AVANT next-intl
   if (pathname.startsWith("/320750")) {
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
