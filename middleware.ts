@@ -15,7 +15,7 @@ export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   // Ne pas localiser /_lock
-  if (pathname.startsWith("/_lock")) {
+  if (pathname.endsWith("/_lock")) {
     return NextResponse.next();
   }
 

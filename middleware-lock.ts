@@ -7,9 +7,9 @@ export default function lockMiddleware(req: NextRequest) {
   const pathname = url.pathname;
 
   // Autoriser la page de lock (localisée ou non)
-  if (pathname === "/_lock" || pathname.endsWith("/_lock")) {
-    return NextResponse.next();
-  }
+  if (pathname.endsWith("/_lock")) {
+  return NextResponse.next();
+}
 
   // Vérifier l'accès
   const hasAccess =
