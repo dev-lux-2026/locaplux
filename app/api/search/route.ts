@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -36,7 +38,7 @@ export async function GET(req: Request) {
       category: {
         select: {
           id: true,
-          name: true, // ✔ slug supprimé
+          name: true,
         },
       },
     },

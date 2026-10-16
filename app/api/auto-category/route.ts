@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // app/api/auto-category/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -71,8 +73,8 @@ export async function POST(req: Request) {
             description,
             imageTags: imageTags || [],
           },
-          detected,      // résultat brut IA
-          finalCategory, // catégorie finale utilisée
+          detected,
+          finalCategory,
         },
       },
       { status: 200 }
