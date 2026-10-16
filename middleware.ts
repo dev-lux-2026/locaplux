@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import securityMiddleware from './middleware-security';
 
@@ -9,11 +10,18 @@ const intlMiddleware = createMiddleware({
 });
 
 export default async function middleware(req: NextRequest) {
-  // 1) Exécuter VRAIMENT le middleware i18n
-  const intlResponse = await intlMiddleware(req);
+  const pathname = req.nextUrl.pathname;
 
-  // 2) Passer la réponse i18n à la sécurité
-  return securityMiddleware(req, intlResponse);
+  // Autoriser l'accès admin pour toi
+  if (pathname.startsWith("/admin")) {
+    const intlResponse = await intlMiddleware(req);
+    return securityMiddleware(req, intlResponse);
+  }
+
+  // Bloquer tout le reste → maintenance
+  const url = req.nextUrl.clone();
+  url.pathname = "/maintenance";
+  return NextResponse.redirect(url);
 }
 
 export const config = {
