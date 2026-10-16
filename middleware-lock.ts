@@ -4,11 +4,14 @@ import type { NextRequest } from "next/server";
 
 export default function lockMiddleware(req: NextRequest) {
   const url = req.nextUrl.clone();
+  const pathname = url.pathname;
 
-  if (url.pathname === "/_lock") {
+  // Autoriser la page de lock (localisée ou non)
+  if (pathname === "/_lock" || pathname.endsWith("/_lock")) {
     return NextResponse.next();
   }
 
+  // Vérifier l'accès
   const hasAccess =
     req.cookies.get("locaplux_access")?.value === process.env.SITE_PASSWORD;
 
