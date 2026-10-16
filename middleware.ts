@@ -12,13 +12,13 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // Autoriser la page maintenance (NE PAS appliquer next-intl ici)
+  // Autoriser la page maintenance
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
   // Autoriser l'admin pour toi
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/320750")) {
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
