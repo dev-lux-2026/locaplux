@@ -1,4 +1,3 @@
-// lock sync
 import {NextResponse} from "next/server";
 import type {NextRequest} from "next/server";
 import {getToken} from "next-auth/jwt";
@@ -7,11 +6,6 @@ export default async function securityMiddleware(req: NextRequest, intlResponse:
   const origin = req.headers.get("origin") || "";
   const ua = req.headers.get("user-agent") || "";
   const pathname = req.nextUrl.pathname;
-
-  // --- Autoriser la page de verrouillage ---
-  if (pathname === "/_lock" || pathname.startsWith("/_lock")) {
-    return intlResponse;
-  }
 
   // --- ORIGINES AUTORISÉES ---
   const allowedOrigins = [
