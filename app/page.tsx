@@ -7,12 +7,11 @@ export default function Home() {
   const [code, setCode] = useState("");
   const router = useRouter();
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // Ton mot secret ici
     if (code === "lux2026") {
-      router.push("/fr"); // Tu entres sur ton vrai site
+      router.push("/fr");
     }
   }
 
