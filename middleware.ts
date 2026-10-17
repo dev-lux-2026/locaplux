@@ -12,10 +12,10 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 1) Route secrète : bypass total + next-intl
+  // 🔐 1) Secret : accès complet au site, flow normal
   if (pathname.startsWith("/320750")) {
-    req.nextUrl.pathname = "/fr";     // ta vraie homepage
-    return intlMiddleware(req);       // initialise locale + messages
+    req.nextUrl.pathname = "/";     // page WOW → /fr
+    return NextResponse.rewrite(req.nextUrl);
   }
 
   // 🛠 2) Autoriser la page maintenance
