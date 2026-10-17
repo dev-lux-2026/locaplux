@@ -12,18 +12,22 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 1) Secret : accès complet au site, flow normal
+  // 🔐 Secret : utiliser l'ancien comportement (pas de maintenance)
   if (pathname.startsWith("/320750")) {
-    req.nextUrl.pathname = "/";     // page WOW → /fr
-    return NextResponse.rewrite(req.nextUrl);
+    // On remet le chemin d'origine : /
+    req.nextUrl.pathname = "/";
+    // On exécute next-intl comme avant
+    const intlResponse = await intlMiddleware(req);
+    // On exécute la sécurité comme avant
+    return securityMiddleware(req, intlResponse);
   }
 
-  // 🛠 2) Autoriser la page maintenance
+  // 🛠 Autoriser la page maintenance
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
-  // 🔒 3) Admin (localisé)
+  // 🔒 Admin (localisé)
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/fr/admin") ||
@@ -34,7 +38,7 @@ export default async function middleware(req: NextRequest) {
     return securityMiddleware(req, intlResponse);
   }
 
-  // 🚫 4) Tout le reste → maintenance
+  // 🚫 Tout le reste → maintenance
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
   return NextResponse.redirect(url);
