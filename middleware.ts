@@ -11,11 +11,18 @@ const intlMiddleware = createMiddleware({
 
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
+  const hasSecret = pathname.includes("320750");
+  const secretCookie = req.cookies.get("secret")?.value === "ok";
 
-  // 🔐 Secret : détecté même dans /fr/320750
-  if (pathname.includes("320750")) {
-    // 👉 On revient à ton ancien comportement
-    req.nextUrl.pathname = "/";
+  // 🔐 Secret utilisé → on pose un cookie et on redirige vers /
+  if (hasSecret) {
+    const res = NextResponse.redirect(new URL("/", req.url));
+    res.cookies.set("secret", "ok", { path: "/" });
+    return res;
+  }
+
+  // 🔐 Si le cookie est présent → accès complet au site
+  if (secretCookie) {
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
