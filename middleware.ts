@@ -12,9 +12,12 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Route secrète : bypass total
+  // 🔐 Route secrète : bypass mais AVEC next-intl
   if (pathname.startsWith("/320750")) {
-    return NextResponse.rewrite(new URL("/fr", req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = "/fr";
+    req.nextUrl.pathname = "/fr";
+    return intlMiddleware(req);
   }
 
   // 🛠 Autoriser la page maintenance
