@@ -12,8 +12,8 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Secret : accès complet au site
-  if (pathname.startsWith("/320750")) {
+  // 🔐 Secret : détecté même dans /fr/320750
+  if (pathname.includes("320750")) {
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
@@ -34,7 +34,7 @@ export default async function middleware(req: NextRequest) {
     return securityMiddleware(req, intlResponse);
   }
 
-  // 🚫 Tout le reste → maintenance (rewrite, pas redirect)
+  // 🚫 Tout le reste → maintenance
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
   return NextResponse.rewrite(url);
@@ -42,7 +42,6 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/320750',
     '/((?!api|_next|.*\\..*).*)'
   ]
 };
