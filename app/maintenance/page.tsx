@@ -16,10 +16,10 @@ export default function Maintenance() {
       {/* Logo Locaplux */}
       <h1
         style={{
-          fontSize: 80,
+          fontSize: 100,          // plus grand
           fontWeight: "bold",
-          marginBottom: 20,
-          letterSpacing: "2px"
+          marginBottom: 10,
+          letterSpacing: "3px"
         }}
       >
         Locaplux
@@ -28,9 +28,10 @@ export default function Maintenance() {
       {/* Phrase suspense */}
       <p
         style={{
-          fontSize: 24,
-          maxWidth: 600,
-          opacity: 0.8,
+          fontSize: 20,           // plus petit
+          maxWidth: 500,
+          opacity: 0.7,
+          marginTop: 10,
           lineHeight: "1.4"
         }}
       >
