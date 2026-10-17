@@ -12,9 +12,8 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Secret : ancien comportement, sans maintenance
+  // 🔐 Secret : accès complet au site
   if (pathname.startsWith("/320750")) {
-    req.nextUrl.pathname = "/";
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
@@ -35,10 +34,10 @@ export default async function middleware(req: NextRequest) {
     return securityMiddleware(req, intlResponse);
   }
 
-  // 🚫 Tout le reste → maintenance
+  // 🚫 Tout le reste → maintenance (rewrite, pas redirect)
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
-  return NextResponse.redirect(url);
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
