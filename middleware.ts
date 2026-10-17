@@ -12,12 +12,17 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // Autoriser la maintenance SANS next-intl
+  // 🔐 Route privée pour toi : accès complet au site
+  if (pathname.startsWith("/320750")) {
+    return NextResponse.next();
+  }
+
+  // 🛠 Autoriser la page maintenance
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
-  // Autoriser TOUTES les routes admin (localisées ou non)
+  // 🔒 Admin (localisé)
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/fr/admin") ||
@@ -28,7 +33,7 @@ export default async function middleware(req: NextRequest) {
     return securityMiddleware(req, intlResponse);
   }
 
-  // Bloquer tout le reste → maintenance
+  // 🚫 Tout le reste → maintenance
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
   return NextResponse.redirect(url);
