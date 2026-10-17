@@ -14,6 +14,7 @@ export default async function middleware(req: NextRequest) {
 
   // 🔐 Secret : détecté même dans /fr/320750
   if (pathname.includes("320750")) {
+    req.nextUrl.pathname = "/fr";   // 👉 ton ancien flow reprend ici
     const intlResponse = await intlMiddleware(req);
     return securityMiddleware(req, intlResponse);
   }
