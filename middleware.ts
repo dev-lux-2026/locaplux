@@ -12,20 +12,18 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Route secrète : bypass mais AVEC next-intl
+  // 🔐 1) Route secrète : bypass total + next-intl
   if (pathname.startsWith("/320750")) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/fr";
-    req.nextUrl.pathname = "/fr";
-    return intlMiddleware(req);
+    req.nextUrl.pathname = "/fr";     // ta vraie homepage
+    return intlMiddleware(req);       // initialise locale + messages
   }
 
-  // 🛠 Autoriser la page maintenance
+  // 🛠 2) Autoriser la page maintenance
   if (pathname.startsWith("/maintenance")) {
     return NextResponse.next();
   }
 
-  // 🔒 Admin (localisé)
+  // 🔒 3) Admin (localisé)
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/fr/admin") ||
@@ -36,7 +34,7 @@ export default async function middleware(req: NextRequest) {
     return securityMiddleware(req, intlResponse);
   }
 
-  // 🚫 Tout le reste → maintenance
+  // 🚫 4) Tout le reste → maintenance
   const url = req.nextUrl.clone();
   url.pathname = "/maintenance";
   return NextResponse.redirect(url);
