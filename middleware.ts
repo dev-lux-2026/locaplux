@@ -12,13 +12,10 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Secret : utiliser l'ancien comportement (pas de maintenance)
+  // 🔐 Secret : ancien comportement, sans maintenance
   if (pathname.startsWith("/320750")) {
-    // On remet le chemin d'origine : /
     req.nextUrl.pathname = "/";
-    // On exécute next-intl comme avant
     const intlResponse = await intlMiddleware(req);
-    // On exécute la sécurité comme avant
     return securityMiddleware(req, intlResponse);
   }
 
@@ -27,7 +24,7 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 🔒 Admin (localisé)
+  // 🔒 Admin
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/fr/admin") ||
@@ -46,6 +43,7 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/320750',
     '/((?!api|_next|.*\\..*).*)'
   ]
 };
