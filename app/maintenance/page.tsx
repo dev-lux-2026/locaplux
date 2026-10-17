@@ -16,7 +16,7 @@ export default function Maintenance() {
       {/* Logo Locaplux */}
       <h1
         style={{
-          fontSize: 100,          // plus grand
+          fontSize: "clamp(50px, 12vw, 100px)", // responsive
           fontWeight: "bold",
           marginBottom: 10,
           letterSpacing: "3px"
@@ -28,8 +28,8 @@ export default function Maintenance() {
       {/* Phrase suspense */}
       <p
         style={{
-          fontSize: 20,           // plus petit
-          maxWidth: 500,
+          fontSize: "clamp(16px, 4vw, 22px)", // responsive
+          maxWidth: "90%",                    // ne déborde jamais
           opacity: 0.7,
           marginTop: 10,
           lineHeight: "1.4"

@@ -12,11 +12,9 @@ const intlMiddleware = createMiddleware({
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  // 🔐 Route privée secrète pour toi : accès complet au site
+  // 🔐 Route secrète : bypass total
   if (pathname.startsWith("/320750")) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/fr"; // redirection vers la vraie homepage
-    return NextResponse.redirect(url);
+    return NextResponse.rewrite(new URL("/fr", req.url));
   }
 
   // 🛠 Autoriser la page maintenance
