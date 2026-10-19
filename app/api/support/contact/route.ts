@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const { data, error } = await resend.emails.send({
       from: "Locaplux Support <support@locaplux.com>",
       to: "support@locaplux.com",
-      reply_to: email,
+      replyTo: email, // ← CORRECTION ICI
       subject: `[Support] ${subject}`,
       html: `
         <h2>Nouveau message support</h2>
