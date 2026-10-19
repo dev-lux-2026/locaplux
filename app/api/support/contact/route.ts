@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     // Envoi email support
     await resend.emails.send({
       from: "Locaplux Support <support@locaplux.com>",
-      to: "support@locaplux.com",
+      to: "espacefred@internet.lu",
       subject: `[Support] ${subject}`,
       html: `
         <h2>Nouveau message support</h2>
