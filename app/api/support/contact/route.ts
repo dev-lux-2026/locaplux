@@ -1,12 +1,11 @@
 export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 
-// ⚠️ Assure-toi d'avoir RESEND_API_KEY dans ton .env
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Validation Zod
 const ContactSchema = z.object({
   email: z.string().email(),
   subject: z.string().min(3).max(200),
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validation
     const parsed = ContactSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -28,10 +26,18 @@ export async function POST(req: Request) {
 
     const { email, subject, message } = parsed.data;
 
-    // Envoi email support
-    await resend.emails.send({
+    if (!process.env.RESEND_API_KEY) {
+      console.error("RESEND_API_KEY manquante dans l'environnement.");
+      return NextResponse.json(
+        { error: "Configuration email invalide (clé manquante)." },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = await resend.emails.send({
       from: "Locaplux Support <support@locaplux.com>",
-      to: "espacefred@internet.lu",
+      to: "support@locaplux.com",
+      reply_to: email,
       subject: `[Support] ${subject}`,
       html: `
         <h2>Nouveau message support</h2>
@@ -41,6 +47,16 @@ export async function POST(req: Request) {
         <p>${message.replace(/\n/g, "<br/>")}</p>
       `,
     });
+
+    if (error) {
+      console.error("Erreur Resend support/contact :", error);
+      return NextResponse.json(
+        { error: "Erreur lors de l'envoi de l'email support." },
+        { status: 500 }
+      );
+    }
+
+    console.log("Email support/contact envoyé avec succès :", data);
 
     return NextResponse.json({ success: true });
   } catch (err) {
