@@ -14,6 +14,11 @@ export default async function middleware(req: NextRequest) {
   const hasSecret = pathname.includes("320750");
   const secretCookie = req.cookies.get("secret")?.value === "ok";
 
+  // ✅ Autoriser toutes les routes API (fix critique)
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   // 🔐 Secret utilisé → on pose un cookie et on redirige vers /
   if (hasSecret) {
     const res = NextResponse.redirect(new URL("/", req.url));
