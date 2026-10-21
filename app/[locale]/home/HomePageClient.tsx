@@ -363,7 +363,7 @@ export default function HomePageClient(
           {popularProducts.map((p) => (
             <a
               key={p.id}
-              href={`/products/${p.id}`}
+              href={`/product/${p.id}`}
               className="
                 border border-gray-200 dark:border-white/10 
                 rounded-xl p-4 shadow-sm 
@@ -406,7 +406,7 @@ export default function HomePageClient(
           {latestProducts.map((p) => (
             <a
               key={p.id}
-              href={`/products/${p.id}`}
+              href={`/product/${p.id}`}
               className="
                 border border-gray-200 dark:border-white/10 
                 rounded-xl p-4 shadow-sm 
