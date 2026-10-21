@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import BuyerIntro from "@/components/BuyerIntro";
 import HomeConnected from "@/components/HomeConnected";
 import { useState, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
 import Container from "@/components/Container";
 import SectionTitle from "@/components/SectionTitle";
 
@@ -35,6 +36,8 @@ export default function HomePageClient(
 ) {
   const { data: session, status } = useSession();
   const t = useTranslations("Home");
+const params = useParams(); 
+  const locale = params?.locale || "fr";
 
   const [isPaused, setIsPaused] = useState(false);
 
