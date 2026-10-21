@@ -38,7 +38,7 @@ export default function ProductCard({ product }: any) {
         )}
 
         <Link
-          href={`/products/${product.id}`}
+          href={`/product/${product.id}`}
           className="text-black font-medium hover:underline block mt-2"
         >
           Voir le produit
