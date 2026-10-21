@@ -241,7 +241,7 @@ export default function HomePageClient(
           onMouseUp={handleMouseUp}
         >
           <div className="relative h-[300px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden shadow-xl bg-black cursor-grab active:cursor-grabbing">
-            <a href={`/products/${productsToShow[carouselIndex].slug}`}>
+            <a href={`/product/${productsToShow[carouselIndex].id}`}>
               <img
                 src={
                   productsToShow[carouselIndex].images?.[0] ||
