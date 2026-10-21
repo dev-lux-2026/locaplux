@@ -12,13 +12,18 @@ export default function OnboardingPreferencesPage() {
   const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
   const [loadingEmail, setLoadingEmail] = useState<boolean>(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const res = await fetch("/api/onboarding/preferences", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preferredLanguage }),
+      // ✅ On envoie le format exact attendu par l'API (l'objet preferences)
+      body: JSON.stringify({ 
+        preferences: { 
+          preferredLanguage 
+        } 
+      }),
     });
 
     const data = await res.json();
@@ -30,7 +35,7 @@ export default function OnboardingPreferencesPage() {
 
     toast.success("Préférences enregistrées !");
 
-    // 🔥 Redirection localisée
+    // 🔥 Redirection localisée fonctionnelle
     router.push(`/${locale}/home`);
   }
 
