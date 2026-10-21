@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Container from "@/components/Container";
-import SectionTitle from "@/components/SectionTitle";
 import CategoryPageSkeleton from "@/components/ui/CategoryPageSkeleton";
 
 interface Category {
@@ -14,7 +13,8 @@ interface Product {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  prix_locaplux: number;
+  images?: string[];
 }
 
 export default function CategoryPage(
@@ -26,25 +26,31 @@ export default function CategoryPage(
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtres premium
+  // Filtres
   const [sort, setSort] = useState("relevance");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
   useEffect(() => {
     async function load() {
-      // Charger toutes les catégories
-      const cats = await fetch("/api/categories/list").then((r) => r.json());
-      const found = cats.find((c: Category) => c.id === id);
-      setCategory(found ?? null);
+      try {
+        // Charger toutes les catégories pour trouver le nom
+        const cats = await fetch("/api/categories/list").then((r) => r.json());
+        const found = cats.find((c: Category) => c.id === id);
+        setCategory(found ?? null);
 
-      // Charger les produits
-      const prods = await fetch(`/api/categories/${id}/products`).then((r) =>
-        r.json()
-      );
+        // Charger les produits de la catégorie
+        const prods = await fetch(`/api/categories/${id}/products`).then((r) =>
+          r.json()
+        );
 
-      setProducts(Array.isArray(prods) ? prods : []);
-      setLoading(false);
+        setProducts(Array.isArray(prods) ? prods : []);
+      } catch (error) {
+        console.error("Erreur lors du chargement de la catégorie :", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();
@@ -59,15 +65,20 @@ export default function CategoryPage(
       maxPrice,
     });
 
-    const prods = await fetch(
-      `/api/categories/${id}/products?${query.toString()}`
-    ).then((r) => r.json());
+    try {
+      const prods = await fetch(
+        `/api/categories/${id}/products?${query.toString()}`
+      ).then((r) => r.json());
 
-    setProducts(Array.isArray(prods) ? prods : []);
-    setLoading(false);
+      setProducts(Array.isArray(prods) ? prods : []);
+    } catch (error) {
+      console.error("Erreur lors de l'application des filtres :", error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 🔥 SKELETON PREMIUM
   if (!category || loading) {
     return (
       <Container>
@@ -80,7 +91,7 @@ export default function CategoryPage(
     <Container>
       <div className="py-10 space-y-10 text-gray-900 dark:text-gray-200">
 
-        {/* HEADER PREMIUM */}
+        {/* HEADER */}
         <div className="text-center">
           <h1 className="text-3xl font-semibold">{category.name}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -88,7 +99,7 @@ export default function CategoryPage(
           </p>
         </div>
 
-        {/* FILTRES PREMIUM */}
+        {/* FILTRES */}
         <div
           className="
             grid grid-cols-2 md:grid-cols-4 gap-4 
@@ -162,7 +173,11 @@ export default function CategoryPage(
                   transition cursor-pointer
                 "
               >
-                <div className="w-full h-40 bg-gray-200 dark:bg-[#1F1F22] rounded-lg mb-3" />
+                <img
+                  src={p.images?.[0] || "/placeholder.jpg"}
+                  alt={p.name}
+                  className="w-full h-40 object-cover rounded-lg mb-3"
+                />
 
                 <p className="font-semibold text-black dark:text-white text-sm">
                   {p.name}
@@ -173,7 +188,7 @@ export default function CategoryPage(
                 </p>
 
                 <p className="text-[#1A3A5F] dark:text-[#D4AF37] font-semibold mt-3 text-sm">
-                  {p.price} €
+                  {p.prix_locaplux} €
                 </p>
               </a>
             ))}

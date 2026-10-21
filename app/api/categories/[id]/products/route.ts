@@ -23,7 +23,7 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ products });
+    return NextResponse.json(products);
   } catch (error) {
     console.error("Erreur GET /categories/[id]/products :", error);
     return NextResponse.json(
