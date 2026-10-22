@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       );
     }
 
-    deliveryPrice = distanceKm * (partner.delivery_price_per_km || 0.8);
+    deliveryPrice = distanceKm * Number(partner.delivery_price_per_km || 0.8);
 
     if (partner.delivery_min_price)
       deliveryPrice = Math.max(deliveryPrice, partner.delivery_min_price);
