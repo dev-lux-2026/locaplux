@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import prisma from "@/lib/prisma"; // ✅ Utilisation de Prisma à la place de Supabase direct
+import prisma from "@/lib/prisma";
 import { haversine } from "@/app/utils/haversine";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -29,14 +29,14 @@ export async function POST(req: Request) {
   const line_items = [];
   const item = cart[0];
 
-  // ✅ Utilisation de Prisma avec le vrai champ prix_locaplux
+  // ✅ Utilisation du champ partnerId conforme à ton schéma Prisma
   const product = await prisma.product.findUnique({
     where: { id: item.id },
     select: {
       id: true,
       name: true,
       prix_locaplux: true,
-      userId: true,
+      partnerId: true, // 💎 Modifié ici
       delivery_available: true,
     }
   });
@@ -48,7 +48,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Sécurité pour le prix
   const productPrice = product.prix_locaplux || 0;
 
   line_items.push({
@@ -67,9 +66,9 @@ export async function POST(req: Request) {
   let distanceKm = 0;
 
   if (product.delivery_available) {
-    // ✅ Utilisation de Prisma pour récupérer le partenaire vendeur
+    // ✅ Récupération du partenaire avec product.partnerId
     const partner = await prisma.user.findUnique({
-      where: { id: product.userId },
+      where: { id: product.partnerId }, // 💎 Modifié ici
       select: {
         id: true,
         lat: true,
@@ -123,10 +122,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    // ✅ Création de la commande via Prisma
+    // ✅ Création de la commande liée à product.partnerId
     const order = await prisma.order.create({
       data: {
-        partnerId: product.userId,
+        partnerId: product.partnerId, // 💎 Modifié ici
         status: "pending",
         total: productPrice + deliveryPrice,
         customerFirstName: customer?.firstName || null,
