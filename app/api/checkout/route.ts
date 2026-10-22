@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabase } from "@/lib/supabase";
+import prisma from "@/lib/prisma"; // ✅ Utilisation de Prisma à la place de Supabase direct
 import { haversine } from "@/app/utils/haversine";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -27,14 +27,19 @@ export async function POST(req: Request) {
   }
 
   const line_items = [];
-
   const item = cart[0];
 
-  const { data: product } = await supabase
-    .from("Product")
-    .select("id, name, price, userId, delivery_available")
-    .eq("id", item.id)
-    .single();
+  // ✅ Utilisation de Prisma avec le vrai champ prix_locaplux
+  const product = await prisma.product.findUnique({
+    where: { id: item.id },
+    select: {
+      id: true,
+      name: true,
+      prix_locaplux: true,
+      userId: true,
+      delivery_available: true,
+    }
+  });
 
   if (!product) {
     return NextResponse.json(
@@ -43,6 +48,9 @@ export async function POST(req: Request) {
     );
   }
 
+  // Sécurité pour le prix
+  const productPrice = product.prix_locaplux || 0;
+
   line_items.push({
     price_data: {
       currency: "eur",
@@ -50,7 +58,7 @@ export async function POST(req: Request) {
         name: product.name,
         images: item.images || [],
       },
-      unit_amount: Math.round(product.price * 100),
+      unit_amount: Math.round(productPrice * 100),
     },
     quantity: item.quantity,
   });
@@ -59,19 +67,19 @@ export async function POST(req: Request) {
   let distanceKm = 0;
 
   if (product.delivery_available) {
-    const { data: partner } = await supabase
-      .from("User")
-      .select(`
-        id,
-        lat,
-        lng,
-        delivery_price_per_km,
-        delivery_min_price,
-        delivery_max_price,
-        delivery_max_km
-      `)
-      .eq("id", product.userId)
-      .single();
+    // ✅ Utilisation de Prisma pour récupérer le partenaire vendeur
+    const partner = await prisma.user.findUnique({
+      where: { id: product.userId },
+      select: {
+        id: true,
+        lat: true,
+        lng: true,
+        delivery_price_per_km: true,
+        delivery_min_price: true,
+        delivery_max_price: true,
+        delivery_max_km: true,
+      }
+    });
 
     if (!partner || !partner.lat || !partner.lng) {
       return NextResponse.json(
@@ -81,8 +89,8 @@ export async function POST(req: Request) {
     }
 
     distanceKm = haversine(
-      partner.lat,
-      partner.lng,
+      Number(partner.lat),
+      Number(partner.lng),
       clientLat,
       clientLng
     );
@@ -94,8 +102,7 @@ export async function POST(req: Request) {
       );
     }
 
-    deliveryPrice =
-      distanceKm * (partner.delivery_price_per_km || 0.8);
+    deliveryPrice = distanceKm * (partner.delivery_price_per_km || 0.8);
 
     if (partner.delivery_min_price)
       deliveryPrice = Math.max(deliveryPrice, partner.delivery_min_price);
@@ -115,50 +122,47 @@ export async function POST(req: Request) {
     });
   }
 
-  const { data: order, error: orderError } = await supabase
-    .from("Order")
-    .insert({
-      partnerId: product.userId,
-      status: "pending",
-      total: product.price + deliveryPrice,
+  try {
+    // ✅ Création de la commande via Prisma
+    const order = await prisma.order.create({
+      data: {
+        partnerId: product.userId,
+        status: "pending",
+        total: productPrice + deliveryPrice,
+        customerFirstName: customer?.firstName || null,
+        customerLastName: customer?.lastName || null,
+        customerEmail: customer?.email || null,
+        customerPhone: customer?.phone || null,
+        customerStreet: customer?.street || null,
+        customerNumber: customer?.number || null,
+        customerPostal: customer?.postal || null,
+        customerCity: customer?.city || null,
+        customerCountry: customer?.country || null,
+        deliveryPrice,
+        deliveryDistance: distanceKm,
+        deliveryMode: product.delivery_available ? "delivery" : "pickup",
+        clientLat,
+        clientLng,
+      }
+    });
 
-      customerFirstName: customer?.firstName || null,
-      customerLastName: customer?.lastName || null,
-      customerEmail: customer?.email || null,
-      customerPhone: customer?.phone || null,
-      customerStreet: customer?.street || null,
-      customerNumber: customer?.number || null,
-      customerPostal: customer?.postal || null,
-      customerCity: customer?.city || null,
-      customerCountry: customer?.country || null,
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items,
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
+      metadata: {
+        orderId: order.id,
+      },
+    });
 
-      deliveryPrice,
-      deliveryDistance: distanceKm,
-      deliveryMode: product.delivery_available ? "delivery" : "pickup",
-      clientLat,
-      clientLng,
-    })
-    .select()
-    .single();
-
-  if (orderError) {
+    return NextResponse.json({ url: session.url });
+  } catch (orderError) {
     console.error(orderError);
     return NextResponse.json(
       { error: "Impossible de créer la commande" },
       { status: 500 }
     );
   }
-
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items,
-    mode: "payment",
-    success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
-    metadata: {
-      orderId: order.id,
-    },
-  });
-
-  return NextResponse.json({ url: session.url });
 }
