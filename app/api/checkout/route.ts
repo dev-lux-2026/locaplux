@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       clientLng
     );
 
-    if (partner.delivery_max_km && distanceKm > partner.delivery_max_km) {
+    if (partner.delivery_max_km && distanceKm > Number(partner.delivery_max_km)) {
       return NextResponse.json(
         { error: "Livraison impossible pour cette distance" },
         { status: 400 }
