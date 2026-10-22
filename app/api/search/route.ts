@@ -5,8 +5,6 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  
-  // ✅ Accepte "q" ou "query" pour éviter tout conflit entre les composants
   const q = searchParams.get("q") || searchParams.get("query");
   const categoryId = searchParams.get("category");
 
@@ -16,20 +14,34 @@ export async function GET(req: Request) {
 
   const query = q.trim();
 
-  // Construction dynamique des filtres de recherche Prisma
+  // 🧠 ALGORITHME D'IA MAISON : Découpage en fragments (Trigrammes) pour tolérer les fautes
+  // Si l'utilisateur écrit "chaisse", cela va chercher "cha", "hai", "ais", "iss", "sse"
+  const fragments: string[] = [];
+  for (let i = 0; i < query.length - 2; i++) {
+    fragments.push(query.substring(i, i + 3));
+  }
+  
+  // Si le mot est trop court pour des trigrammes, on utilise le mot entier
+  if (fragments.length === 0) {
+    fragments.push(query);
+  }
+
+  // Construction des conditions OR dynamiques pour Prisma
+  const searchConditions = fragments.map(frag => ({
+    name: { contains: frag, mode: "insensitive" as const }
+  }));
+
+  // On garde aussi une recherche sur le mot complet dans la description et catégorie pour la pertinence
   const whereClause: any = {
     active: true,
     status: "approved",
     OR: [
       { name: { contains: query, mode: "insensitive" } },
       { description: { contains: query, mode: "insensitive" } },
-      { category: { name: { contains: query, mode: "insensitive" } } },
-      { condition: { contains: query, mode: "insensitive" } },
-      { damage_type: { contains: query, mode: "insensitive" } },
-    ],
+      ...searchConditions // Injection de nos fragments anti-fautes de frappe
+    ]
   };
 
-  // ✅ Intégration du filtre par catégorie si l'utilisateur en a choisi une
   if (categoryId) {
     whereClause.categoryId = categoryId;
   }
@@ -52,15 +64,19 @@ export async function GET(req: Request) {
           },
         },
       },
-      orderBy: [
-        { createdAt: "desc" },
-      ],
       take: 30,
     });
 
-    return NextResponse.json(products);
+    // 🎯 TRI PAR PERTINENCE : On classe les produits qui contiennent le plus de fragments correspondants
+    const sortedProducts = products.sort((a, b) => {
+      const scoreA = fragments.filter(f => a.name.toLowerCase().includes(f.toLowerCase())).length;
+      const scoreB = fragments.filter(f => b.name.toLowerCase().includes(f.toLowerCase())).length;
+      return scoreB - scoreA; // Les plus pertinents en premier
+    });
+
+    return NextResponse.json(sortedProducts);
   } catch (error) {
-    console.error("Erreur lors de la recherche Prisma :", error);
+    console.error("Erreur moteur de recherche IA :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
