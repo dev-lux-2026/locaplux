@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useSearchParams, useRouter, useParams } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useNotifications } from "@/hooks/useNotifications";
 import ThemeIcon from "@/components/theme/ThemeIcon";
@@ -17,15 +17,21 @@ export default function Header() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  
+  // ✅ Récupération de la langue courante (fr, en, lu) depuis l'URL
+  const params = useParams();
+  const locale = params?.locale || "fr";
 
   const userName = session?.user?.name || session?.user?.email || "";
   const initial = userName ? userName.charAt(0).toUpperCase() : "?";
 
-  const isIntroPage = pathname === "/";
+  const isIntroPage = pathname === "/" || pathname === `/${locale}`;
 
   const hideBecomePartner =
     pathname === "/register/partner" ||
-    pathname.startsWith("/register/partner/");
+    pathname === `/${locale}/register/partner` ||
+    pathname.startsWith("/register/partner/") ||
+    pathname.startsWith(`/${locale}/register/partner/`);
 
   const notif = useNotifications();
 
@@ -71,7 +77,8 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between py-3 px-4">
 
         <div className="flex items-center gap-4">
-          <Link href="/home" className="text-xl font-semibold tracking-wide">
+          {/* ✅ Lien du logo corrigé avec la langue dynamique */}
+          <Link href={`/${locale}/home`} className="text-xl font-semibold tracking-wide">
             Locaplux
           </Link>
 
@@ -85,8 +92,9 @@ export default function Header() {
           <LanguageSwitcher />
 
           {!hideBecomePartner && (
+            /* ✅ Lien devenir partenaire corrigé avec la langue dynamique */
             <Link
-              href="/register/partner"
+              href={`/${locale}/register/partner`}
               className="text-[12px] px-3 py-1.5 border border-white rounded hover:bg-white hover:text-black transition"
             >
               {t("becomePartner")}
@@ -137,8 +145,9 @@ export default function Header() {
                     </div>
                   )}
 
+                  {/* ✅ Lien des notifications corrigé */}
                   <Link
-                    href="/partner/notifications"
+                    href={`/${locale}/partner/notifications`}
                     className="block px-3 py-2 text-blue-600 dark:text-blue-400 
                                hover:bg-gray-100 dark:hover:bg-white/5"
                   >
@@ -173,17 +182,18 @@ export default function Header() {
                                 border border-gray-200 dark:border-white/10
                                 rounded-md shadow-lg text-[13px] overflow-hidden z-20">
 
-                  <Link href="/account/profile" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
+                  {/* ✅ Liens de menu utilisateur corrigés avec la langue */}
+                  <Link href={`/${locale}/account/profile`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
                     {t("profile")}
                   </Link>
 
-                  <Link href="/account/orders" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
+                  <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
                     {t("orders")}
                   </Link>
 
                   {session?.user?.role === "partner" && (
                     <Link
-                      href="/partner/dashboard"
+                      href={`/${locale}/partner/dashboard`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600"
                     >
                       {t("partnerDashboard")}
@@ -192,7 +202,7 @@ export default function Header() {
 
                   {session?.user?.role === "admin" && (
                     <Link
-                      href="/admin/partners"
+                      href={`/${locale}/admin/partners`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-red-600"
                     >
                       {t("adminDashboard")}
@@ -201,7 +211,7 @@ export default function Header() {
 
                   <button
                     className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 border-t border-gray-200 dark:border-white/10 text-red-600"
-                    onClick={() => signOut({ callbackUrl: "/home?logout=1" })}
+                    onClick={() => signOut({ callbackUrl: `/${locale}/home?logout=1` })}
                   >
                     {t("logout")}
                   </button>

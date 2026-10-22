@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter, useParams } from "next/navigation";
 
 export default function HomeConnected({
   userName,
@@ -9,6 +10,14 @@ export default function HomeConnected({
   userName: string;
 }) {
   const t = useTranslations("HomeConnected");
+  const router = useRouter();
+  const params = useParams();
+  
+  // Récupère la langue actuelle de l'URL (fr, en, lu)
+  const locale = params?.locale || "fr";
+
+  // État local pour capturer le texte saisi par l'utilisateur
+  const [searchQuery, setSearchQuery] = useState("");
 
   const SUGGESTION_ITEMS = useMemo(
     () => [
@@ -26,6 +35,22 @@ export default function HomeConnected({
     () => [...SUGGESTION_ITEMS].sort(() => Math.random() - 0.5),
     [SUGGESTION_ITEMS]
   );
+
+  // Fonction pour déclencher la recherche vers la page /search
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      router.push(`/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push(`/${locale}/search`);
+    }
+  };
+
+  // Permet de valider en appuyant sur la touche "Entrée" du clavier
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
     <section className="w-full bg-white dark:bg-[#0B0B0C] py-10 px-4 transition-colors">
@@ -74,6 +99,9 @@ export default function HomeConnected({
               <div className="flex items-center gap-2">
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   className="flex-1 border border-gray-300 dark:border-white/10 
                              bg-white dark:bg-[#0B0B0C] 
                              text-gray-900 dark:text-white 
@@ -85,12 +113,15 @@ export default function HomeConnected({
                   placeholder={t("search.placeholder")}
                 />
 
-                <button className="px-4 py-2 
+                <button 
+                  onClick={handleSearch}
+                  className="px-4 py-2 
                                    bg-black dark:bg-white 
                                    text-white dark:text-black 
                                    text-[13px] rounded-md 
                                    hover:bg-gray-900 dark:hover:bg-gray-200 
-                                   transition">
+                                   transition"
+                >
                   {t("search.button")}
                 </button>
               </div>
