@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { haversine } from "@/app/utils/haversine";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -13,6 +15,14 @@ if (!stripeSecret) {
 const stripe = new Stripe(stripeSecret);
 
 export async function POST(req: Request) {
+  // 🔐 Sécurisation : Récupération de l'utilisateur connecté (Acheteur)
+  const sessionUser = await getServerSession(authOptions);
+
+  if (!sessionUser?.user?.id) {
+    return NextResponse.json({ error: "Non autorisé. Veuillez vous connecter." }, { status: 401 });
+  }
+
+  const buyerUserId = sessionUser.user.id;
   const { cart, clientLat, clientLng, customer } = await req.json();
 
   if (!cart || cart.length === 0) {
@@ -27,9 +37,9 @@ export async function POST(req: Request) {
   }
 
   const line_items = [];
-  const item = cart[0];
+  const item = cart;
 
-  // ✅ Utilisation du champ partnerId conforme à ton schéma Prisma
+  // Récupération du produit avec son partnerId
   const product = await prisma.product.findUnique({
     where: { id: item.id },
     select: {
@@ -66,7 +76,6 @@ export async function POST(req: Request) {
   let distanceKm = 0;
 
   if (product.delivery_available) {
-    // ✅ Récupération du partenaire avec product.partnerId
     const partner = await prisma.user.findUnique({
       where: { id: product.partnerId },
       select: {
@@ -101,10 +110,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Correction du calcul arithmétique (Decimal -> number)
     deliveryPrice = distanceKm * Number(partner.delivery_price_per_km || 0.8);
 
-    // ✅ Correction du filtrage min/max avec Math (Decimal -> number)
     if (partner.delivery_min_price)
       deliveryPrice = Math.max(deliveryPrice, Number(partner.delivery_min_price));
 
@@ -124,26 +131,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    // ✅ Création de la commande liée à product.partnerId
+    // ✅ Alignement parfait avec les colonnes de ton modèle "Order" Prisma
     const order = await prisma.order.create({
       data: {
-        partnerId: product.partnerId,
+        userId: buyerUserId,          // Lié à l'acheteur connecté
+        partnerId: product.partnerId,  // Lié au vendeur
         status: "pending",
-        total: productPrice + deliveryPrice,
-        customerFirstName: customer?.firstName || null,
-        customerLastName: customer?.lastName || null,
-        customerEmail: customer?.email || null,
-        customerPhone: customer?.phone || null,
-        customerStreet: customer?.street || null,
-        customerNumber: customer?.number || null,
-        customerPostal: customer?.postal || null,
-        customerCity: customer?.city || null,
-        customerCountry: customer?.country || null,
-        deliveryPrice,
-        deliveryDistance: distanceKm,
-        deliveryMode: product.delivery_available ? "delivery" : "pickup",
-        clientLat,
-        clientLng,
+        total: Math.round(productPrice + deliveryPrice), // Le total doit être un entier (Int)
+        street: customer?.street || null,
+        number: customer?.number || null,
+        postal: customer?.postal || null,
+        city: customer?.city || null,
+        country: customer?.country || null,
       }
     });
 
