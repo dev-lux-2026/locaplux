@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       id: true,
       name: true,
       prix_locaplux: true,
-      partnerId: true, // 💎 Modifié ici
+      partnerId: true,
       delivery_available: true,
     }
   });
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   if (product.delivery_available) {
     // ✅ Récupération du partenaire avec product.partnerId
     const partner = await prisma.user.findUnique({
-      where: { id: product.partnerId }, // 💎 Modifié ici
+      where: { id: product.partnerId },
       select: {
         id: true,
         lat: true,
@@ -101,13 +101,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ Correction du calcul arithmétique (Decimal -> number)
     deliveryPrice = distanceKm * Number(partner.delivery_price_per_km || 0.8);
 
+    // ✅ Correction du filtrage min/max avec Math (Decimal -> number)
     if (partner.delivery_min_price)
-      deliveryPrice = Math.max(deliveryPrice, partner.delivery_min_price);
+      deliveryPrice = Math.max(deliveryPrice, Number(partner.delivery_min_price));
 
     if (partner.delivery_max_price)
-      deliveryPrice = Math.min(deliveryPrice, partner.delivery_max_price);
+      deliveryPrice = Math.min(deliveryPrice, Number(partner.delivery_max_price));
 
     line_items.push({
       price_data: {
@@ -125,7 +127,7 @@ export async function POST(req: Request) {
     // ✅ Création de la commande liée à product.partnerId
     const order = await prisma.order.create({
       data: {
-        partnerId: product.partnerId, // 💎 Modifié ici
+        partnerId: product.partnerId,
         status: "pending",
         total: productPrice + deliveryPrice,
         customerFirstName: customer?.firstName || null,
