@@ -10,14 +10,36 @@ export async function GET(req: NextRequest) {
       const encoder = new TextEncoder();
 
       const listener = (data: any) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch (e) {
+          // Évite le crash si le flux est déjà fermé
+        }
       };
 
       eventBus.on('notification', listener);
 
-      req.signal.addEventListener('abort', () => {
+      // 💓 PING REGULIER : Envoie un battement de cœur toutes les 15 secondes pour garder le flux vivant
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": ping\n\n"));
+        } catch (e) {
+          clearInterval(keepAlive);
+        }
+      }, 15000);
+
+      // ⏱️ SECURITE TIME LIMIT : Fermeture propre au bout de 25s pour éviter le timeout Vercel de 300s
+      const timeout = setTimeout(() => {
+        clearInterval(keepAlive);
         eventBus.off('notification', listener);
-        controller.close();
+        try { controller.close(); } catch (e) {}
+      }, 25000);
+
+      req.signal.addEventListener('abort', () => {
+        clearInterval(keepAlive);
+        clearTimeout(timeout);
+        eventBus.off('notification', listener);
+        try { controller.close(); } catch (e) {}
       });
     },
   });
@@ -26,7 +48,7 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
+      'Connection': 'keep-alive',
     },
   });
 }
