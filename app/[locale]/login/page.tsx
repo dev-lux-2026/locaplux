@@ -35,7 +35,6 @@ export default function LoginPage() {
 
       setLoading(false);
 
-      // 🔍 TRÈS IMPORTANT : Affichage du rapport brut dans la console (F12)
       console.log("=== 🔬 DIAGNOSTIC CONNEXION BRUT ===", res);
 
       // 🚫 Cas 1 : Email non vérifié
@@ -45,29 +44,32 @@ export default function LoginPage() {
         return;
       }
 
-      // ❌ Cas 2 : Une erreur est retournée par Next-Auth
+      // ❌ Cas 2 : Identifiants incorrects (CredentialsSignin)
+      if (res?.error === "CredentialsSignin" || res?.status === 401) {
+        toast.error("Adresse email ou mot de passe incorrect.");
+        return;
+      }
+
+      // ⚠️ Cas 3 : Autre erreur retournée par Next-Auth
       if (res?.error) {
-        toast.error(`Erreur détectée : ${res.error}`);
-        alert(`Next-Auth a renvoyé une erreur : ${res.error}\nStatut : ${res.status}`);
+        toast.error(`Erreur de connexion : ${res.error}`);
         return;
       }
 
-      // ⚠️ Cas 3 : Pas d'erreur, mais statut non valide (ex: 401)
+      // ⚠️ Cas 4 : Pas d'erreur explicite mais échec réseau/statut non valide
       if (res && !res.ok) {
-        toast.error(`Échec (Code ${res.status})`);
-        alert(`Statut HTTP invalide : ${res.status}`);
+        toast.error(`Une erreur est survenue (Code ${res.status}).`);
         return;
       }
 
-      // ✔ Cas 4 : Tout est OK, on tente la redirection
+      // ✔ Cas 5 : Tout est OK, authentification réussie
       toast.success("Authentification réussie ! Redirection...");
       router.push(`/${locale}/home`);
 
     } catch (err: any) {
       setLoading(false);
       console.error("🔴 CRASH COMPLET DU COMPOSANT :", err);
-      toast.error(`Le script a crashé : ${err.message || err}`);
-      alert(`Erreur fatale JS : ${err.message || err}`);
+      toast.error("Une erreur technique est survenue. Veuillez réessayer.");
     }
   };
 
