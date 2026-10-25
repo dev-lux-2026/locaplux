@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = params?.locale || "fr";
 
   const [form, setForm] = useState({
     firstName: "",
@@ -16,6 +18,8 @@ export default function RegisterPage() {
     country: "",
     acceptTerms: false,
   });
+
+  const [loading, setLoading] = useState(false);
 
   const euCountries = [
     { code: "LU", name: "Luxembourg" },
@@ -73,27 +77,36 @@ export default function RegisterPage() {
       return;
     }
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    setLoading(true);
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (!res.ok) {
-      toast.error(data.error || "Erreur lors de l'inscription");
-      return;
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        // ✨ Affiche instantanément le message explicatif précis envoyé par l'API (ex: Email déjà pris)
+        toast.error(data.error || "Une erreur est survenue lors de l'inscription.");
+        return;
+      }
+
+      toast.success("Compte créé avec succès !");
+      router.push(`/${locale}/account/onboarding/address`);
+    } catch (err) {
+      setLoading(false);
+      toast.error("Une erreur technique est survenue. Veuillez réessayer.");
     }
-
-    toast.success("Compte créé");
-    router.push("/account/onboarding/address");
   }
 
   return (
-    <div className="max-w-md mx-auto py-12">
+    <div className="max-w-md mx-auto py-12 px-4 text-black">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-semibold mb-2">Créer votre compte</h1>
+        <h1 className="text-3xl font-semibold mb-2 text-gray-900">Créer votre compte</h1>
         <p className="text-gray-600 dark:text-gray-300 text-base">
           Accédez à une expérience premium et sécurisée.
         </p>
@@ -104,42 +117,46 @@ export default function RegisterPage() {
         className="space-y-4 bg-white dark:bg-[#111] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-white/10"
       >
         <input
-          className="input"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
           placeholder="Prénom"
           value={form.firstName}
           onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+          required
         />
 
         <input
-          className="input"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
           placeholder="Nom"
           value={form.lastName}
           onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+          required
         />
 
         <input
-          className="input"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
           placeholder="Email"
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
         />
 
         <input
-          className="input"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
           placeholder="Mot de passe"
           type="password"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
         />
 
         <select
-          className="input"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
           value={form.country}
           onChange={(e) => setForm({ ...form, country: e.target.value })}
+          required
         >
           <option value="">Sélectionnez votre pays</option>
-
           {euCountries.map((c) =>
             c.code === "separator" ? (
               <option key="sep" disabled>
@@ -169,14 +186,14 @@ export default function RegisterPage() {
           >
             J’accepte les{" "}
             <Link
-              href="/legal/terms"
+              href={`/${locale}/legal/terms`}
               className="underline hover:text-black dark:hover:text-white"
             >
               Conditions Générales d’Utilisation
             </Link>{" "}
             et les{" "}
             <Link
-              href="/legal/cgv"
+              href={`/${locale}/legal/cgv`}
               className="underline hover:text-black dark:hover:text-white"
             >
               Conditions Générales de Vente
@@ -184,15 +201,19 @@ export default function RegisterPage() {
           </label>
         </div>
 
-        <button className="btn-primary w-full" type="submit">
-          Continuer
+        <button 
+          className="w-full px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 disabled:bg-gray-400 transition text-sm font-medium" 
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Création du compte..." : "Continuer"}
         </button>
       </form>
 
       <p className="text-center text-gray-600 dark:text-gray-400 mt-6 text-sm">
         Déjà un compte ?{" "}
         <Link
-          href="/login"
+          href={`/${locale}/login`}
           className="text-black dark:text-[#D4AF37] font-medium hover:underline"
         >
           Se connecter

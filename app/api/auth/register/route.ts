@@ -1,103 +1,131 @@
-export const dynamic = "force-dynamic";
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
+"use client";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    
-    const email = body.email;
-    const password = body.password;
-    const acceptTerms = body.acceptTerms;
-    
-    // ✅ Assemblage du nom complet si firstName et lastName sont fournis
-    const name = body.name || `${body.firstName || ""} ${body.lastName || ""}`.trim();
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+import toast from "react-hot-toast";
 
-    // Vérification CGU / CGV
-    if (!acceptTerms) {
-      return NextResponse.json(
-        { error: "Vous devez accepter les CGU et les CGV." },
-        { status: 400 }
-      );
-    }
+export default function LoginPage() {
+  const router = useRouter();
+  const { locale } = useParams();
 
-    // Vérification des champs obligatoires
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: "Champs manquants. Veuillez renseigner votre nom et prénom." },
-        { status: 400 }
-      );
-    }
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
 
-    // ✅ Déclaration et vérification de l'email existant
-    const existing = await prisma.user.findUnique({
-      where: { email },
-    });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email." },
-        { status: 400 }
-      );
-    }
+  const handleChange = (e: any) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-    // Hashage natif du mot de passe
-    const hashed = await bcrypt.hash(password, 10);
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
 
-    // Création de l'utilisateur en base de données
-    await prisma.user.create({
-      data: {
-        email,
-        password: hashed,
-        name,
-        emailVerified: null,
-        acceptedTermsAt: new Date(),
-      },
-    });
-
-    // Génération du token de vérification d'email
-    const token = randomUUID();
-    const expires = new Date(Date.now() + 1000 * 60 * 60);
-
-    await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token,
-        expires,
-      },
-    });
-
-    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL}/verify-email?token=${token}`;
-
-    // Envoi de l'email via Resend si la clé API est présente
-    if (process.env.RESEND_API_KEY) {
-      await fetch("https://resend.com", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Locaplux <no-reply@locaplux.com>",
-          to: email,
-          subject: "Confirmez votre adresse email",
-          html: `
-            <p>Bienvenue sur Locaplux !</p>
-            <p>Veuillez confirmer votre adresse email :</p>
-            <p><a href="${verifyUrl}">Confirmer mon email</a></p>
-          `,
-        }),
+    try {
+      const res = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
       });
-    }
 
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json(
-      { error: "Erreur interne." },
-      { status: 500 }
-    );
-  }
+      setLoading(false);
+
+      // 🚫 Cas 1 : Email non vérifié
+      if (res?.error === "EMAIL_NOT_VERIFIED") {
+        toast.error("Veuillez vérifier votre adresse email avant de vous connecter.");
+        router.push(`/${locale}/register/check-email`);
+        return;
+      }
+
+      // ❌ Cas 2 : Identifiants incorrects (Intercepte CredentialsSignin ou 401)
+      if (res?.error || (res && !res.ok)) {
+        toast.error("Identifiants incorrects. Veuillez vérifier votre adresse email ou votre mot de passe.");
+        return;
+      }
+
+      // ✔ Cas 3 : Tout est parfait
+      toast.success("Connexion réussie ! Ravie de vous revoir.");
+      router.push(`/${locale}/home`);
+
+    } catch (err: any) {
+      setLoading(false);
+      toast.error("Une erreur technique est survenue. Veuillez réessayer plus tard.");
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto py-12 px-4 text-black">
+      <h1 className="text-3xl font-semibold text-gray-900">Connexion</h1>
+      <p className="text-gray-700 mt-2 text-[15px] leading-relaxed">
+        Connectez‑vous pour accéder à votre espace Locaplux.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-6">
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Adresse email</label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
+            required
+          />
+        </div>
+
+        {/* Mot de passe */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-black bg-white"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition"
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.02.152-2.005.438-2.93m3.12-3.12A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 1.02-.152 2.005-.438 2.93m-3.12 3.12L4.5 4.5" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Bouton de soumission */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 disabled:bg-gray-400 transition text-sm font-medium"
+        >
+          {loading ? "Connexion en cours..." : "Se connecter"}
+        </button>
+      </form>
+
+      <p className="text-[14px] text-gray-600 mt-6">
+        Pas encore de compte ?{" "}
+        <Link href={`/${locale}/register`} className="text-black underline font-medium">
+          Créer un compte
+        </Link>
+      </p>
+    </div>
+  );
 }
