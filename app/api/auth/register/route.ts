@@ -8,30 +8,33 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // ✅ Récupère name, ou assemble firstName et lastName si présents
     const email = body.email;
     const password = body.password;
     const acceptTerms = body.acceptTerms;
+    
+    // ✅ Assemblage du nom complet si firstName et lastName sont fournis
     const name = body.name || `${body.firstName || ""} ${body.lastName || ""}`.trim();
 
-      // Vérification CGU / CGV
+    // Vérification CGU / CGV
     if (!acceptTerms) {
       return NextResponse.json(
-        { error: "DEBUG API: acceptTerms est absent ou faux dans le JSON reçu." },
+        { error: "Vous devez accepter les CGU et les CGV." },
         { status: 400 }
       );
     }
 
-    // Vérification champs obligatoires
+    // Vérification des champs obligatoires
     if (!email || !password || !name) {
       return NextResponse.json(
-        { 
-          error: "DEBUG API: Validation échouée.", 
-          details: { email: !!email, password: !!password, name: !!name, nameValue: name } 
-        },
+        { error: "Champs manquants. Veuillez renseigner votre nom et prénom." },
         { status: 400 }
       );
     }
+
+    // ✅ Déclaration et vérification de l'email existant
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (existing) {
       return NextResponse.json(
@@ -40,11 +43,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash du mot de passe
+    // Hashage natif du mot de passe
     const hashed = await bcrypt.hash(password, 10);
 
-    // Création utilisateur
-    const user = await prisma.user.create({
+    // Création de l'utilisateur en base de données
+    await prisma.user.create({
       data: {
         email,
         password: hashed,
@@ -54,7 +57,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // Token de vérification email
+    // Génération du token de vérification d'email
     const token = randomUUID();
     const expires = new Date(Date.now() + 1000 * 60 * 60);
 
@@ -68,9 +71,9 @@ export async function POST(req: Request) {
 
     const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL}/verify-email?token=${token}`;
 
-    // Envoi email via Resend
+    // Envoi de l'email via Resend si la clé API est présente
     if (process.env.RESEND_API_KEY) {
-      await fetch("https://api.resend.com/emails", {
+      await fetch("https://resend.com", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
