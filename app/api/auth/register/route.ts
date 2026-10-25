@@ -7,7 +7,12 @@ import { randomUUID } from "crypto";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, name, acceptTerms } = body;
+    
+    // ✅ Récupère name, ou assemble firstName et lastName si présents
+    const email = body.email;
+    const password = body.password;
+    const acceptTerms = body.acceptTerms;
+    const name = body.name || `${body.firstName || ""} ${body.lastName || ""}`.trim();
 
     // Vérification CGU / CGV
     if (!acceptTerms) {
@@ -20,7 +25,7 @@ export async function POST(req: Request) {
     // Vérification champs obligatoires
     if (!email || !password || !name) {
       return NextResponse.json(
-        { error: "Champs manquants." },
+        { error: "Champs manquants. Veuillez renseigner votre nom et prénom." },
         { status: 400 }
       );
     }
@@ -47,7 +52,7 @@ export async function POST(req: Request) {
         password: hashed,
         name,
         emailVerified: null,
-        acceptedTermsAt: new Date(), // 🔥 Ajout légal
+        acceptedTermsAt: new Date(),
       },
     });
 
@@ -63,26 +68,28 @@ export async function POST(req: Request) {
       },
     });
 
-    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL}/verify-email?token=${token}`;
 
     // Envoi email via Resend
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Locaplux <no-reply@locaplux.com>",
-        to: email,
-        subject: "Confirmez votre adresse email",
-        html: `
-          <p>Bienvenue sur Locaplux !</p>
-          <p>Veuillez confirmer votre adresse email :</p>
-          <p><a href="${verifyUrl}">Confirmer mon email</a></p>
-        `,
-      }),
-    });
+    if (process.env.RESEND_API_KEY) {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Locaplux <no-reply@locaplux.com>",
+          to: email,
+          subject: "Confirmez votre adresse email",
+          html: `
+            <p>Bienvenue sur Locaplux !</p>
+            <p>Veuillez confirmer votre adresse email :</p>
+            <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+          `,
+        }),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
