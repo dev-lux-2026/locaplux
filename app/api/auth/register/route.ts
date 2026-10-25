@@ -14,10 +14,10 @@ export async function POST(req: Request) {
     const acceptTerms = body.acceptTerms;
     const name = body.name || `${body.firstName || ""} ${body.lastName || ""}`.trim();
 
-    // Vérification CGU / CGV
+      // Vérification CGU / CGV
     if (!acceptTerms) {
       return NextResponse.json(
-        { error: "Vous devez accepter les CGU et les CGV." },
+        { error: "DEBUG API: acceptTerms est absent ou faux dans le JSON reçu." },
         { status: 400 }
       );
     }
@@ -25,15 +25,13 @@ export async function POST(req: Request) {
     // Vérification champs obligatoires
     if (!email || !password || !name) {
       return NextResponse.json(
-        { error: "Champs manquants. Veuillez renseigner votre nom et prénom." },
+        { 
+          error: "DEBUG API: Validation échouée.", 
+          details: { email: !!email, password: !!password, name: !!name, nameValue: name } 
+        },
         { status: 400 }
       );
     }
-
-    // Vérification email déjà utilisé
-    const existing = await prisma.user.findUnique({
-      where: { email },
-    });
 
     if (existing) {
       return NextResponse.json(
