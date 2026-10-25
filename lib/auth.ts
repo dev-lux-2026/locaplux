@@ -23,29 +23,28 @@ export const authOptions: NextAuthOptions = {
 
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Champs manquants.");
         }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
-        if (!user) return null;
+        if (!user) {
+          throw new Error("CredentialsSignin");
+        }
 
         const isValid = await bcrypt.compare(
           credentials.password,
           user.password ?? ""
         );
 
-        if (!isValid) return null;
+        if (!isValid) {
+          throw new Error("CredentialsSignin");
+        }
 
         if (!user.emailVerified) {
-          return {
-            id: user.id,
-            email: user.email,
-            emailVerified: false,
-            role: user.role,
-          };
+          throw new Error("EMAIL_NOT_VERIFIED");
         }
 
         return {
