@@ -94,5 +94,5 @@ export default async function VerifyEmailPage(props: VerifyEmailProps) {
   });
 
   // Redirection propre vers la page de connexion avec les drapeaux de succès
-  redirect(`/${locale}/login?verified=true&email=${encodeURIComponent(user.email)}`);
+  redirect(`/${locale}/login?verified=true&email=${encodeURIComponent(user.email || "")}`);
 }
