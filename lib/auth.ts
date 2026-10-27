@@ -1,10 +1,35 @@
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import prisma from "./prisma";
+import { prisma } from "./prisma"; // ✨ FIX : Aligné sur l'import nommé de votre projet (@/lib/prisma)
 import bcrypt from "bcryptjs";
 
 export { signIn } from "next-auth/react";
+
+// Déclaration de surcharge des types Next-Auth pour un support TypeScript parfait
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      name?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      emailVerified: Date | boolean | null;
+    };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    emailVerified: Date | boolean | null;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -43,6 +68,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("CredentialsSignin");
         }
 
+        // 🚫 Blocage strict : Impossible de se connecter si l'email n'est pas validé
         if (!user.emailVerified) {
           throw new Error("EMAIL_NOT_VERIFIED");
         }
@@ -75,18 +101,13 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      if (token) {
-        // 🔥 FIX FINAL : cast propre et définitif
-        const user = session.user as any;
-
-        user.id = token.id as string;
-        user.emailVerified = token.emailVerified as boolean;
-        user.role = token.role as string;
-        user.name = token.name as string | null;
-        user.firstName = token.firstName as string | null;
-        user.lastName = token.lastName as string | null;
-
-        session.user = user;
+      if (token && session.user) {
+        session.user.id = token.id;
+        session.user.emailVerified = token.emailVerified;
+        session.user.role = token.role;
+        session.user.name = token.name;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
       }
 
       return session;

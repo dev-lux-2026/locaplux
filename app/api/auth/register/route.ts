@@ -11,9 +11,12 @@ export async function POST(req: Request) {
     const email = body.email;
     const password = body.password;
     const acceptTerms = body.acceptTerms;
+    const firstName = body.firstName || "";
+    const lastName = body.lastName || "";
+    const country = body.country || "";
     
-    // Assemblage du nom complet si firstName et lastName sont fournis
-    const name = body.name || `${body.firstName || ""} ${body.lastName || ""}`.trim();
+    // Assemblage du nom complet requis pour Next-Auth
+    const name = body.name || `${firstName} ${lastName}`.trim();
 
     // Vérification CGU / CGV
     if (!acceptTerms) {
@@ -24,14 +27,14 @@ export async function POST(req: Request) {
     }
 
     // Vérification des champs obligatoires
-    if (!email || !password || !name) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
-        { error: "Champs manquants. Veuillez renseigner votre nom et prénom." },
+        { error: "Champs manquants. Veuillez renseigner votre prénom et votre nom." },
         { status: 400 }
       );
     }
 
-    // Déclaration et vérification de l'email existant
+    // Vérification de l'email existant
     const existing = await prisma.user.findUnique({
       where: { email },
     });
@@ -43,23 +46,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hashage natif du mot de passe
+    // Hashage du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Création de l'utilisateur en base de données
+    // Création de l'utilisateur avec alignement strict du schéma (champs séparés)
     await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        emailVerified: null,
+        firstName,
+        lastName,
+        country,
+        emailVerified: null, // Reste null tant que le lien n'est pas cliqué
         acceptedTermsAt: new Date(),
       },
     });
 
     // Génération du token de vérification d'email
     const token = randomUUID();
-    const expires = new Date(Date.now() + 1000 * 60 * 60);
+    const expires = new Date(Date.now() + 1000 * 60 * 60); // Expire dans 1 heure
 
     await prisma.verificationToken.create({
       data: {
@@ -69,36 +75,58 @@ export async function POST(req: Request) {
       },
     });
 
-    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL}/verify-email?token=${token}`;
+    // Construction de l'URL de validation
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+    const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
 
-    // Envoi de l'email via Resend si la clé API est présente
+    // Envoi de l'email via l'endpoint de production Resend
     if (process.env.RESEND_API_KEY) {
       try {
-        await fetch("https://resend.com", {
+        const resendResponse = await fetch("https://resend.com", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Locaplux <no-reply@locaplux.com>",
+            // NOTE : "onboarding@resend.dev" fonctionne uniquement vers votre propre mail de test.
+            // Si vous utilisez @locaplux.com, assurez-vous que le domaine est validé sur Resend !
+            from: "Locaplux <no-reply@locaplux.com>", 
             to: email,
-            subject: "Confirmez votre adresse email",
+            subject: "Confirmez votre adresse email - Locaplux",
             html: `
-              <p>Bienvenue sur Locaplux !</p>
-              <p>Veuillez confirmer votre adresse email :</p>
-              <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Bienvenue sur Locaplux !</h2>
+                <p>Merci pour votre inscription. Pour finaliser la création de votre compte et poursuivre votre inscription, veuillez confirmer votre adresse email :</p>
+                <p style="margin: 30px 0;">
+                  <a href="${verifyUrl}" style="background-color: #00A3FF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                    Confirmer mon email
+                  </a>
+                </p>
+                <p style="font-size: 12px; color: #666;">Si le bouton ne fonctionne pas, copiez-collez ce lien : <br/> ${verifyUrl}</p>
+              </div>
             `,
           }),
         });
+
+        if (!resendResponse.ok) {
+          const errorLog = await resendResponse.json();
+          console.error("🔴 Échec de l'envoi Resend (Payload/Domaine non valide) :", errorLog);
+        }
       } catch (emailError) {
-        console.error("🔴 Erreur Resend :", emailError);
+        console.error("🔴 Erreur réseau ou DNS lors de l'appel Resend :", emailError);
       }
     }
 
-    return NextResponse.json({ success: true });
+    // On indique explicitement au front-end qu'une vérification est requise
+    return NextResponse.json({ 
+      success: true, 
+      requiresVerification: true,
+      email 
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("🔴 Erreur serveur inscription :", err);
     return NextResponse.json(
       { error: "Erreur interne." },
       { status: 500 }

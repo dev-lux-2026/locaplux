@@ -90,11 +90,18 @@ export default function RegisterPage() {
       setLoading(false);
 
       if (!res.ok) {
-        // ✨ Affiche instantanément le message explicatif précis envoyé par l'API (ex: Email déjà pris)
         toast.error(data.error || "Une erreur est survenue lors de l'inscription.");
         return;
       }
 
+      // ✨ Redirection corrigée vers la route unique du projet : app/[locale]/verify-email/page.tsx
+      if (data.requiresVerification) {
+        toast.success("Compte initialisé ! Veuillez vérifier vos e-mails.");
+        router.push(`/${locale}/verify-email?email=${encodeURIComponent(data.email)}`);
+        return;
+      }
+
+      // Fallback historique si la vérification forcée n'est pas activée par l'API
       toast.success("Compte créé avec succès !");
       router.push(`/${locale}/account/onboarding/address`);
     } catch (err) {

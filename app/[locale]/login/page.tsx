@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const { locale } = useParams();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const locale = params?.locale || "fr";
 
   const [form, setForm] = useState({
     email: "",
@@ -18,11 +20,25 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: any) => {
+  // Écoute des notifications de succès (ex: validation de l'email)
+  useEffect(() => {
+    const verified = searchParams.get("verified");
+    const emailParam = searchParams.get("email");
+
+    if (verified === "true") {
+      toast.success("Votre adresse e-mail a été validée avec succès ! Vous pouvez maintenant vous connecter.");
+    }
+    
+    if (emailParam) {
+      setForm((prev) => ({ ...prev, email: decodeURIComponent(emailParam) }));
+    }
+  }, [searchParams]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -63,8 +79,10 @@ export default function LoginPage() {
       }
 
       // ✔ Cas 5 : Tout est OK, authentification réussie
-      toast.success("Authentification réussie ! Redirection...");
-      router.push(`/${locale}/home`);
+      toast.success("Authentification réussie !");
+      
+      // 🚀 Redirection intelligente vers la suite de l'onboarding pour compléter l'adresse
+      router.push(`/${locale}/account/onboarding/address`);
 
     } catch (err: any) {
       setLoading(false);
@@ -88,7 +106,7 @@ export default function LoginPage() {
             name="email"
             value={form.email}
             onChange={handleChange}
-            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-black"
+            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-black bg-white"
             required
           />
         </div>
@@ -101,7 +119,7 @@ export default function LoginPage() {
               name="password"
               value={form.password}
               onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-black"
+              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-black bg-white"
               required
             />
             <button
@@ -126,7 +144,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 transition text-sm"
+          className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-900 transition text-sm font-medium"
         >
           {loading ? "Vérification..." : "Se connecter"}
         </button>
@@ -137,5 +155,13 @@ export default function LoginPage() {
         <Link href={`/${locale}/register`} className="text-black underline">Créer un compte</Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12">Chargement...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
