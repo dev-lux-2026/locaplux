@@ -14,8 +14,8 @@ export default async function middleware(req: NextRequest) {
   const hasSecret = pathname.includes("320750");
   const secretCookie = req.cookies.get("secret")?.value === "ok";
 
-  // ✅ Autoriser toutes les routes API (fix critique)
-  if (pathname.startsWith("/api")) {
+  // ✨ FIX CRITIQUE : Autoriser toutes les routes d'API, qu'elles soient brutes ou préfixées par une langue (ex: /fr/api/auth)
+  if (pathname.startsWith("/api") || pathname.match(/^\/(fr|en|lu)\/api/)) {
     return NextResponse.next();
   }
 
