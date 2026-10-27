@@ -73,23 +73,27 @@ export async function POST(req: Request) {
 
     // Envoi de l'email via Resend si la clé API est présente
     if (process.env.RESEND_API_KEY) {
-      await fetch("https://resend.com", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Locaplux <no-reply@locaplux.com>",
-          to: email,
-          subject: "Confirmez votre adresse email",
-          html: `
-            <p>Bienvenue sur Locaplux !</p>
-            <p>Veuillez confirmer votre adresse email :</p>
-            <p><a href="${verifyUrl}">Confirmer mon email</a></p>
-          `,
-        }),
-      });
+      try {
+        await fetch("https://resend.com", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "Locaplux <no-reply@locaplux.com>",
+            to: email,
+            subject: "Confirmez votre adresse email",
+            html: `
+              <p>Bienvenue sur Locaplux !</p>
+              <p>Veuillez confirmer votre adresse email :</p>
+              <p><a href="${verifyUrl}">Confirmer mon email</a></p>
+            `,
+          }),
+        });
+      } catch (emailError) {
+        console.error("🔴 Erreur Resend :", emailError);
+      }
     }
 
     return NextResponse.json({ success: true });
