@@ -7,26 +7,27 @@ export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token || !token.email) {
-    return NextResponse.json({ error: "Non autorisé. Jeton ou email absent." }, { status: 401 });
+    return NextResponse.json({ 
+      error: "DEBUG INTERNE : Session Next-Auth introuvable dans les cookies.",
+      tokenPresent: !!token 
+    }, { status: 401 });
   }
 
   try {
-    // 🚀 RECHERCHE SÉCURISÉE : On trouve le vrai ID utilisateur de production via son email unique
+    // 🚀 Recherche de l'utilisateur associé au jeton de session actuel
     const dbUser = await prisma.user.findUnique({
       where: { email: token.email },
     });
 
     if (!dbUser) {
-      return NextResponse.json({ error: "Utilisateur introuvable en base de données." }, { status: 404 });
+      return NextResponse.json({ 
+        error: `DEBUG INTERNE : L'adresse e-mail ${token.email} n'existe pas dans Supabase.` 
+      }, { status: 404 });
     }
 
-    const userId = dbUser.id; // L'ID officiel et valide issu de Supabase
+    const userId = dbUser.id;
     const body = await req.json();
     const { billing, shipping } = body;
-
-    if (!billing || !shipping) {
-      return NextResponse.json({ error: "Données manquantes." }, { status: 400 });
-    }
 
     const cleanData = (data: any, type: string) => ({
       userId,
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     const existingBilling = existingAddresses.find(a => a.type === "billing");
     const existingShipping = existingAddresses.find(a => a.type === "shipping");
 
-    // Écriture définitive et atomique dans Supabase
+    // Tentative d'écriture
     await prisma.$transaction([
       existingBilling 
         ? prisma.address.update({ where: { id: existingBilling.id }, data: cleanData(billing, "billing") })
@@ -57,10 +58,20 @@ export async function POST(req: NextRequest) {
         : prisma.address.create({ data: cleanData(shipping, "shipping") }),
     ]);
 
-    return NextResponse.json({ success: true });
+    // Renvoie un succès complet avec les informations d'identification pour vérification
+    return NextResponse.json({ 
+      success: true, 
+      debugMsg: "Écriture réussie !",
+      connectedEmail: dbUser.email,
+      connectedUserId: dbUser.id
+    });
 
   } catch (error: any) {
     console.error("🔴 Erreur finale écriture adresse :", error);
-    return NextResponse.json({ error: "Erreur lors de la sauvegarde.", details: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Erreur lors de la sauvegarde.", 
+      details: error.message,
+      prismaCode: error.code 
+    }, { status: 500 });
   }
 }
