@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server"; // ✨ FIX : Import de NextRequest
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) { // ✨ FIX : Remplacement de Request par NextRequest
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const { billing, shipping } = body;
 
     const cleanData = (data: any, type: string) => ({
-      userId, // C'est cet ID qui est potentiellement rejeté par PostgreSQL
+      userId, 
       type,
       street: data.street || "Non renseigné",
       number: data.number || null,
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       phone: data.phone || null,
     });
 
-    // TEST D'ÉCRITURE DIRECT : On enlève la transaction globale pour voir quelle ligne bloque précisément
+    // TEST D'ÉCRITURE DIRECT : Capture les rejets PostgreSQL précis
     try {
       await prisma.address.create({
         data: cleanData(billing, "billing")
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ 
         error: "Supabase a rejeté l'adresse de facturation.", 
         details: billingError.message,
-        code: billingError.code // Code d'erreur Prisma (ex: P2003 violation de clé)
+        code: billingError.code
       }, { status: 500 });
     }
 
