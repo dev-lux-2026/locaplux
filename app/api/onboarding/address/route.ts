@@ -1,63 +1,66 @@
 export const dynamic = "force-dynamic";
-import { NextResponse, type NextRequest } from "next/server"; // ✨ FIX : Import de NextRequest
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-export async function POST(req: NextRequest) { // ✨ FIX : Remplacement de Request par NextRequest
+export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  if (!token) {
-    return NextResponse.json({ error: "DEBUG: Jeton JWT introuvable dans les cookies." }, { status: 401 });
+  if (!token || !token.email) {
+    return NextResponse.json({ error: "Non autorisé. Jeton ou email absent." }, { status: 401 });
   }
 
-  // Diagnostic de l'ID transporté par la session
-  const userId = (token.id || token.sub) as string; 
-
   try {
+    // 🚀 RECHERCHE SÉCURISÉE : On trouve le vrai ID utilisateur de production via son email unique
+    const dbUser = await prisma.user.findUnique({
+      where: { email: token.email },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json({ error: "Utilisateur introuvable en base de données." }, { status: 404 });
+    }
+
+    const userId = dbUser.id; // L'ID officiel et valide issu de Supabase
     const body = await req.json();
     const { billing, shipping } = body;
 
+    if (!billing || !shipping) {
+      return NextResponse.json({ error: "Données manquantes." }, { status: 400 });
+    }
+
     const cleanData = (data: any, type: string) => ({
-      userId, 
+      userId,
       type,
-      street: data.street || "Non renseigné",
-      number: data.number || null,
-      zip: data.zip || "00000",
-      city: data.city || "Non renseigné",
-      country: data.country || "Non renseigné",
-      phone: data.phone || null,
+      street: data.street?.trim() || "Non renseigné",
+      number: data.number?.trim() || null,
+      zip: data.zip?.trim() || "00000",
+      city: data.city?.trim() || "Non renseigné",
+      country: data.country?.trim() || "Non renseigné",
+      phone: data.phone?.trim() || null,
     });
 
-    // TEST D'ÉCRITURE DIRECT : Capture les rejets PostgreSQL précis
-    try {
-      await prisma.address.create({
-        data: cleanData(billing, "billing")
-      });
-    } catch (billingError: any) {
-      console.error("🔴 ERREUR FACTURATION :", billingError.message);
-      return NextResponse.json({ 
-        error: "Supabase a rejeté l'adresse de facturation.", 
-        details: billingError.message,
-        code: billingError.code
-      }, { status: 500 });
-    }
+    const existingAddresses = await prisma.address.findMany({
+      where: { userId },
+    });
 
-    try {
-      await prisma.address.create({
-        data: cleanData(shipping, "shipping")
-      });
-    } catch (shippingError: any) {
-      console.error("🔴 ERREUR LIVRAISON :", shippingError.message);
-      return NextResponse.json({ 
-        error: "Supabase a rejeté l'adresse de livraison.", 
-        details: shippingError.message,
-        code: shippingError.code
-      }, { status: 500 });
-    }
+    const existingBilling = existingAddresses.find(a => a.type === "billing");
+    const existingShipping = existingAddresses.find(a => a.type === "shipping");
+
+    // Écriture définitive et atomique dans Supabase
+    await prisma.$transaction([
+      existingBilling 
+        ? prisma.address.update({ where: { id: existingBilling.id }, data: cleanData(billing, "billing") })
+        : prisma.address.create({ data: cleanData(billing, "billing") }),
+
+      existingShipping
+        ? prisma.address.update({ where: { id: existingShipping.id }, data: cleanData(shipping, "shipping") })
+        : prisma.address.create({ data: cleanData(shipping, "shipping") }),
+    ]);
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Erreur traitement payload.", details: error.message }, { status: 500 });
+    console.error("🔴 Erreur finale écriture adresse :", error);
+    return NextResponse.json({ error: "Erreur lors de la sauvegarde.", details: error.message }, { status: 500 });
   }
 }
