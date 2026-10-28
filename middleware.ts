@@ -11,13 +11,16 @@ const intlMiddleware = createMiddleware({
 
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
-  const hasSecret = pathname.includes("320750");
-  const secretCookie = req.cookies.get("secret")?.value === "ok";
 
-  // ✨ FIX CRITIQUE : Autoriser toutes les routes d'API, qu'elles soient brutes ou préfixées par une langue (ex: /fr/api/auth)
+  // 🚀 FIX CRITIQUE ABSOLU : Libération immédiate et étanche de toutes les routes d'API.
+  // Placé tout en haut, cela empêche next-intl ou le rewrite de maintenance de modifier
+  // la requête POST en GET, permettant aux formulaires d'atteindre Supabase sans altération.
   if (pathname.startsWith("/api") || pathname.match(/^\/(fr|en|lu)\/api/)) {
     return NextResponse.next();
   }
+
+  const hasSecret = pathname.includes("320750");
+  const secretCookie = req.cookies.get("secret")?.value === "ok";
 
   // 🔐 Secret utilisé → on pose un cookie et on redirige vers /
   if (hasSecret) {
@@ -55,7 +58,6 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next|.*\\..*).*)'
-  ]
+  // Le matcher intercepte tout sauf les fichiers statiques et les assets
+  matcher: ['/((?!_next|.*\\..*).*)']
 };
