@@ -5,12 +5,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  // 1. Récupération de la session utilisateur
+  // 1. Récupération et validation stricte de la session
   const session = await getServerSession(authOptions);
 
-  // ⚠️ Note : Vérifiez bien que votre lib/auth.ts remplit la propriété session.user.id
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Non autorisé. Session absente ou expirée." }, { status: 401 });
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const userId = session.user.id;
@@ -19,7 +18,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { billing, shipping } = body;
 
-    // Validation de la présence des objets
     if (!billing || !shipping) {
       return NextResponse.json(
         { error: "Données de facturation ou de livraison manquantes." },
@@ -27,66 +25,59 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validation back-end des champs obligatoires
+    // Validation des champs obligatoires textuels
     const required = ["street", "zip", "city", "country"];
-
     for (const field of required) {
-      if (!billing[field]) {
-        return NextResponse.json(
-          { error: `Le champ de facturation '${field}' est obligatoire.` },
-          { status: 400 }
-        );
+      if (!billing[field]?.trim()) {
+        return NextResponse.json({ error: `Champs obligatoires manquants (facturation : ${field})` }, { status: 400 });
       }
-      if (!shipping[field]) {
-        return NextResponse.json(
-          { error: `Le champ de livraison '${field}' est obligatoire.` },
-          { status: 400 }
-        );
+      if (!shipping[field]?.trim()) {
+        return NextResponse.json({ error: `Champs obligatoires manquants (livraison : ${field})` }, { status: 400 });
       }
     }
 
-    // 🚀 Utilisation d'une transaction Prisma pour garantir l'intégrité des données
+    // 🚀 NETTOYAGE DES DONNÉES : Sécurise les champs vides pour éviter les plantages Prisma
+    const formatAddressData = (data: any, type: "billing" | "shipping") => {
+      return {
+        userId,
+        type,
+        street: data.street.trim(),
+        // Si le numéro est vide, on envoie null (ou "0" si votre schéma exige un Int strict non-nul)
+        number: data.number?.trim() || null, 
+        zip: data.zip.trim(),
+        city: data.city.trim(),
+        country: data.country.trim(),
+        // Si le téléphone est vide ou absent, on passe null de manière propre
+        phone: data.phone?.trim() || null,
+      };
+    };
+
+    // ⚡ Exécution de la transaction sécurisée et atomique
     await prisma.$transaction([
-      // Supprimer les anciennes adresses de l'utilisateur
+      // Supprimer proprement les anciennes adresses existantes pour cet ID utilisateur
       prisma.address.deleteMany({
         where: { userId },
       }),
 
-      // Créer la nouvelle adresse de facturation
+      // Création de la ligne de facturation
       prisma.address.create({
-        data: {
-          userId,
-          type: "billing",
-          street: billing.street,
-          number: billing.number || "",
-          zip: billing.zip,
-          city: billing.city,
-          country: billing.country,
-          phone: billing.phone || null,
-        },
+        data: formatAddressData(billing, "billing"),
       }),
 
-      // Créer la nouvelle adresse de livraison
+      // Création de la ligne de livraison
       prisma.address.create({
-        data: {
-          userId,
-          type: "shipping",
-          street: shipping.street,
-          number: shipping.number || "",
-          zip: shipping.zip,
-          city: shipping.city,
-          country: shipping.country,
-          phone: shipping.phone || null,
-        },
+        data: formatAddressData(shipping, "shipping"),
       }),
     ]);
 
     return NextResponse.json({ success: true });
 
-  } catch (error) {
-    console.error("🔴 Erreur lors de l'enregistrement des adresses :", error);
+  } catch (error: any) {
+    // 🔬 Capture l'erreur exacte renvoyée par Prisma dans vos logs Vercel pour le diagnostic
+    console.error("🔴 ÉCHEC CRITIQUE PRISMA TRANSACTION :", error);
+    
     return NextResponse.json(
-      { error: "Erreur interne lors de la sauvegarde." },
+      { error: "Erreur d'écriture en base de données. Vérifiez le format des champs." },
       { status: 500 }
     );
   }
