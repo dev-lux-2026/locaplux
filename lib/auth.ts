@@ -47,6 +47,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("EMAIL_NOT_VERIFIED");
         }
 
+        // CORRECTION UNIQUE SUR AUTHORIZE : On retourne l'état d'onboarding complet
         return {
           id: user.id,
           email: user.email,
@@ -55,6 +56,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           firstName: user.firstName,
           lastName: user.lastName,
+          address: user.address,
+          city: user.city,
+          postal: user.postal,
+          country: user.country,
         };
       },
     }),
@@ -71,6 +76,11 @@ export const authOptions: NextAuthOptions = {
         token.name = u.name;
         token.firstName = u.firstName || null;
         token.lastName = u.lastName || null;
+        // CORRECTION UNIQUE SUR JWT : On hydrate le jeton initial avec l'adresse présente en DB
+        token.address = u.address || null;
+        token.city = u.city || null;
+        token.postal = u.postal || null;
+        token.country = u.country || null;
       }
       
       // ✨ Permet le rafraîchissement à la volée lorsque le client appelle update()
@@ -123,6 +133,11 @@ export const authOptions: NextAuthOptions = {
         user.name = token.name as string | null;
         user.firstName = token.firstName as string | null;
         user.lastName = token.lastName as string | null;
+        // CORRECTION DE SÉCURITÉ FALLBACK : Alignement des champs d'adresse
+        user.address = token.address as string | null;
+        user.city = token.city as string | null;
+        user.postal = token.postal as string | null;
+        user.country = token.country as string | null;
         session.user = user;
       }
 
