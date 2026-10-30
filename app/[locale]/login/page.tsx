@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -49,12 +49,11 @@ function LoginContent() {
         redirect: false,
       });
 
-      setLoading(false);
-
       console.log("=== 🔬 DIAGNOSTIC CONNEXION BRUT ===", res);
 
       // 🚫 Cas 1 : Email non vérifié
       if (res?.error === "EMAIL_NOT_VERIFIED") {
+        setLoading(false);
         toast.error("Veuillez vérifier votre email avant de vous connecter.");
         router.push(`/${locale}/register/check-email`);
         return;
@@ -62,18 +61,21 @@ function LoginContent() {
 
       // ❌ Cas 2 : Identifiants incorrects (CredentialsSignin)
       if (res?.error === "CredentialsSignin" || res?.status === 401) {
+        setLoading(false);
         toast.error("Adresse email ou mot de passe incorrect.");
         return;
       }
 
       // ⚠️ Cas 3 : Autre erreur retournée par Next-Auth
       if (res?.error) {
+        setLoading(false);
         toast.error(`Erreur de connexion : ${res.error}`);
         return;
       }
 
       // ⚠️ Cas 4 : Pas d'erreur explicite mais échec réseau/statut non valide
       if (res && !res.ok) {
+        setLoading(false);
         toast.error(`Une erreur est survenue (Code ${res.status}).`);
         return;
       }
@@ -81,8 +83,19 @@ function LoginContent() {
       // ✔ Cas 5 : Tout est OK, authentification réussie
       toast.success("Authentification réussie !");
       
-      // 🚀 Redirection intelligente vers la suite de l'onboarding pour compléter l'adresse
-      router.push(`/${locale}/account/onboarding/address`);
+      // Récupération de la session à jour pour aiguiller la redirection
+      const session = await getSession();
+      const user = session?.user as any;
+
+      setLoading(false);
+
+      // Si l'utilisateur a déjà configuré son profil, on l'envoie sur son espace
+      if (user?.firstName && user?.lastName && user?.address) {
+        router.push(`/${locale}/account/profile`);
+      } else {
+        // Sinon, redirection vers l'onboarding pour compléter les données manquantes
+        router.push(`/${locale}/account/onboarding/address`);
+      }
 
     } catch (err: any) {
       setLoading(false);
