@@ -61,30 +61,68 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         const u = user as any;
         token.id = u.id;
+        token.email = u.email;
         token.emailVerified = u.emailVerified ?? false;
         token.role = u.role;
         token.name = u.name;
         token.firstName = u.firstName || null;
         token.lastName = u.lastName || null;
       }
+      
+      // ✨ Permet le rafraîchissement à la volée lorsque le client appelle update()
+      if (trigger === "update" && session) {
+        return { ...token, ...session };
+      }
+      
       return token;
     },
 
     async session({ session, token }) {
-      if (token) {
-        const user = session.user as any;
+      if (token && token.email) {
+        try {
+          // 🚀 LECTURE FRAICHE EN PRODUCTION : Récupère l'état d'onboarding réel dans Supabase
+          const freshUser = await prisma.user.findUnique({
+            where: { email: token.email },
+            select: {
+              id: true,
+              email: true,
+              emailVerified: true,
+              role: true,
+              name: true,
+              firstName: true,
+              lastName: true,
+              address: true,
+              city: true,
+              postal: true,
+              country: true,
+            }
+          });
 
+          if (freshUser) {
+            session.user = {
+              ...freshUser,
+              emailVerified: freshUser.emailVerified ? true : false
+            } as any;
+            return session;
+          }
+        } catch (dbError) {
+          console.error("🔴 Erreur récupération utilisateur frais session :", dbError);
+        }
+      }
+
+      // Fallback de sécurité si Supabase n'est pas accessible momentanément
+      if (token && session.user) {
+        const user = session.user as any;
         user.id = token.id as string;
         user.emailVerified = token.emailVerified as boolean;
         user.role = token.role as string;
         user.name = token.name as string | null;
         user.firstName = token.firstName as string | null;
         user.lastName = token.lastName as string | null;
-
         session.user = user;
       }
 
