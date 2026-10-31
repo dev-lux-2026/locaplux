@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth"; // Ajustez le chemin vers vos authOptions si nécessaire
-import { prisma } from "@/lib/prisma"; // Ajustez le chemin vers votre instance Prisma
+import { authOptions } from "@/lib/auth"; 
+import { prisma } from "@/lib/prisma"; 
 
 export async function POST(req: Request) {
   try {
-    // 1. Sécurisation : On vérifie que l'utilisateur est bien connecté
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -14,7 +13,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Récupération des données envoyées par le formulaire du profil
     const body = await req.json();
     const {
       phone,
@@ -22,13 +20,9 @@ export async function POST(req: Request) {
       postal,
       city,
       country,
-      shippingAddress,
-      shippingPostal,
-      shippingCity,
-      shippingCountry,
     } = body;
 
-    // 3. Mise à jour atomique et sécurisée dans Supabase via Prisma
+    // Mise à jour sur les colonnes exactes de votre modèle User Prisma
     const updatedUser = await prisma.user.update({
       where: { email: session.user.email },
       data: {
@@ -37,15 +31,9 @@ export async function POST(req: Request) {
         postal: postal || null,
         city: city || null,
         country: country || "France",
-        // Utilisation de champs optionnels ou replis si vides
-        shippingAddress: shippingAddress || null,
-        shippingPostal: shippingPostal || null,
-        shippingCity: shippingCity || null,
-        shippingCountry: shippingCountry || "France",
       },
     });
 
-    // 4. Succès
     return NextResponse.json({
       success: true,
       message: "Profil mis à jour avec succès dans Supabase.",
@@ -55,10 +43,6 @@ export async function POST(req: Request) {
         postal: updatedUser.postal,
         city: updatedUser.city,
         country: updatedUser.country,
-        shippingAddress: updatedUser.shippingAddress,
-        shippingPostal: updatedUser.shippingPostal,
-        shippingCity: updatedUser.shippingCity,
-        shippingCountry: updatedUser.shippingCountry,
       },
     });
 
