@@ -89,9 +89,10 @@ function LoginContent() {
 
       setLoading(false);
 
-      // Si l'utilisateur a déjà configuré son profil, on l'envoie sur son espace
+      // 🚀 REDIRECTION CONVIVIALE MARKETPLACE
+      // Si l'utilisateur a déjà configuré son profil, on l'envoie sur l'accueil (Home)
       if (user?.firstName && user?.lastName && user?.address) {
-        router.push(`/${locale}/account/profile`);
+        router.push(`/${locale}`);
       } else {
         // Sinon, redirection vers l'onboarding pour compléter les données manquantes
         router.push(`/${locale}/account/onboarding/address`);
