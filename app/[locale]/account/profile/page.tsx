@@ -365,8 +365,77 @@ export default function ProfilePage() {
               </p>
             </div>
           )}
+{/* --- BLOC LATÉRAL DES GRANDES MARKETPLACES : AVATAR ET COMPTE (AJOUT SÉCURISÉ) --- */}
+      <div className="mt-12 pt-8 border-t border-gray-100 text-center">
+        <div className="relative w-24 h-24 mx-auto group">
+          {user?.image || user?.avatar ? (
+            <img
+              src={user.image || user.avatar}
+              alt={fullName || "Avatar"}
+              className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-sm mx-auto"
+            />
+          ) : (
+            <div className="w-24 h-24 bg-gray-100 border border-gray-200 text-gray-400 font-semibold flex items-center justify-center rounded-full text-2xl uppercase shadow-inner mx-auto">
+              {user?.firstName?. || user?.name?. || "U"}
+            </div>
+          )}
+
+          {/* Zone d'action interactive au survol de la souris */}
+          <label className="absolute inset-0 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center cursor-pointer text-[12px] font-medium gap-1 max-w-[96px] mx-auto">
+            <span>📷</span>
+            <span>Changer</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.;
+                if (!file) return;
+
+                if (file.size > 2 * 1024 * 1024) {
+                  toast.error("L'image est trop lourde. Maximum 2 Mo.");
+                  return;
+                }
+
+                const uploadToast = toast.loading("Téléversement de l'avatar...");
+
+                try {
+                  const formData = new FormData();
+                  formData.append("avatar", file);
+
+                  const res = await fetch("/api/account/update-avatar", {
+                    method: "POST",
+                    body: formData,
+                  });
+
+                  if (!res.ok) throw new Error("Échec du téléversement");
+                  const data = await res.json();
+
+                  await update({
+                    ...session,
+                    user: {
+                      ...session?.user,
+                      image: data.url,
+                      avatar: data.url,
+                    },
+                  });
+
+                  toast.success("Photo de profil mise à jour !", { id: uploadToast });
+                } catch (err) {
+                  console.error("🔴 Erreur upload avatar client :", err);
+                  toast.error("Impossible d'enregistrer l'image.", { id: uploadToast });
+                }
+              }}
+            />
+          </label>
         </div>
-      )}
+
+        <h3 className="font-semibold text-gray-900 mt-4 text-xl">{fullName}</h3>
+        <p className="text-xs text-gray-400 font-bold mt-1 tracking-wide uppercase">
+          {displayStatus}
+        </p>
+      </div>
+      {/* --- FIN DU BLOC ADDITIONNEL --- */}
     </div>
   );
 }
