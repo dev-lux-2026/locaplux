@@ -311,6 +311,16 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {user?.role === "partner" && (
+            <div className="pt-6 border-t">
+              <p className="text-sm text-gray-500">Partenaire</p>
+              <p className="text-[15px] text-gray-700 mt-1">
+                Votre compte partenaire est actif. Vous pouvez gérer vos produits,
+                vos commandes et vos informations professionnelles.
+              </p>
+            </div>
+          )}
+
           {user?.role !== "partner" && (
             <div className="pt-6 border-t">
               <p className="text-sm text-gray-500">Partenaires</p>
