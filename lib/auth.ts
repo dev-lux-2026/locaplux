@@ -59,6 +59,7 @@ export const authOptions: NextAuthOptions = {
           city: user.city,
           postal: user.postal,
           country: user.country,
+          phone: user.phone, // ✨ 1. AJOUT AUTHORIZE : Transmis au JWT initial
         };
       },
     }),
@@ -88,6 +89,7 @@ export const authOptions: NextAuthOptions = {
         token.city = u.city || null;
         token.postal = u.postal || null;
         token.country = u.country || null;
+        token.phone = u.phone || null; // ✨ 2. AJOUT JWT : Stocké en mémoire dans le cookie
       }
       
       // ✨ Permet le rafraîchissement à la volée lorsque le client appelle update()
@@ -116,6 +118,7 @@ export const authOptions: NextAuthOptions = {
               city: true,
               postal: true,
               country: true,
+              phone: true, // ✨ 3. AJOUT SELECT : Extrait de Supabase à chaque rafraîchissement
             }
           });
 
@@ -156,6 +159,7 @@ export const authOptions: NextAuthOptions = {
         user.city = token.city as string | null;
         user.postal = token.postal as string | null;
         user.country = token.country as string | null;
+        user.phone = token.phone as string | null; // ✨ 4. AJOUT FALLBACK : Sécurité d'affichage
         session.user = user;
       }
 
