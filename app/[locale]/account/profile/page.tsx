@@ -126,14 +126,22 @@ export default function ProfilePage() {
             Retrouvez ici vos informations personnelles et votre activité sur Locaplux.
           </p>
         </div>
-        {!isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition text-sm"
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}`}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-sm flex items-center gap-1"
           >
-            ✏️ Modifier
-          </button>
-        )}
+            🏠 Accueil
+          </Link>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition text-sm"
+            >
+              ✏️ Modifier
+            </button>
+          )}
+        </div>
       </div>
 
       {isEditing ? (
