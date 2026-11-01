@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Structure des données alignée avec Supabase & Prisma
+  // Structure des données 100% alignée avec Supabase & Prisma
   const [formData, setFormData] = useState({
     phone: "",
     address: "",
@@ -29,7 +29,7 @@ export default function ProfilePage() {
     shippingCountry: "France",
   });
 
-  // Synchronisation des données de session dès que l'utilisateur est connecté
+  // Synchronisation complète des données de session dès que l'utilisateur est connecté
   useEffect(() => {
     if (user) {
       setFormData({
@@ -156,7 +156,6 @@ export default function ProfilePage() {
               className="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-md px-3 py-2 text-[15px] cursor-not-allowed"
             />
           </div>
-
           <div>
             <p className="text-sm text-gray-500 mb-1">Email (Lié au compte)</p>
             <input
@@ -228,6 +227,54 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+            <p className="text-sm font-semibold text-gray-900">📦 Adresse de livraison spécifique</p>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Rue et numéro (Livraison)</label>
+              <input
+                type="text"
+                name="shippingAddress"
+                value={formData.shippingAddress}
+                onChange={handleChange}
+                className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                placeholder="Laisser vide si identique à la facturation"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Code postal</label>
+                <input
+                  type="text"
+                  name="shippingPostal"
+                  value={formData.shippingPostal}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Ville</label>
+                <input
+                  type="text"
+                  name="shippingCity"
+                  value={formData.shippingCity}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Pays</label>
+                <input
+                  type="text"
+                  name="shippingCountry"
+                  value={formData.shippingCountry}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               type="button"
@@ -269,7 +316,7 @@ export default function ProfilePage() {
             <p className="text-lg font-medium">{displayStatus}</p>
           </div>
 
-          <div className="pt-6 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">🏠 Adresse principale / de facturation</p>
               {user?.address ? (
@@ -280,6 +327,21 @@ export default function ProfilePage() {
                 </p>
               ) : (
                 <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse enregistrée.</p>
+              )}
+            </div>
+
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+              <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">📦 Adresse de livraison spécifique</p>
+              {user?.shippingAddress ? (
+                <p className="text-[15px] text-gray-800 mt-2 leading-relaxed">
+                  {user.shippingAddress}<br />
+                  {user.shippingPostal} {user.shippingCity}<br />
+                  <span className="text-xs font-medium text-gray-500">{user.shippingCountry || "France"}</span>
+                </p>
+              ) : user?.address ? (
+                <p className="text-[14px] text-gray-500 italic mt-2">Identique à l'adresse de facturation.</p>
+              ) : (
+                <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse de livraison renseignée.</p>
               )}
             </div>
           </div>
