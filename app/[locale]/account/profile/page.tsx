@@ -180,56 +180,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
-            <p className="text-sm font-semibold text-gray-900">🏠 Adresse de facturation / principale</p>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Rue et numéro</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-1">
-                <label className="block text-xs text-gray-500 mb-1">Code postal</label>
-                <input
-                  type="text"
-                  name="postal"
-                  value={formData.postal}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs text-gray-500 mb-1">Ville</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs text-gray-500 mb-1">Pays</label>
-                <input
-                  type="text"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
             <p className="text-sm font-semibold text-gray-900">📦 Adresse de livraison spécifique</p>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Rue et numéro (Livraison)</label>
@@ -250,6 +200,51 @@ export default function ProfilePage() {
                   name="shippingPostal"
                   value={formData.shippingPostal}
                   onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Ville</label>
+                <input
+                  type="text"
+                  name="shippingCity"
+                  value={formData.shippingCity}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Pays</label>
+                <input
+                  type="text"
+                  name="shippingCountry"
+                  value={formData.shippingCountry}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              disabled={loading}
+              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md font-medium text-sm hover:bg-gray-50 transition"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-black text-white rounded-md font-medium text-sm hover:bg-gray-900 transition"
+            >
+              {loading ? "Enregistrement..." : "Sauvegarder"}
+            </button>
+          </div>
+        </form>
+      ) : (
         /* ======================== MODE LECTURE D'ORIGINE ENRICHI ======================== */
         <div className="mt-10 flex flex-col gap-6">
           <div>
