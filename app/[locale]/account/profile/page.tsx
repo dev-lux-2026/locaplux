@@ -307,6 +307,8 @@ export default function ProfilePage() {
             <p className="text-lg font-medium">{user?.email}</p>
           </div>
 
+          </div>
+
           <div>
             <p className="text-sm text-gray-500">Téléphone</p>
             <p className="text-lg font-medium">{user?.phone || "Non renseigné"}</p>
@@ -317,7 +319,7 @@ export default function ProfilePage() {
             <p className="text-lg font-medium">{displayStatus}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t">
+          <div className="pt-6 border-t">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">🏠 Adresse principale / de facturation</p>
               {user?.address ? (
@@ -330,7 +332,9 @@ export default function ProfilePage() {
                 <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse enregistrée.</p>
               )}
             </div>
+          </div>
 
+          <div className="pt-4">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">📦 Adresse de livraison spécifique</p>
               {user?.shippingAddress ? (
@@ -366,7 +370,10 @@ export default function ProfilePage() {
               </p>
             </div>
           )}
-{/* --- BLOC LATÉRAL DES GRANDES MARKETPLACES : AVATAR ET COMPTE (AJOUT SÉCURISÉ) --- */}
+        </div>
+      )}
+
+      {/* --- BLOC AVATAR DE LA MARKETPLACE --- */}
       <div className="mt-12 pt-8 border-t border-gray-100 text-center">
         <div className="relative w-24 h-24 mx-auto group">
           {user?.image || user?.avatar ? (
@@ -377,11 +384,10 @@ export default function ProfilePage() {
             />
           ) : (
             <div className="w-24 h-24 bg-gray-100 border border-gray-200 text-gray-400 font-semibold flex items-center justify-center rounded-full text-2xl uppercase shadow-inner mx-auto">
-              {user?.firstName?. || user?.name?. || "U"}
+              {user?.firstName?.[0] || user?.name?.[0] || "U"}
             </div>
           )}
 
-          {/* Zone d'action interactive au survol de la souris */}
           <label className="absolute inset-0 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center cursor-pointer text-[12px] font-medium gap-1 max-w-[96px] mx-auto">
             <span>📷</span>
             <span>Changer</span>
@@ -390,7 +396,7 @@ export default function ProfilePage() {
               accept="image/*"
               className="hidden"
               onChange={async (e) => {
-                const file = e.target.files?.;
+                const file = e.target.files?.[0];
                 if (!file) return;
 
                 if (file.size > 2 * 1024 * 1024) {
@@ -401,12 +407,12 @@ export default function ProfilePage() {
                 const uploadToast = toast.loading("Téléversement de l'avatar...");
 
                 try {
-                  const formData = new FormData();
-                  formData.append("avatar", file);
+                  const formDataPayload = new FormData();
+                  formDataPayload.append("avatar", file);
 
                   const res = await fetch("/api/account/update-avatar", {
                     method: "POST",
-                    body: formData,
+                    body: formDataPayload,
                   });
 
                   if (!res.ok) throw new Error("Échec du téléversement");
@@ -430,13 +436,11 @@ export default function ProfilePage() {
             />
           </label>
         </div>
-
         <h3 className="font-semibold text-gray-900 mt-4 text-xl">{fullName}</h3>
         <p className="text-xs text-gray-400 font-bold mt-1 tracking-wide uppercase">
           {displayStatus}
         </p>
       </div>
-      {/* --- FIN DU BLOC ADDITIONNEL --- */}
     </div>
   );
 }
