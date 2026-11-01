@@ -250,51 +250,6 @@ export default function ProfilePage() {
                   name="shippingPostal"
                   value={formData.shippingPostal}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs text-gray-500 mb-1">Ville</label>
-                <input
-                  type="text"
-                  name="shippingCity"
-                  value={formData.shippingCity}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-xs text-gray-500 mb-1">Pays</label>
-                <input
-                  type="text"
-                  name="shippingCountry"
-                  value={formData.shippingCountry}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              disabled={loading}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md font-medium text-sm hover:bg-gray-50 transition"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-black text-white rounded-md font-medium text-sm hover:bg-gray-900 transition"
-            >
-              {loading ? "Enregistrement..." : "Sauvegarder"}
-            </button>
-          </div>
-        </form>
-      ) : (
         /* ======================== MODE LECTURE D'ORIGINE ENRICHI ======================== */
         <div className="mt-10 flex flex-col gap-6">
           <div>
@@ -307,8 +262,6 @@ export default function ProfilePage() {
             <p className="text-lg font-medium">{user?.email}</p>
           </div>
 
-          </div>
-
           <div>
             <p className="text-sm text-gray-500">Téléphone</p>
             <p className="text-lg font-medium">{user?.phone || "Non renseigné"}</p>
@@ -319,7 +272,7 @@ export default function ProfilePage() {
             <p className="text-lg font-medium">{displayStatus}</p>
           </div>
 
-          <div className="pt-6 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">🏠 Adresse principale / de facturation</p>
               {user?.address ? (
@@ -332,9 +285,7 @@ export default function ProfilePage() {
                 <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse enregistrée.</p>
               )}
             </div>
-          </div>
 
-          <div className="pt-4">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">📦 Adresse de livraison spécifique</p>
               {user?.shippingAddress ? (
@@ -350,7 +301,6 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-
           {user?.role === "partner" && (
             <div className="pt-6 border-t">
               <p className="text-sm text-gray-500">Partenaire</p>
@@ -384,7 +334,7 @@ export default function ProfilePage() {
             />
           ) : (
             <div className="w-24 h-24 bg-gray-100 border border-gray-200 text-gray-400 font-semibold flex items-center justify-center rounded-full text-2xl uppercase shadow-inner mx-auto">
-              {user?.firstName?.[0] || user?.name?.[0] || "U"}
+              {user?.firstName?.charAt(0) || user?.name?.charAt(0) || "U"}
             </div>
           )}
 
