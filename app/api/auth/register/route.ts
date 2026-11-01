@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
     const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
 
-    // Envoi de l'email via l'endpoint de production Resend
+    // Envoi de l'email via l'endpoint officiel de production Resend API
     if (process.env.RESEND_API_KEY) {
       try {
         const resendResponse = await fetch("https://resend.com", {
@@ -89,8 +89,6 @@ export async function POST(req: Request) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // NOTE : "onboarding@resend.dev" fonctionne uniquement vers votre propre mail de test.
-            // Si vous utilisez @locaplux.com, assurez-vous que le domaine est validé sur Resend !
             from: "Locaplux <no-reply@locaplux.com>", 
             to: email,
             subject: "Confirmez votre adresse email - Locaplux",
