@@ -156,6 +156,7 @@ export default function ProfilePage() {
               className="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-md px-3 py-2 text-[15px] cursor-not-allowed"
             />
           </div>
+
           <div>
             <p className="text-sm text-gray-500 mb-1">Email (Lié au compte)</p>
             <input
