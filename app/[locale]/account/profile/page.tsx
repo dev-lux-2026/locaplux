@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Structure des données 100% alignée avec Supabase & Prisma
+  // Structure des données alignée avec Supabase & Prisma
   const [formData, setFormData] = useState({
     phone: "",
     address: "",
@@ -29,7 +29,7 @@ export default function ProfilePage() {
     shippingCountry: "France",
   });
 
-  // Synchronisation complète des données de session dès que l'utilisateur est connecté
+  // Synchronisation des données de session dès que l'utilisateur est connecté
   useEffect(() => {
     if (user) {
       setFormData({
