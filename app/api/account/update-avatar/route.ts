@@ -4,13 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 
-// 🚀 CONFIGURATION CRUCIALE POUR VERCEL : Autorise la réception de fichiers volumineux
-export const config = {
-  api: {
-    bodyParser: false, // Empêche Next.js de bloquer le flux FormData binaire
-  },
-};
-
 export async function POST(req: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,7 +18,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Récupération sécurisée du binaire
     const formData = await req.formData();
     const file = formData.get("avatar") as File | null;
 
