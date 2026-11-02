@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 
+// 🚀 IMPÉRATIF POUR VERCEL : Force la route à s'exécuter de manière dynamique à chaque requête
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -13,11 +16,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Configuration de stockage indisponible." }, { status: 500 });
     }
 
+    // 🔐 Récupération sécurisée de la session
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    
+    // Si la session est vide (problème de cookie en production), on renvoie une erreur propre sans crasher
+    if (!session || !session.user || !session.user.email) {
+      return NextResponse.json(
+        { error: "Authentification requise. Veuillez vous déconnecter puis vous reconnecter." }, 
+        { status: 401 }
+      );
     }
 
+    // Extraction du fichier image binaire
     const formData = await req.formData();
     const file = formData.get("avatar") as File | null;
 
@@ -54,6 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Génération du lien échouée." }, { status: 500 });
     }
 
+    // Mise à jour MongoDB via Prisma
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
@@ -65,7 +76,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, url: publicUrl });
 
   } catch (error: any) {
-    console.error("🔴 CRASH SERVEUR :", error);
-    return NextResponse.json({ error: "Erreur interne du traitement." }, { status: 500 });
+    console.error("🔴 ERREUR CRITIQUE API AVATAR :", error);
+    return NextResponse.json({ error: "Erreur interne lors du traitement de l'image." }, { status: 500 });
   }
 }
