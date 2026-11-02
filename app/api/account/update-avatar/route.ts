@@ -8,10 +8,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    // 🔬 LOGS DE VÉRIFICATION ULTRA-STRICTS AU DÉBUT DE POST
+    console.log("=== 🔍 SÉCURITÉ INFRASTRUCTURE LOCAPLUX ===");
+    console.log("NEXT_PUBLIC_SUPABASE_URL présente :", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SUPABASE_SERVICE_ROLE_KEY présente :", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY présente :", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error("🔴 Variables d'environnement de stockage introuvables");
       return NextResponse.json({ error: "Configuration de stockage indisponible." }, { status: 500 });
     }
 
@@ -47,6 +54,7 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
+      console.error("🔴 Erreur Supabase Storage :", uploadError.message);
       return NextResponse.json({ error: `Erreur stockage : ${uploadError.message}` }, { status: 500 });
     }
 
