@@ -328,7 +328,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* --- BLOC AVATAR DE LA MARKETPLACE --- */}
+      {/* --- BLOC AVATAR DE LA MARKETPLACE CORRIGÉ --- */}
       <div className="mt-12 pt-8 border-t border-gray-100 text-center">
         <div className="relative w-24 h-24 mx-auto group">
           {user?.image || user?.avatar ? (
@@ -338,6 +338,7 @@ export default function ProfilePage() {
               className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-sm mx-auto"
             />
           ) : (
+            /* 🚀 FIX SÉCURISÉ : Initiales CSS pures sans aucun appel de fichier externe pour éviter l'erreur 400 */
             <div className="w-24 h-24 bg-gray-100 border border-gray-200 text-gray-400 font-semibold flex items-center justify-center rounded-full text-2xl uppercase shadow-inner mx-auto">
               {user?.firstName?.charAt(0) || user?.name?.charAt(0) || "U"}
             </div>
