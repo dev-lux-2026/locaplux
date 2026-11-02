@@ -2,20 +2,17 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    console.log("=== 🔍 SÉCURITÉ INFRASTRUCTURE LOCAPLUX ===");
+    console.log("=== 🔍 AMÉLIORATION DU TUNNEL HTTP SECURE ===");
     
-    // Nettoyage strict des variables d'environnement (supprime les espaces et slashs de fin)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
-    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim();
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("🔴 Clés introuvables après nettoyage");
       return NextResponse.json({ error: "Configuration de stockage indisponible." }, { status: 500 });
     }
 
@@ -31,40 +28,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
     }
 
-    // 🚀 SÉCURISATION DU BINAIRE : Utilisation d'un Blob standard pour éviter le crash du fetch Node.js
     const arrayBuffer = await file.arrayBuffer();
-    const fileBlob = new Blob([arrayBuffer], { type: file.type });
-
     const fileExt = file.name.split(".").pop() || "png";
     const cleanEmail = session.user.email.replace(/[^a-zA-Z0-9]/g, "_");
     const fileName = `${cleanEmail}-${Date.now()}.${fileExt}`;
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false }
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/avatars/${fileName}`;
+    
+    // 🚀 INJECTION COMPATIBILITÉ VERCEL FRA1 : Forçage des en-têtes et agents réseau standardisés
+    const response = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey,
+        "Content-Type": file.type,
+        "Connection": "keep-alive",
+        "Accept": "*/*"
+      },
+      body: arrayBuffer,
     });
 
-    // Envoi du Blob natif
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from("avatars")
-      .upload(fileName, fileBlob, {
-        contentType: file.type,
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("🔴 Erreur Supabase Storage détectée :", uploadError.message);
-      return NextResponse.json({ error: `Erreur stockage : ${uploadError.message}` }, { status: 500 });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("🔴 Supabase Rejection:", errorText);
+      return NextResponse.json({ error: `Supabase a refusé l'accès : ${errorText}` }, { status: 500 });
     }
 
-    const { data: linkData } = supabaseAdmin.storage
-      .from("avatars")
-      .getPublicUrl(fileName);
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
 
-    const publicUrl = linkData?.publicUrl;
-    if (!publicUrl) {
-      return NextResponse.json({ error: "Génération du lien échouée." }, { status: 500 });
-    }
-
+    // Mise à jour de la table User
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
@@ -76,7 +68,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, url: publicUrl });
 
   } catch (error: any) {
-    console.error("🔴 ERREUR CRITIQUE API AVATAR :", error?.message || error);
-    return NextResponse.json({ error: "Erreur interne lors du traitement de l'image." }, { status: 500 });
+    console.error("🔴 ERREUR TUNNEL VERCEL :", error?.message || error);
+    return NextResponse.json({ error: `Erreur de connexion réseau : ${error?.message || "fetch failed"}` }, { status: 500 });
   }
 }
