@@ -8,6 +8,17 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // 🚀 AUTORISATION SUPABASE : Permet à Next.js d'afficher les photos de profil
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default withIntl(nextConfig);
