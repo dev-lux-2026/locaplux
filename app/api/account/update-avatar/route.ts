@@ -8,26 +8,20 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    // 🔬 LOGS DE VÉRIFICATION ULTRA-STRICTS AU DÉBUT DE POST
     console.log("=== 🔍 SÉCURITÉ INFRASTRUCTURE LOCAPLUX ===");
-    console.log("NEXT_PUBLIC_SUPABASE_URL présente :", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("SUPABASE_SERVICE_ROLE_KEY présente :", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-    console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY présente :", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    // Nettoyage strict des variables d'environnement (supprime les espaces et slashs de fin)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim();
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("🔴 Variables d'environnement de stockage introuvables");
+      console.error("🔴 Clés introuvables après nettoyage");
       return NextResponse.json({ error: "Configuration de stockage indisponible." }, { status: 500 });
     }
 
     const session = await getServerSession(authOptions);
     if (!session || !session.user || !session.user.email) {
-      return NextResponse.json(
-        { error: "Authentification requise. Veuillez vous reconnecter." }, 
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     }
 
     const formData = await req.formData();
@@ -37,24 +31,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // 🚀 SÉCURISATION DU BINAIRE : Utilisation d'un Blob standard pour éviter le crash du fetch Node.js
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBlob = new Blob([arrayBuffer], { type: file.type });
 
     const fileExt = file.name.split(".").pop() || "png";
     const cleanEmail = session.user.email.replace(/[^a-zA-Z0-9]/g, "_");
     const fileName = `${cleanEmail}-${Date.now()}.${fileExt}`;
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
 
+    // Envoi du Blob natif
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from("avatars")
-      .upload(fileName, buffer, {
+      .upload(fileName, fileBlob, {
         contentType: file.type,
         upsert: true,
       });
 
     if (uploadError) {
-      console.error("🔴 Erreur Supabase Storage :", uploadError.message);
+      console.error("🔴 Erreur Supabase Storage détectée :", uploadError.message);
       return NextResponse.json({ error: `Erreur stockage : ${uploadError.message}` }, { status: 500 });
     }
 
@@ -78,7 +76,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, url: publicUrl });
 
   } catch (error: any) {
-    console.error("🔴 ERREUR CRITIQUE API AVATAR :", error);
+    console.error("🔴 ERREUR CRITIQUE API AVATAR :", error?.message || error);
     return NextResponse.json({ error: "Erreur interne lors du traitement de l'image." }, { status: 500 });
   }
 }
