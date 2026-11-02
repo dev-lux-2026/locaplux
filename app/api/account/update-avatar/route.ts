@@ -9,6 +9,14 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    export async function POST(req: Request) {
+  // 🔬 LOGS DE VÉRIFICATION ULTRA-STRICTS
+  console.log("=== 🔍 SÉCURITÉ INFRASTRUCTURE LOCAPLUX ===");
+  console.log("NEXT_PUBLIC_SUPABASE_URL présente :", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("Début de l'URL :", process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 15));
+  console.log("SUPABASE_SERVICE_ROLE_KEY présente :", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log("Début de la clé secrète :", process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10));
+  console.log("==========================================");
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
