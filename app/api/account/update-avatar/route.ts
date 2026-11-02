@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    console.log("=== 🔍 AMÉLIORATION DU TUNNEL HTTP SECURE ===");
+    console.log("=== 🔍 EXÉCUTION API AVATAR LOCAPLUX ===");
 
     const session = await getServerSession(authOptions);
     if (!session || !session.user || !session.user.email) {
@@ -22,7 +22,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
     }
 
-    // Extraction du fichier binaire standardisé en Blob
+    // Récupération et nettoyage strict des variables d'environnement
+    const supabaseUrl = "https://supabase.co";
+    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim();
+
+    if (!supabaseKey) {
+      return NextResponse.json({ error: "La clé secrète de stockage est introuvable." }, { status: 500 });
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const fileBlob = new Blob([arrayBuffer], { type: file.type });
 
@@ -30,20 +37,15 @@ export async function POST(req: Request) {
     const cleanEmail = session.user.email.replace(/[^a-zA-Z0-9]/g, "_");
     const fileName = `${cleanEmail}-${Date.now()}.${fileExt}`;
 
-    // 🚀 INITIALISATION DU SDK AVEC DÉSACTIVATION DES COOKIES (Recommandé pour Vercel Serverless)
-    const supabaseAdmin = createClient(
-      "https://supabase.co",
-      process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
-        }
+    // Configuration optimale pour les fonctions serverless Vercel
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
       }
-    );
+    });
 
-    // Téléversement via le SDK officiel
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from("avatars")
       .upload(fileName, fileBlob, {
@@ -52,21 +54,20 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      console.error("🔴 Erreur interne du SDK Supabase :", uploadError.message);
+      console.error("🔴 Erreur retournée par le stockage Supabase :", uploadError.message);
       return NextResponse.json({ error: `Erreur stockage : ${uploadError.message}` }, { status: 500 });
     }
 
-    // Récupération du lien public
     const { data: linkData } = supabaseAdmin.storage
       .from("avatars")
       .getPublicUrl(fileName);
 
     const publicUrl = linkData?.publicUrl;
     if (!publicUrl) {
-      return NextResponse.json({ error: "Génération du lien échouée." }, { status: 500 });
+      return NextResponse.json({ error: "Génération de l'URL publique impossible." }, { status: 500 });
     }
 
-    // Enregistrement dans PostgreSQL via Prisma
+    // Sauvegarde du lien dans Postgres via Prisma
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, url: publicUrl });
 
   } catch (error: any) {
-    console.error("🔴 ERREUR TUNNEL VERCEL :", error?.message || error);
-    return NextResponse.json({ error: `Erreur de connexion réseau : ${error?.message || "fetch failed"}` }, { status: 500 });
+    console.error("🔴 EXCEPTION CAPTURÉE :", error?.message || error);
+    return NextResponse.json({ error: `Une erreur est survenue : ${error?.message || "Traitement interrompu"}` }, { status: 500 });
   }
 }
