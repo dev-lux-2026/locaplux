@@ -1,18 +1,14 @@
 // /lib/emails/emailTemplate.tsx
 import * as React from "react";
-import { LOGO_BASE64 } from "./logoBase64";
 
 export const EmailTemplate = ({
   title,
   children,
-  logoBase64,
 }: {
   title: string;
   children: React.ReactNode;
-  logoBase64?: string;
+  logoBase64?: string; // Gardé optionnel pour ne pas casser d'autres imports potentiels
 }) => {
-  const logo = logoBase64 ?? LOGO_BASE64;
-
   return (
     <html>
       <body
@@ -23,21 +19,26 @@ export const EmailTemplate = ({
           backgroundColor: "#f5f5f5",
         }}
       >
-        {/* HEADER */}
+        {/* HEADER - Texte Locaplux au lieu de l'image */}
         <table
           width="100%"
           cellPadding="0"
           cellSpacing="0"
-          style={{ backgroundColor: "#000000", padding: "20px 0" }}
+          style={{ backgroundColor: "#000000", padding: "25px 0" }}
         >
           <tr>
             <td align="center">
-              <img
-                src={logo}
-                alt="Locaplux"
-                width="180"
-                style={{ display: "block" }}
-              />
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  letterSpacing: "1.5px",
+                  textDecoration: "none",
+                }}
+              >
+                Locaplux
+              </span>
             </td>
           </tr>
         </table>
@@ -56,7 +57,7 @@ export const EmailTemplate = ({
         >
           <tr>
             <td>
-              <h1 style={{ marginTop: 0 }}>{title}</h1>
+              <h1 style={{ marginTop: 0, color: "#111111" }}>{title}</h1>
               <div>{children}</div>
             </td>
           </tr>

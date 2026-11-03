@@ -1,6 +1,6 @@
+// /lib/emails/partner/partnerKycApproved.tsx
 import * as React from "react";
 import { EmailTemplate } from "@/lib/emails/emailTemplate";
-import { LOGO_BASE64 } from "@/lib/emails/logoBase64";
 
 interface PartnerKycApprovedEmailProps {
   name: string;
@@ -14,7 +14,7 @@ export const PartnerKycApprovedEmail = ({
   completeProfileUrl,
 }: PartnerKycApprovedEmailProps) => {
   return (
-    <EmailTemplate title="Compte validé" logoBase64={LOGO_BASE64}>
+    <EmailTemplate title="Compte validé">
       <p>Bonjour {name},</p>
 
       <p>Félicitations ! Votre compte partenaire Locaplux vient d’être validé.</p>
@@ -24,6 +24,7 @@ export const PartnerKycApprovedEmail = ({
       <div style={{ textAlign: "center", margin: "30px 0" }}>
         <a
           href={createPasswordUrl}
+          target="_blank"
           style={{
             backgroundColor: "#000",
             color: "#fff",
@@ -32,6 +33,7 @@ export const PartnerKycApprovedEmail = ({
             textDecoration: "none",
             fontSize: "15px",
             fontWeight: "bold",
+            display: "inline-block",
           }}
         >
           Créer mon mot de passe
@@ -45,6 +47,7 @@ export const PartnerKycApprovedEmail = ({
           <div style={{ textAlign: "center", marginTop: "20px" }}>
             <a
               href={completeProfileUrl}
+              target="_blank"
               style={{
                 backgroundColor: "#e5e5e5",
                 color: "#000",
@@ -52,6 +55,7 @@ export const PartnerKycApprovedEmail = ({
                 borderRadius: "6px",
                 textDecoration: "none",
                 fontSize: "14px",
+                display: "inline-block",
               }}
             >
               Compléter mon profil
