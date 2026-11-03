@@ -328,69 +328,10 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* --- BLOC AVATAR DE LA MARKETPLACE CORRIGÉ --- */}
-      <div className="mt-12 pt-8 border-t border-gray-100 text-center">
-        <div className="relative w-24 h-24 mx-auto group">
-          {user?.image || user?.avatar ? (
-            <img
-              src={user.image || user.avatar}
-              alt={fullName || "Avatar"}
-              className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-sm mx-auto"
-            />
-          ) : (
-            /* 🚀 FIX SÉCURISÉ : Initiales CSS pures sans aucun appel de fichier externe pour éviter l'erreur 400 */
-            <div className="w-24 h-24 bg-gray-100 border border-gray-200 text-gray-400 font-semibold flex items-center justify-center rounded-full text-2xl uppercase shadow-inner mx-auto">
-              {user?.firstName?.charAt(0) || user?.name?.charAt(0) || "U"}
-            </div>
-          )}
-
-          <label className="absolute inset-0 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition duration-200 flex flex-col items-center justify-center cursor-pointer text-[12px] font-medium gap-1 max-w-[96px] mx-auto">
-            <span>📷</span>
-            <span>Changer</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                if (file.size > 2 * 1024 * 1024) {
-                  toast.error("L'image est trop lourde. Maximum 2 Mo.");
-                  return;
-                }
-
-                const uploadToast = toast.loading("Téléversement de l'avatar...");
-
-                try {
-                  const formDataPayload = new FormData();
-                  formDataPayload.append("avatar", file);
-
-                  const res = await fetch("/api/account/update-avatar", {
-                    method: "POST",
-                    body: formDataPayload,
-                  });
-
-                  if (!res.ok) throw new Error("Échec du téléversement");
-                  const data = await res.json();
-
-                  await update({
-                    ...session,
-                    user: {
-                      ...session?.user,
-                      image: data.url,
-                      avatar: data.url,
-                    },
-                  });
-
-                  toast.success("Photo de profil mise à jour !", { id: uploadToast });
-                } catch (err) {
-                  console.error("🔴 Erreur upload avatar client :", err);
-                  toast.error("Impossible d'enregistrer l'image.", { id: uploadToast });
-                }
-              }}
-            />
-          </label>
+      {/* --- BLOC AVATAR AUTOMATIQUE (INITIALE UNIQUEMENT) --- */}
+      <div className="mt-12 pt-8 border-t border-gray-100 text-center flex flex-col items-center justify-center">
+        <div className="w-24 h-24 bg-gradient-to-tr from-black to-gray-700 text-white font-bold flex items-center justify-center rounded-full text-3xl uppercase shadow-md border-4 border-white ring-2 ring-gray-100">
+          {user?.firstName?.charAt(0) || user?.name?.charAt(0) || "U"}
         </div>
         <h3 className="font-semibold text-gray-900 mt-4 text-xl">{fullName}</h3>
         <p className="text-xs text-gray-400 font-bold mt-1 tracking-wide uppercase">
