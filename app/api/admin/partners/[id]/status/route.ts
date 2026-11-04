@@ -58,7 +58,13 @@ export async function PATCH(
   if (status === "approved") {
     const token = await createPartnerActivationToken(partner.id);
 
-    const createPasswordUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/create-password?token=${token}`;
+    // 💡 Sécurité ajoutée : si NEXT_PUBLIC_APP_URL est introuvable, on bascule sur NEXTAUTH_URL ou sur ton domaine direct
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      "https://locaplux.com";
+
+    const createPasswordUrl = `${baseUrl}/auth/create-password?token=${token}`;
 
     await sendPartnerKycApprovedEmail(
       partner.email ?? "",
