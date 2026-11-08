@@ -29,15 +29,15 @@ export async function POST(req: Request) {
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 3600000); // Valide 1 heure
 
-    // Enregistrer le token dans la table dédiée PasswordResetToken
-    // (On supprime d'abord les anciens tokens potentiels pour cet email par propreté)
+    // Supprimer les anciens tokens de cet utilisateur via son userId
     await prisma.passwordResetToken.deleteMany({
-      where: { email },
+      where: { userId: user.id },
     });
 
+    // Créer le nouveau token lié à l'utilisateur
     await prisma.passwordResetToken.create({
       data: {
-        email,
+        userId: user.id,
         token,
         expires,
       },
