@@ -16,39 +16,40 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Rechercher l'utilisateur par son email
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    // Par sécurité, même si l'utilisateur n'existe pas, on renvoie un succès 
-    // pour éviter l'énumération des e-mails par des personnes malveillantes.
+    // Par sécurité, on renvoie un succès même si l'utilisateur n'existe pas
     if (!user) {
       return NextResponse.json({ success: true });
     }
 
-    // 2. Générer un token unique et sécurisé
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // Valide 1 heure
+    // Générer un token unique et sécurisé
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 3600000); // Valide 1 heure
 
-    // 3. Sauvegarder le token dans la base de données si nécessaire
-    await prisma.user.update({
-      where: { id: user.id },
+    // Enregistrer le token dans la table dédiée PasswordResetToken
+    // (On supprime d'abord les anciens tokens potentiels pour cet email par propreté)
+    await prisma.passwordResetToken.deleteMany({
+      where: { email },
+    });
+
+    await prisma.passwordResetToken.create({
       data: {
-        // resetToken,
-        // resetTokenExpiry,
+        email,
+        token,
+        expires,
       },
     });
 
-    // Détermination de l'URL de base du site
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXTAUTH_URL ||
       "https://locaplux.com";
 
-    const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
 
-    // 4. Envoi de l'e-mail via Resend avec ton domaine validé
     const { data, error } = await resend.emails.send({
       from: "Locaplux <contact@locaplux.com>",
       to: email,
@@ -72,8 +73,6 @@ export async function POST(req: Request) {
       console.error("🔴 ERREUR RESEND DÉTAILLÉE :", error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
-    console.log("🟢 Email de réinitialisation envoyé avec succès :", data);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
