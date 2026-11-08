@@ -49,9 +49,9 @@ export async function POST(req: Request) {
 
     const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
 
-    // 4. Envoi de l'e-mail via Resend
-    await resend.emails.send({
-      from: "Locaplux <onboarding@resend.dev>", // Remplace par ton domaine vérifié Resend si besoin
+// 4. Envoi de l'e-mail via Resend avec gestion d'erreur explicite
+    const { data, error } = await resend.emails.send({
+      from: "Locaplux <onboarding@resend.dev>", // ou ton domaine si configuré
       to: email,
       subject: "Réinitialisation de votre mot de passe - Locaplux",
       html: `
@@ -68,6 +68,13 @@ export async function POST(req: Request) {
         </div>
       `,
     });
+
+    if (error) {
+      console.error("🔴 ERREUR RESEND DÉTAILLÉE :", error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    console.log("🟢 Email de réinitialisation envoyé avec succès :", data);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
