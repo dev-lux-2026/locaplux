@@ -20,26 +20,25 @@ export async function POST(req: Request) {
       where: { email },
     });
 
-    // Par sécurité, on renvoie un succès même si l'utilisateur n'existe pas
     if (!user) {
       return NextResponse.json({ success: true });
     }
 
-    // Générer un token unique et sécurisé
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 3600000); // Valide 1 heure
+    const expiresAt = new Date(Date.now() + 3600000); // 1 heure
 
-    // Supprimer les anciens tokens de cet utilisateur via son userId
+    // Supprimer les anciens tokens de cet utilisateur
     await prisma.passwordResetToken.deleteMany({
       where: { userId: user.id },
     });
 
-    // Créer le nouveau token lié à l'utilisateur
+    // Créer le nouveau token avec les champs exacts du schéma
     await prisma.passwordResetToken.create({
       data: {
         userId: user.id,
         token,
-        expires,
+        type: "password_reset", // ou un type adapté
+        expiresAt,
       },
     });
 

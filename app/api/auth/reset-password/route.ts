@@ -13,42 +13,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Rechercher le token dans la table dédiée
+    // 1. Rechercher le token et vérifier s'il n'a pas expiré ou déjà été utilisé
     const resetRecord = await prisma.passwordResetToken.findUnique({
       where: { token },
     });
 
-    if (!resetRecord || resetRecord.expires < new Date()) {
+    if (
+      !resetRecord ||
+      resetRecord.expiresAt < new Date() ||
+      resetRecord.usedAt !== null
+    ) {
       return NextResponse.json(
-        { error: "Ce lien de réinitialisation est invalide ou a expiré." },
+        { error: "Ce lien de réinitialisation est invalide, a expiré ou a déjà été utilisé." },
         { status: 400 }
       );
     }
 
-    // 2. Trouver l'utilisateur associé via l'email du token
-    const user = await prisma.user.findUnique({
-      where: { email: resetRecord.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Utilisateur introuvable." },
-        { status: 400 }
-      );
-    }
-
-    // 3. Hasher le nouveau mot de passe
+    // 2. Mettre à jour le mot de passe de l'utilisateur associé
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Mettre à jour le mot de passe de l'utilisateur
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: resetRecord.userId },
       data: { password: hashedPassword },
     });
 
-    // 5. Supprimer le token utilisé pour qu'il ne serve plus
-    await prisma.passwordResetToken.delete({
-      where: { token },
+    // 3. Marquer le token comme utilisé (ou le supprimer)
+    await prisma.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: { usedAt: new Date() },
     });
 
     return NextResponse.json({ success: true });
