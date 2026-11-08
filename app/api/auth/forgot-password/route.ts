@@ -31,11 +31,10 @@ export async function POST(req: Request) {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // Valide 1 heure
 
-    // 3. Sauvegarder le token dans la base de données (assure-toi d'avoir ces champs dans ton modèle Prisma User, ou adapte selon ta structure)
+    // 3. Sauvegarder le token dans la base de données si nécessaire
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        // Si tu stockes les tokens de réinitialisation dans ta table User :
         // resetToken,
         // resetTokenExpiry,
       },
@@ -49,9 +48,9 @@ export async function POST(req: Request) {
 
     const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
 
-// 4. Envoi de l'e-mail via Resend avec gestion d'erreur explicite
+    // 4. Envoi de l'e-mail via Resend avec ton domaine validé
     const { data, error } = await resend.emails.send({
-      from: "Locaplux <onboarding@resend.dev>", // ou ton domaine si configuré
+      from: "Locaplux <contact@locaplux.com>",
       to: email,
       subject: "Réinitialisation de votre mot de passe - Locaplux",
       html: `
