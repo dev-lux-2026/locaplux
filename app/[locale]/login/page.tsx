@@ -90,11 +90,9 @@ function LoginContent() {
       setLoading(false);
 
       // 🚀 REDIRECTION CONVIVIALE MARKETPLACE
-      // Si l'utilisateur a déjà configuré son profil, on l'envoie sur l'accueil (Home)
       if (user?.firstName && user?.lastName && user?.address) {
         router.push(`/${locale}`);
       } else {
-        // Sinon, redirection vers l'onboarding pour compléter les données manquantes
         router.push(`/${locale}/account/onboarding/address`);
       }
 
@@ -126,14 +124,22 @@ function LoginContent() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
-          <div className="relative">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+            <Link
+              href={`/${locale}/forgot-password`}
+              className="text-sm text-gray-600 hover:text-black underline"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
+          <div className="relative mt-1">
             <input
               type={showPassword ? "text" : "password"}
               name="password"
               value={form.password}
               onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-black bg-white"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-black bg-white"
               required
             />
             <button
