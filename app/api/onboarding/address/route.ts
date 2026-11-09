@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Récupération de l'utilisateur officiel via son email unique
     const dbUser = await prisma.user.findUnique({
       where: { email: token.email },
     });
@@ -24,19 +23,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { billing, shipping } = body;
 
-    if (!billing || !shipping) {
-      return NextResponse.json({ error: "Données de formulaire manquantes." }, { status: 400 });
+    if (!billing) {
+      return NextResponse.json({ error: "Données de facturation manquantes." }, { status: 400 });
     }
 
-    // 2. Formatage des données d'adresses
+    // Si shipping n'est pas fourni, on utilise billing par défaut
+    const finalShipping = shipping || billing;
+
     const cleanData = (data: any, type: string) => ({
       userId,
       type,
       street: data.street?.trim() || "Non renseigné",
       number: data.number?.trim() || null,
-      zip: data.zip?.trim() || "00000",
+      zip: data.zip?.trim() || data.postal?.trim() || "00000",
       city: data.city?.trim() || "Non renseigné",
-      country: data.country?.trim() || "Non renseigné",
+      country: data.country?.trim() || "Luxembourg",
       phone: data.phone?.trim() || null,
     });
 
@@ -47,34 +48,38 @@ export async function POST(req: NextRequest) {
     const existingBilling = existingAddresses.find(a => a.type === "billing");
     const existingShipping = existingAddresses.find(a => a.type === "shipping");
 
-    // ⚡ EXÉCUTION UNIFIÉE : Écrit dans la table Address ET met à jour la table User
-    await prisma.$transaction([
-      // Mise à jour ou création de l'adresse de facturation
+    // Transactions sécurisées
+    const transactions: any[] = [
+      // Facturation
       existingBilling 
         ? prisma.address.update({ where: { id: existingBilling.id }, data: cleanData(billing, "billing") })
         : prisma.address.create({ data: cleanData(billing, "billing") }),
 
-      // Mise à jour ou création de l'adresse de livraison
+      // Livraison
       existingShipping
-        ? prisma.address.update({ where: { id: existingShipping.id }, data: cleanData(shipping, "shipping") })
-        : prisma.address.create({ data: cleanData(shipping, "shipping") }),
+        ? prisma.address.update({ where: { id: existingShipping.id }, data: cleanData(finalShipping, "shipping") })
+        : prisma.address.create({ data: cleanData(finalShipping, "shipping") }),
 
-      // ✨ ALIGNEMENT SUPABASE : Remplit enfin les colonnes de la table User pour valider l'onboarding
+      // Mise à jour de la table User (pour le profil et les gardes)
       prisma.user.update({
         where: { id: userId },
         data: {
-          address: billing.street?.trim() || "Non renseigné",
+          number: billing.number?.trim() || null,
+          street: billing.street?.trim() || "Non renseigné",
+          postal: billing.zip?.trim() || billing.postal?.trim() || "00000",
           city: billing.city?.trim() || "Non renseigné",
-          postal: billing.zip?.trim() || "00000",
-          country: billing.country?.trim() || "Non renseigné",
+          country: billing.country?.trim() || "Luxembourg",
+          phone: billing.phone?.trim() || null,
         },
       }),
-    ]);
+    ];
+
+    await prisma.$transaction(transactions);
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("🔴 Erreur alignement onboarding :", error);
+    console.error("🔴 Erreur mise à jour onboarding :", error);
     return NextResponse.json({ error: "Erreur lors de la mise à jour du profil.", details: error.message }, { status: 500 });
   }
 }
