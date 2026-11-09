@@ -29,19 +29,22 @@ export default function ProfilePage() {
     shippingCountry: "France",
   });
 
-  // Synchronisation des données de session dès que l'utilisateur est connecté
+ // Synchronisation des données de session dès que l'utilisateur est connecté
   useEffect(() => {
     if (user) {
       setFormData({
         phone: user.phone || "",
-        address: user.address || "",
+        // ✨ Combine le numéro et la rue si ton formulaire a un champ unique "address", 
+        // ou sépare-les si tu as des champs distincts.
+        address: user.street || user.address || "", 
+        number: user.number || "", // ✨ Ajoute le champ number ici s'il fait partie de ton state
         postal: user.postal || "",
         city: user.city || "",
-        country: user.country || "France",
+        country: user.country || "Luxembourg",
         shippingAddress: user.shippingAddress || "",
         shippingPostal: user.shippingPostal || "",
         shippingCity: user.shippingCity || "",
-        shippingCountry: user.shippingCountry || "France",
+        shippingCountry: user.shippingCountry || "Luxembourg",
       });
     }
   }, [user]);
