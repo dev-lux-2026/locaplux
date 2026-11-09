@@ -55,8 +55,8 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           firstName: user.firstName,
           lastName: user.lastName,
-          street: user.street, // ✨ Récupère la rue depuis la base
-          address: user.address,
+          street: user.street,
+          address: user.address || user.street, // ✨ Pont direct
           city: user.city,
           postal: user.postal,
           country: user.country,
@@ -85,8 +85,8 @@ export const authOptions: NextAuthOptions = {
           token.lastName = u.lastName || null;
         }
 
-        token.street = u.street || null; // ✨ Stocké dans le JWT
-        token.address = u.address || null;
+        token.street = u.street || null;
+        token.address = u.address || u.street || null; // ✨ Pont direct
         token.city = u.city || null;
         token.postal = u.postal || null;
         token.country = u.country || null;
@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
               name: true,
               firstName: true,
               lastName: true,
-              street: true, // ✨ Extrait directement de la base Supabase
+              street: true,
               address: true,
               city: true,
               postal: true,
@@ -134,6 +134,7 @@ export const authOptions: NextAuthOptions = {
 
             session.user = {
               ...freshUser,
+              address: freshUser.address || freshUser.street, // 🚀 LA CLÉ : Force address à récupérer street s'il est vide
               firstName: calculatedFirstName,
               lastName: calculatedLastName,
               emailVerified: freshUser.emailVerified ? true : false
@@ -153,8 +154,8 @@ export const authOptions: NextAuthOptions = {
         user.name = token.name as string | null;
         user.firstName = token.firstName as string | null;
         user.lastName = token.lastName as string | null;
-        user.street = token.street as string | null; // ✨ Fallback sécurité
-        user.address = token.address as string | null;
+        user.street = token.street as string | null;
+        user.address = token.address || token.street || null; // ✨ Fallback sécurité
         user.city = token.city as string | null;
         user.postal = token.postal as string | null;
         user.country = token.country as string | null;
