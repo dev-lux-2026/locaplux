@@ -55,11 +55,12 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           firstName: user.firstName,
           lastName: user.lastName,
+          street: user.street, // ✨ Récupère la rue depuis la base
           address: user.address,
           city: user.city,
           postal: user.postal,
           country: user.country,
-          phone: user.phone, // ✨ 1. AJOUT AUTHORIZE : Transmis au JWT initial
+          phone: user.phone,
         };
       },
     }),
@@ -75,7 +76,6 @@ export const authOptions: NextAuthOptions = {
         token.role = u.role;
         token.name = u.name;
         
-        // ✨ EXTRACTION SÉCURISÉE : Si les colonnes distinctes sont null mais name existe, on découpe le nom complet
         if (u.name && (!u.firstName || !u.lastName)) {
           const parts = u.name.trim().split(" ");
           token.firstName = parts[0] || null;
@@ -85,14 +85,14 @@ export const authOptions: NextAuthOptions = {
           token.lastName = u.lastName || null;
         }
 
+        token.street = u.street || null; // ✨ Stocké dans le JWT
         token.address = u.address || null;
         token.city = u.city || null;
         token.postal = u.postal || null;
         token.country = u.country || null;
-        token.phone = u.phone || null; // ✨ 2. AJOUT JWT : Stocké en mémoire dans le cookie
+        token.phone = u.phone || null;
       }
       
-      // ✨ Permet le rafraîchissement à la volée lorsque le client appelle update()
       if (trigger === "update" && session) {
         return { ...token, ...session };
       }
@@ -103,7 +103,6 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && token.email) {
         try {
-          // 🚀 LECTURE FRAICHE EN PRODUCTION : Récupère l'état d'onboarding réel dans Supabase
           const freshUser = await prisma.user.findUnique({
             where: { email: token.email },
             select: {
@@ -114,16 +113,16 @@ export const authOptions: NextAuthOptions = {
               name: true,
               firstName: true,
               lastName: true,
+              street: true, // ✨ Extrait directement de la base Supabase
               address: true,
               city: true,
               postal: true,
               country: true,
-              phone: true, // ✨ 3. AJOUT SELECT : Extrait de Supabase à chaque rafraîchissement
+              phone: true,
             }
           });
 
           if (freshUser) {
-            // ✨ EXTRACTION SÉCURISÉE POUR LE TOUT FRAIS : Alignement de la session avec le découpage du nom
             let calculatedFirstName = freshUser.firstName;
             let calculatedLastName = freshUser.lastName;
 
@@ -146,7 +145,6 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Fallback de sécurité si Supabase n'est pas accessible momentanément
       if (token && session.user) {
         const user = session.user as any;
         user.id = token.id as string;
@@ -155,11 +153,12 @@ export const authOptions: NextAuthOptions = {
         user.name = token.name as string | null;
         user.firstName = token.firstName as string | null;
         user.lastName = token.lastName as string | null;
+        user.street = token.street as string | null; // ✨ Fallback sécurité
         user.address = token.address as string | null;
         user.city = token.city as string | null;
         user.postal = token.postal as string | null;
         user.country = token.country as string | null;
-        user.phone = token.phone as string | null; // ✨ 4. AJOUT FALLBACK : Sécurité d'affichage
+        user.phone = token.phone as string | null;
         session.user = user;
       }
 
