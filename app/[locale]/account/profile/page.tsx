@@ -16,11 +16,11 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Structure des données alignée avec Supabase & Prisma (avec number inclus)
+  // Structure des données alignée avec Supabase & Prisma (avec number inclus explicitement)
   const [formData, setFormData] = useState({
     phone: "",
     address: "",
-    number: "",
+    number: "", // 👈 C'est cette ligne qui manquait au type du state
     postal: "",
     city: "",
     country: "France",
