@@ -16,10 +16,11 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Structure des données alignée avec Supabase & Prisma
+  // Structure des données alignée avec Supabase & Prisma (avec number inclus)
   const [formData, setFormData] = useState({
     phone: "",
     address: "",
+    number: "",
     postal: "",
     city: "",
     country: "France",
@@ -29,22 +30,20 @@ export default function ProfilePage() {
     shippingCountry: "France",
   });
 
- // Synchronisation des données de session dès que l'utilisateur est connecté
+  // Synchronisation des données de session dès que l'utilisateur est connecté
   useEffect(() => {
     if (user) {
       setFormData({
         phone: user.phone || "",
-        // ✨ Combine le numéro et la rue si ton formulaire a un champ unique "address", 
-        // ou sépare-les si tu as des champs distincts.
         address: user.street || user.address || "", 
-        number: user.number || "", // ✨ Ajoute le champ number ici s'il fait partie de ton state
+        number: user.number || "", 
         postal: user.postal || "",
         city: user.city || "",
-        country: user.country || "Luxembourg",
+        country: user.country || "France",
         shippingAddress: user.shippingAddress || "",
         shippingPostal: user.shippingPostal || "",
         shippingCity: user.shippingCity || "",
-        shippingCountry: user.shippingCountry || "Luxembourg",
+        shippingCountry: user.shippingCountry || "France",
       });
     }
   }, [user]);
@@ -56,7 +55,7 @@ export default function ProfilePage() {
       : "Acheteur Locaplux";
 
   // Détection stricte et professionnelle d'un profil incomplet
-  const isProfileIncomplete = !user?.firstName || !user?.lastName || !user?.address;
+  const isProfileIncomplete = !user?.firstName || !user?.lastName || (!user?.address && !user?.street);
 
   // Reconstruction propre du nom affiché à partir des deux colonnes distinctes
   const fullName = user?.firstName && user?.lastName 
@@ -89,6 +88,7 @@ export default function ProfilePage() {
         user: {
           ...session?.user,
           ...formData,
+          street: formData.address, // Mappe address vers street pour cohérence auth
         }
       });
 
@@ -182,6 +182,67 @@ export default function ProfilePage() {
             />
           </div>
 
+          {/* Adresse Principale / Facturation avec numéro séparé */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+            <p className="text-sm font-semibold text-gray-900">🏠 Adresse de facturation</p>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Numéro</label>
+                <input
+                  type="text"
+                  name="number"
+                  value={formData.number}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                  placeholder="N°"
+                />
+              </div>
+              <div className="col-span-3">
+                <label className="block text-xs text-gray-500 mb-1">Rue</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                  placeholder="Nom de la rue"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Code postal</label>
+                <input
+                  type="text"
+                  name="postal"
+                  value={formData.postal}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Ville</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Pays</label>
+                <input
+                  type="text"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 bg-white text-black rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
             <p className="text-sm font-semibold text-gray-900">📦 Adresse de livraison spécifique</p>
             <div>
@@ -273,11 +334,11 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t">
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <p className="text-xs font-semibold uppercase text-gray-400 tracking-wider">🏠 Adresse principale / de facturation</p>
-              {user?.address ? (
+              {(user?.address || user?.street) ? (
                 <p className="text-[15px] text-gray-800 mt-2 leading-relaxed">
-                  {user.address}<br />
-                  {user.postal} {user.city}<br />
-                  <span className="text-xs font-medium text-gray-500">{user.country || "France"}</span>
+                  {user?.number ? `${user.number}, ` : ""} {user?.street || user?.address}<br />
+                  {user?.postal} {user?.city}<br />
+                  <span className="text-xs font-medium text-gray-500">{user?.country || "France"}</span>
                 </p>
               ) : (
                 <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse enregistrée.</p>
@@ -292,23 +353,14 @@ export default function ProfilePage() {
                   {user.shippingPostal} {user.shippingCity}<br />
                   <span className="text-xs font-medium text-gray-500">{user.shippingCountry || "France"}</span>
                 </p>
-              ) : user?.address ? (
+              ) : (user?.address || user?.street) ? (
                 <p className="text-[14px] text-gray-500 italic mt-2">Identique à l'adresse de facturation.</p>
               ) : (
                 <p className="text-[14px] text-gray-400 italic mt-2">Aucune adresse de livraison renseignée.</p>
               )}
             </div>
           </div>
-          {user?.role === "partner" && (
-            <div className="pt-6 border-t">
-              <p className="text-sm text-gray-500">Partenaire</p>
-              <p className="text-[15px] text-gray-700 mt-1">
-                Votre compte partenaire est actif. Vous pouvez gérer vos produits,
-                vos commandes et vos informations professionnelles.
-              </p>
-            </div>
-          )}
-
+          
           {user?.role === "partner" && (
             <div className="pt-6 border-t">
               <p className="text-sm text-gray-500">Partenaire</p>
