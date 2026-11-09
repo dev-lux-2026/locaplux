@@ -127,7 +127,7 @@ function LoginContent() {
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
             <Link
-              href={`/${locale}/forgot-password`}
+              href={`/${locale}/auth/forgot-password`}
               className="text-sm text-gray-600 hover:text-black underline"
             >
               Mot de passe oublié ?
