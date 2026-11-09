@@ -93,7 +93,7 @@ function LoginContent() {
       if (user?.firstName && user?.lastName && user?.address) {
         router.push(`/${locale}`);
       } else {
-        router.push(`/${locale}/account/onboarding/address`);
+        router.push(`/${locale}/account/profile`);
       }
 
     } catch (err: any) {
