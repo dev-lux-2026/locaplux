@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-    const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
+    const verifyUrl = `${appUrl}/fr/verify-email?token=${token}`;
 
     if (process.env.RESEND_API_KEY) {
       try {
