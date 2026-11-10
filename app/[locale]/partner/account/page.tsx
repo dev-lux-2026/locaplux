@@ -133,6 +133,22 @@ export default function PartnerAccountPage() {
         <section className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">Identité</h2>
 
+          {/* 🔒 Champ e-mail en lecture seule (non modifiable) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Adresse e-mail (Identifiant)
+            </label>
+            <input
+              type="email"
+              disabled
+              className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+              value={partner.email || ""}
+            />
+            <p className="text-[11px] text-gray-400 mt-1">
+              L'adresse e-mail ne peut pas être modifiée.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               className="border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-black"

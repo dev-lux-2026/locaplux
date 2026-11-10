@@ -26,6 +26,9 @@ export async function PATCH(req: Request) {
 
   const data = await req.json();
 
+  // 🛡️ Sécurité : On s'assure qu'aucun changement d'email ne puisse passer par mégarde
+  delete data.email;
+
   // Normalisation des champs livraison
   const delivery_allowed_countries =
     typeof data.delivery_allowed_countries === "string"
