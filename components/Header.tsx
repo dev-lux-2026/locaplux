@@ -182,9 +182,21 @@ export default function Header() {
                                 border border-gray-200 dark:border-white/10
                                 rounded-md shadow-lg text-[13px] overflow-hidden z-20">
 
-                  {/* ✅ Liens de menu utilisateur corrigés avec la langue */}
-                  <Link href={`/${locale}/account/profile`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                    {t("profile")}
+                  {/* ✅ Affichage conditionnel selon le rôle */}
+                  {session?.user?.role !== "partner" && (
+                    <Link href={`/${locale}/account/profile`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
+                      {t("profile")}
+                    </Link>
+                  )}
+
+                  {session?.user?.role === "partner" && (
+                    <Link href={`/${locale}/partner/account`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600">
+                      {t("partnerAccount") || "Mon compte partenaire"}
+                    </Link>
+                  )}
+
+                  <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
+                    {t("orders")}
                   </Link>
 
                   <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
