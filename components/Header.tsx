@@ -199,10 +199,6 @@ export default function Header() {
                     {t("orders")}
                   </Link>
 
-                  <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                    {t("orders")}
-                  </Link>
-
                   {session?.user?.role === "partner" && (
                     <Link
                       href={`/${locale}/partner/dashboard`}
