@@ -1,11 +1,15 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 
 export default function CaptureSuccessPage() {
-  const params = useSearchParams();
-  const session = params.get("session");
+  const searchParams = useSearchParams();
+  const session = searchParams.get("session");
   const router = useRouter();
+  const params = useParams();
+  
+  // Récupère la locale courante (ex: "fr", "en", etc.) depuis l'URL
+  const locale = params?.locale as string || "fr";
 
   function handleNewPhoto() {
     if (!session) return;
