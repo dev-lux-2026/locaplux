@@ -18,6 +18,7 @@ export default function Header() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
+  // ✅ Récupération de la langue courante (fr, en, lu) depuis l'URL
   const params = useParams();
   const locale = params?.locale || "fr";
 
@@ -76,6 +77,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between py-3 px-4">
 
         <div className="flex items-center gap-4">
+          {/* ✅ Lien du logo corrigé avec la langue dynamique */}
           <Link href={`/${locale}/home`} className="text-xl font-semibold tracking-wide">
             Locaplux
           </Link>
@@ -90,6 +92,7 @@ export default function Header() {
           <LanguageSwitcher />
 
           {!hideBecomePartner && (
+            /* ✅ Lien devenir partenaire corrigé avec la langue dynamique */
             <Link
               href={`/${locale}/register/partner`}
               className="text-[12px] px-3 py-1.5 border border-white rounded hover:bg-white hover:text-black transition"
@@ -142,6 +145,7 @@ export default function Header() {
                     </div>
                   )}
 
+                  {/* ✅ Lien des notifications corrigé */}
                   <Link
                     href={`/${locale}/partner/notifications`}
                     className="block px-3 py-2 text-blue-600 dark:text-blue-400 
@@ -178,21 +182,21 @@ export default function Header() {
                                 border border-gray-200 dark:border-white/10
                                 rounded-md shadow-lg text-[13px] overflow-hidden z-20">
 
-                  {/* ✅ Utilisation correcte avec le préfixe menu. */}
+                  {/* ✅ Affichage conditionnel selon le rôle (sans préfixe menu en trop) */}
                   {session?.user?.role !== "partner" && (
                     <Link href={`/${locale}/account/profile`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                      {t("menu.profile")}
+                      {t("profile")}
                     </Link>
                   )}
 
                   {session?.user?.role === "partner" && (
                     <Link href={`/${locale}/partner/account`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600">
-                      {t("menu.partnerAccount")}
+                      {t("partnerAccount")}
                     </Link>
                   )}
 
                   <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                    {t("menu.orders")}
+                    {t("orders")}
                   </Link>
 
                   {session?.user?.role === "partner" && (
@@ -200,7 +204,7 @@ export default function Header() {
                       href={`/${locale}/partner/dashboard`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600"
                     >
-                      {t("menu.partnerDashboard")}
+                      {t("partnerDashboard")}
                     </Link>
                   )}
 
@@ -209,7 +213,7 @@ export default function Header() {
                       href={`/${locale}/admin/partners`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-red-600"
                     >
-                      {t("menu.adminDashboard")}
+                      {t("adminDashboard")}
                     </Link>
                   )}
 
@@ -217,7 +221,7 @@ export default function Header() {
                     className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 border-t border-gray-200 dark:border-white/10 text-red-600"
                     onClick={() => signOut({ callbackUrl: `/${locale}/home?logout=1` })}
                   >
-                    {t("menu.logout")}
+                    {t("logout")}
                   </button>
                 </div>
               )}
