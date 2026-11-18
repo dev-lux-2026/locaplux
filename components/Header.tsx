@@ -11,7 +11,6 @@ import { useTranslations } from "next-intl";
 
 export default function Header() {
   const t = useTranslations("Header");
-  const tMenu = useTranslations("Header.menu"); // 👈 Pour cibler directement le bloc "menu" de tes JSON
   const { data: session } = useSession();
   const [openMenu, setOpenMenu] = useState(false);
   const [openNotif, setOpenNotif] = useState(false);
@@ -181,18 +180,18 @@ export default function Header() {
 
                   {session?.user?.role !== "partner" && (
                     <Link href={`/${locale}/account/profile`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                      {tMenu("profile")}
+                      {t("profile")}
                     </Link>
                   )}
 
                   {session?.user?.role === "partner" && (
                     <Link href={`/${locale}/partner/account`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600">
-                      {tMenu("partnerAccount")}
+                      {t("partnerAccount")}
                     </Link>
                   )}
 
                   <Link href={`/${locale}/account/orders`} className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5">
-                    {tMenu("orders")}
+                    {t("orders")}
                   </Link>
 
                   {session?.user?.role === "partner" && (
@@ -200,7 +199,7 @@ export default function Header() {
                       href={`/${locale}/partner/dashboard`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-blue-600"
                     >
-                      {tMenu("partnerDashboard")}
+                      {t("partnerDashboard")}
                     </Link>
                   )}
 
@@ -209,7 +208,7 @@ export default function Header() {
                       href={`/${locale}/admin/partners`}
                       className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold text-red-600"
                     >
-                      {tMenu("adminDashboard")}
+                      {t("adminDashboard")}
                     </Link>
                   )}
 
@@ -217,7 +216,7 @@ export default function Header() {
                     className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 border-t border-gray-200 dark:border-white/10 text-red-600"
                     onClick={() => signOut({ callbackUrl: `/${locale}/home?logout=1` })}
                   >
-                    {tMenu("logout")}
+                    {t("logout")}
                   </button>
                 </div>
               )}
