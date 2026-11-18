@@ -1,4 +1,5 @@
-"Header": {
+{
+  "Header": {
     "slogan": "Buy better, live better.",
     "becomePartner": "Become a partner",
     "logoutMessage": "You are now logged out",
@@ -13,4 +14,5 @@
     "partnerDashboard": "Partner dashboard",
     "adminDashboard": "Admin dashboard",
     "logout": "Logout"
-  },
+  }
+}

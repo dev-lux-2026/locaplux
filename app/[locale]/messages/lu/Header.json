@@ -1,4 +1,5 @@
-"Header": {
+{
+  "Header": {
     "slogan": "Kaaft besser, liewt besser.",
     "becomePartner": "Partner ginn",
     "logoutMessage": "Dir sidd elo ausgeloggt",
@@ -13,4 +14,5 @@
     "partnerDashboard": "Partner-Dashboard",
     "adminDashboard": "Admin-Dashboard",
     "logout": "Ausloggen"
-  },
+  }
+}
