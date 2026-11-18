@@ -13,7 +13,7 @@ export default function CaptureSuccessPage() {
   }
 
   function handleReturnPC() {
-    router.push("/partner/products/new");
+    router.push(`/${locale}/product/new`);
   }
 
   return (

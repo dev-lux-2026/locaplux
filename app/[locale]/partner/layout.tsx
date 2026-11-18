@@ -37,7 +37,7 @@ export default function PartnerLayout(
   const nav = [
     { href: "/partner/dashboard", label: "Dashboard" },
     { href: "/partner/products", label: "Mes produits" },
-    { href: "/partner/products/new", label: "➕ Ajouter un produit" },
+    { href: "/products/new", label: "➕ Ajouter un produit" },
     { href: "/partner/orders", label: "Commandes" },
     { href: "/partner/payouts", label: "Paiements" },
     { href: "/partner/account", label: "Mon compte" },

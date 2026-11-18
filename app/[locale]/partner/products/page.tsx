@@ -205,7 +205,7 @@ export default function PartnerProducts() {
           </div>
 
           <Link
-            href={`/${locale}/partner/products/new`}
+            href={`/${locale}/products/new`}
             className={`px-6 py-3 rounded-xl text-sm font-medium transition shadow-sm ${
               readOnly
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
@@ -226,7 +226,7 @@ export default function PartnerProducts() {
 
             {!readOnly && (
               <Link
-                href={`/${locale}/partner/products/new`}
+                href={`/${locale}/products/new`}
                 className="inline-block mt-6 px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl shadow hover:bg-gray-900 dark:hover:bg-gray-200 transition text-sm font-medium"
               >
                 Ajouter un produit
