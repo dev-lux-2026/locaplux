@@ -15,6 +15,13 @@ export default function ProductPage({
   const [product, setProduct] = useState<any>(null);
   const [similar, setSimilar] = useState<any[]>([]);
 
+  /* ------------------------------------------------------ */
+  /* GALERIE : MINIATURE ACTIVE + ZOOM SUIVI CURSEUR       */
+  /* ------------------------------------------------------ */
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const [origin, setOrigin] = useState("50% 50%");
+
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
@@ -30,13 +37,14 @@ export default function ProductPage({
   /* LOAD PRODUCT                                           */
   /* ------------------------------------------------------ */
   useEffect(() => {
+    setActiveIndex(0);
     fetch(`/api/products/${id}`)
       .then((res) => res.json())
       .then((data) => setProduct(data));
   }, [id]);
 
   /* ------------------------------------------------------ */
-  /* LOAD SIMILAR PRODUCTS                                  */
+  /* LOAD SIMILAR PRODUCTS                                   */
   /* ------------------------------------------------------ */
   useEffect(() => {
     fetch(`/api/products/similar?id=${id}`)
@@ -68,6 +76,16 @@ export default function ProductPage({
         <div className="py-20 text-center opacity-70">Chargement...</div>
       </Container>
     );
+  }
+
+  const images: string[] = Array.isArray(product.images) ? product.images : [];
+  const mainImage = images[activeIndex] || images[0] || "/placeholder.jpg";
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setOrigin(`${x}% ${y}%`);
   }
 
   /* ------------------------------------------------------ */
@@ -116,7 +134,7 @@ export default function ProductPage({
   }
 
   /* ------------------------------------------------------ */
-  /* SEND QUESTION                                           */
+  /* SEND QUESTION                                          */
   /* ------------------------------------------------------ */
   const sendQuestion = async () => {
     if (!message.trim()) {
@@ -195,23 +213,48 @@ export default function ProductPage({
 
         {/* GALERIE PREMIUM */}
         <div className="space-y-4">
-          <div className="w-full h-96 bg-gray-100 dark:bg-[#1F1F22] rounded-2xl overflow-hidden shadow-sm">
+          <div
+            onMouseEnter={() => setZoomed(true)}
+            onMouseLeave={() => {
+              setZoomed(false);
+              setOrigin("50% 50%");
+            }}
+            onMouseMove={handleMouseMove}
+            className="w-full h-96 bg-gray-100 dark:bg-[#1F1F22] rounded-2xl overflow-hidden shadow-sm cursor-zoom-in relative"
+          >
             <img
-              src={product.images?.[0] || "/placeholder.jpg"}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              src={mainImage}
+              alt={product.name}
+              style={{
+                transformOrigin: origin,
+                transform: zoomed ? "scale(2.2)" : "scale(1)",
+              }}
+              className="w-full h-full object-cover transition-transform duration-150 ease-out"
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
-            {product.images?.map((img: string, i: number) => (
-              <div
-                key={i}
-                className="h-20 bg-gray-100 dark:bg-[#1F1F22] rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition"
-              >
-                <img src={img} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
+          {images.length > 0 && (
+            <div className="grid grid-cols-4 gap-3">
+              {images.map((img: string, i: number) => (
+                <button
+                  key={`${img}-${i}`}
+                  type="button"
+                  onClick={() => setActiveIndex(i)}
+                  className={`h-20 bg-gray-100 dark:bg-[#1F1F22] rounded-xl overflow-hidden cursor-pointer transition border-2 ${
+                    activeIndex === i
+                      ? "border-black dark:border-[#D4AF37]"
+                      : "border-transparent opacity-80 hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={img}
+                    alt={`${product.name} ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* INFO PRODUIT PREMIUM */}
@@ -275,9 +318,9 @@ export default function ProductPage({
           <div className="bg-white dark:bg-[#18181A] border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Livraison</h3>
             <ul className="text-gray-700 dark:text-gray-300 text-sm space-y-1">
-              <li>• Livraison estimée : 2–4 jours ouvrés</li>
-              <li>• Emballage sécurisé</li>
-              <li>• Suivi fourni</li>
+              <li>Livraison estimée : 2–4 jours ouvrés</li>
+              <li>Emballage sécurisé</li>
+              <li>Suivi fourni</li>
             </ul>
           </div>
 
@@ -449,6 +492,7 @@ export default function ProductPage({
               >
                 <img
                   src={p.images?.[0] || "/placeholder.jpg"}
+                  alt={p.name}
                   className="w-full h-40 object-cover rounded-lg mb-3"
                 />
 
