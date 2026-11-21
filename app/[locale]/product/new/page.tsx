@@ -10,9 +10,6 @@ export default function NewProductPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
 
-  /* ------------------------------------------------------ */
-  /* ÉTAT PRODUIT                                           */
-  /* ------------------------------------------------------ */
   const [product, setProduct] = useState({
     name: "",
     description: "",
@@ -25,6 +22,7 @@ export default function NewProductPage() {
     reference: "",
     dimensions: "",
     materials: "",
+    brand: "",
     damage_type: "no_damage",
     damage_description: "",
     images: [] as string[],
@@ -34,9 +32,6 @@ export default function NewProductPage() {
     delivery_available: false,
   });
 
-  /* ------------------------------------------------------ */
-  /* CHARGEMENT PARAMÈTRES PARTENAIRE                        */
-  /* ------------------------------------------------------ */
   const [partner, setPartner] = useState<any>(null);
 
   useEffect(() => {
@@ -56,9 +51,6 @@ export default function NewProductPage() {
     loadPartner();
   }, []);
 
-  /* ------------------------------------------------------ */
-  /* AUTO-DETECTION IA TEXTE                                 */
-  /* ------------------------------------------------------ */
   const [autoCategory, setAutoCategory] = useState<any>(null);
   const [debug, setDebug] = useState<any>(null);
 
@@ -88,9 +80,6 @@ export default function NewProductPage() {
     return () => clearTimeout(timeout);
   }, [product.name, product.description]);
 
-  /* ------------------------------------------------------ */
-  /* UPLOAD DESKTOP                                         */
-  /* ------------------------------------------------------ */
   function handleUpload(img: { url: string; autoCategory?: any; debug?: any }) {
     setProduct((prev) => ({
       ...prev,
@@ -114,9 +103,6 @@ export default function NewProductPage() {
     }));
   }
 
-  /* ------------------------------------------------------ */
-  /* MOBILE UPLOAD (IPHONE / ANDROID)                       */
-  /* ------------------------------------------------------ */
   const [mobileSession, setMobileSession] = useState<string | null>(null);
   const [receivedMobileUrls, setReceivedMobileUrls] = useState<string[]>([]);
 
@@ -163,9 +149,6 @@ export default function NewProductPage() {
     return () => clearInterval(interval);
   }, [mobileSession, receivedMobileUrls]);
 
-  /* ------------------------------------------------------ */
-  /* SUBMIT                                                 */
-  /* ------------------------------------------------------ */
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<any>(null);
 
@@ -195,9 +178,6 @@ export default function NewProductPage() {
     window.location.href = "/partner/products";
   }
 
-  /* ------------------------------------------------------ */
-  /* UI                                                     */
-  /* ------------------------------------------------------ */
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0B0C]">
       {toast && (
@@ -209,7 +189,6 @@ export default function NewProductPage() {
       )}
 
       <div className="max-w-4xl mx-auto py-12 px-4 lg:px-0 space-y-10">
-        {/* HEADER */}
         <header>
           <p className="text-xs font-medium tracking-[0.2em] text-gray-500 dark:text-gray-400 uppercase">
             Locaplux • Produit
@@ -280,7 +259,6 @@ export default function NewProductPage() {
             </h2>
 
             <div className="space-y-4">
-              {/* NOM */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Nom
@@ -296,7 +274,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* DESCRIPTION */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Description
@@ -311,7 +288,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* POURQUOI CE PRIX */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Pourquoi ce prix ? (optionnel)
@@ -336,8 +312,23 @@ export default function NewProductPage() {
               Caractéristiques
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* RÉFÉRENCE */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Marque
+                </label>
+                <input
+                  type="text"
+                  name="brand"
+                  placeholder="Ex. : Vitra, Kartell, Hay…"
+                  value={product.brand}
+                  onChange={(e) =>
+                    setProduct({ ...product, brand: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
+              </div>
+
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Référence
@@ -354,7 +345,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* DIMENSIONS */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Dimensions
@@ -371,7 +361,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* MATÉRIAUX */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Matériaux
@@ -456,7 +445,6 @@ export default function NewProductPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* RETRAIT */}
               <div className="flex items-center justify-between border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -489,7 +477,6 @@ export default function NewProductPage() {
                 </button>
               </div>
 
-              {/* LIVRAISON */}
               <div className="flex items-center justify-between border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -531,7 +518,6 @@ export default function NewProductPage() {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* PRIX NORMAL */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Prix normal (€)
@@ -546,7 +532,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* PRIX LOCAPLUX */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Prix Locaplux (€)
@@ -561,7 +546,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* PRIX D’ACHAT */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Prix d’achat (optionnel)
@@ -576,7 +560,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* STOCK */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                   Stock disponible
@@ -592,7 +575,6 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* ÉTAT DU PRODUIT */}
             <div>
               <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                 État du produit
@@ -605,14 +587,12 @@ export default function NewProductPage() {
                 }
                 className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
               >
-                <option value="new">Neuf</option>
-                <option value="like_new">Comme neuf / Showroom</option>
+                <option value="new">Nouveau (new / nei)</option>
                 <option value="good">Bon état</option>
                 <option value="fair">État correct</option>
               </select>
             </div>
 
-            {/* DOMMAGES */}
             <div>
               <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
                 Type de dommage
@@ -651,7 +631,6 @@ export default function NewProductPage() {
             </div>
           </section>
 
-          {/* CTA */}
           <div className="flex justify-end">
             <button
               type="submit"

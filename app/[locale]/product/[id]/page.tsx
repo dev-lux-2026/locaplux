@@ -5,19 +5,40 @@ import Container from "@/components/Container";
 import { detectForbiddenContent } from "@/utils/messageFilterClient";
 import DeliveryPriceCalculator from "@/components/DeliveryPriceCalculator";
 
+function formatCondition(rawCondition: string | null | undefined, locale: string) {
+  const normalized = rawCondition === "like_new" ? "new" : rawCondition;
+  const lang = (locale || "fr").toLowerCase().slice(0, 2);
+
+  if (!normalized) {
+    if (lang === "en") return "Not specified";
+    if (lang === "lu") return "Net uginn";
+    return "Non spécifié";
+  }
+
+  const labels: Record<string, { fr: string; en: string; lu: string }> = {
+    new: { fr: "Nouveau", en: "new", lu: "nei" },
+    good: { fr: "Bon état", en: "good", lu: "gudden Zoustand" },
+    fair: { fr: "État correct", en: "fair", lu: "akzeptabelen Zoustand" },
+  };
+
+  const entry = labels[normalized];
+  if (!entry) return normalized;
+
+  if (lang === "en") return entry.en;
+  if (lang === "lu") return entry.lu;
+  return entry.fr;
+}
+
 export default function ProductPage({
   params,
 }: {
   params: { locale: string; id: string };
 }) {
-  const { id } = params;
+  const { id, locale } = params;
 
   const [product, setProduct] = useState<any>(null);
   const [similar, setSimilar] = useState<any[]>([]);
 
-  /* ------------------------------------------------------ */
-  /* GALERIE : MINIATURE ACTIVE + ZOOM SUIVI CURSEUR       */
-  /* ------------------------------------------------------ */
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [origin, setOrigin] = useState("50% 50%");
@@ -33,9 +54,6 @@ export default function ProductPage({
   const [unlocked, setUnlocked] = useState(false);
   const [partnerInfo, setPartnerInfo] = useState<any>(null);
 
-  /* ------------------------------------------------------ */
-  /* LOAD PRODUCT                                           */
-  /* ------------------------------------------------------ */
   useEffect(() => {
     setActiveIndex(0);
     fetch(`/api/products/${id}`)
@@ -43,18 +61,12 @@ export default function ProductPage({
       .then((data) => setProduct(data));
   }, [id]);
 
-  /* ------------------------------------------------------ */
-  /* LOAD SIMILAR PRODUCTS                                   */
-  /* ------------------------------------------------------ */
   useEffect(() => {
     fetch(`/api/products/similar?id=${id}`)
       .then((res) => res.json())
       .then((data) => setSimilar(data));
   }, [id]);
 
-  /* ------------------------------------------------------ */
-  /* CHECK IF PARTNER IS UNLOCKED                           */
-  /* ------------------------------------------------------ */
   useEffect(() => {
     fetch("/api/questions/unlock", {
       method: "POST",
@@ -88,9 +100,6 @@ export default function ProductPage({
     setOrigin(`${x}% ${y}%`);
   }
 
-  /* ------------------------------------------------------ */
-  /* START CHECKOUT                                         */
-  /* ------------------------------------------------------ */
   async function startCheckout() {
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
@@ -133,9 +142,6 @@ export default function ProductPage({
     }
   }
 
-  /* ------------------------------------------------------ */
-  /* SEND QUESTION                                          */
-  /* ------------------------------------------------------ */
   const sendQuestion = async () => {
     if (!message.trim()) {
       setError("Veuillez écrire un message.");
@@ -204,13 +210,9 @@ export default function ProductPage({
     setLoading(false);
   };
 
-  /* ------------------------------------------------------ */
-  /* UI                                                     */
-  /* ------------------------------------------------------ */
   return (
     <Container>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 py-10">
-
         {/* GALERIE PREMIUM */}
         <div className="space-y-4">
           <div
@@ -259,8 +261,6 @@ export default function ProductPage({
 
         {/* INFO PRODUIT PREMIUM */}
         <div className="space-y-6">
-
-          {/* TITRE + PRIX */}
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
               {product.name}
@@ -279,7 +279,6 @@ export default function ProductPage({
             </div>
           </div>
 
-          {/* RETRAIT / LIVRAISON */}
           <div className="flex gap-3 mt-2">
             {product.pickup_available && (
               <span className="px-3 py-1 text-xs rounded-lg bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
@@ -294,7 +293,6 @@ export default function ProductPage({
             )}
           </div>
 
-          {/* LIVRAISON DYNAMIQUE */}
           {product.delivery_available && (
             <DeliveryPriceCalculator productId={product.id} />
           )}
@@ -302,7 +300,9 @@ export default function ProductPage({
           {/* ÉTAT */}
           <div className="bg-white dark:bg-[#18181A] border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">État du produit</h3>
-            <p className="text-gray-700 dark:text-gray-300">{product.condition || "Non spécifié"}</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              {formatCondition(product.condition, locale)}
+            </p>
           </div>
 
           {/* POURQUOI CE PRIX */}
@@ -329,6 +329,7 @@ export default function ProductPage({
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Caractéristiques</h3>
 
             <ul className="text-gray-700 dark:text-gray-300 text-sm space-y-2">
+              <li><strong>Marque :</strong> {product.brand || "Non spécifiée"}</li>
               <li><strong>Référence :</strong> {product.reference || "Non spécifiée"}</li>
               <li><strong>Catégorie :</strong> {product.category?.name}</li>
               <li><strong>Dimensions :</strong> {product.dimensions || "Non spécifiées"}</li>
@@ -374,14 +375,12 @@ export default function ProductPage({
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white dark:bg-[#18181A] rounded-xl p-6 w-full max-w-md shadow-xl animate-scaleIn">
-
             {!success ? (
               <>
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
                   Poser une question
                 </h2>
 
-                {/* TEXTAREA + COMPTEUR */}
                 <div className="relative">
                   <textarea
                     className={`w-full h-32 border rounded-lg p-3 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-[#1F1F22] focus:outline-none focus:ring-2 ${
@@ -415,7 +414,6 @@ export default function ProductPage({
                   </div>
                 </div>
 
-                {/* UPLOAD FICHIERS */}
                 {unlocked && (
                   <input
                     type="file"
@@ -425,12 +423,10 @@ export default function ProductPage({
                   />
                 )}
 
-                {/* ERREUR */}
                 {error && (
                   <p className="text-red-600 text-sm mt-2">{error}</p>
                 )}
 
-                {/* ACTIONS */}
                 <div className="flex justify-end gap-3 mt-4">
                   <button
                     onClick={() => setShowModal(false)}
@@ -458,7 +454,6 @@ export default function ProductPage({
                 </p>
               </div>
             )}
-
           </div>
         </div>
       )}

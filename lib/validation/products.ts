@@ -30,12 +30,12 @@ export const productCreateSchema = z.object({
 
   images: z.array(z.string().url("URL d'image invalide")).min(1, "Au moins une image est requise"),
 
-  // Nouveaux champs alignés avec la page produit
   condition: optionalText(100),
   reason: optionalText(500),
   reference: optionalText(120),
   dimensions: optionalText(200),
   materials: optionalText(250),
+  brand: optionalText(150),
 
   damage_type: damageTypeEnum,
   damage_description: z.string().max(500, "La description du dommage est trop longue").nullable().optional(),
@@ -46,7 +46,6 @@ export const productCreateSchema = z.object({
 
   imageTags: z.array(z.string()).optional(),
 
-  // Retrait / Livraison
   pickup_available: z.boolean().optional(),
   delivery_available: z.boolean().optional(),
 });
@@ -70,6 +69,7 @@ export const productUpdateSchema = z.object({
   reference: optionalText(120),
   dimensions: optionalText(200),
   materials: optionalText(250),
+  brand: optionalText(150),
 
   damage_type: damageTypeEnum.optional(),
   damage_description: z.string().max(500).nullable().optional(),

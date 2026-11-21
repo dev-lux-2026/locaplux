@@ -6,9 +6,6 @@ import prisma from "@/lib/prisma";
 
 import { productCreateSchema } from "@/lib/validation/products";
 
-/* ------------------------------------------------------ */
-/* GET — Récupérer les produits du partenaire              */
-/* ------------------------------------------------------ */
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -42,6 +39,7 @@ export async function GET(req: Request) {
       reference: p.reference,
       dimensions: p.dimensions,
       materials: p.materials,
+      brand: p.brand,
       damage_type: p.damage_type,
       damage_description: p.damage_description,
 
@@ -65,9 +63,6 @@ export async function GET(req: Request) {
   }
 }
 
-/* ------------------------------------------------------ */
-/* POST — Créer un produit (version premium Locaplux)     */
-/* ------------------------------------------------------ */
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,6 +99,7 @@ export async function POST(req: Request) {
       reference,
       dimensions,
       materials,
+      brand,
       damage_type,
       damage_description,
       categoryId,
@@ -149,6 +145,7 @@ export async function POST(req: Request) {
         reference: reference || null,
         dimensions: dimensions || null,
         materials: materials || null,
+        brand: brand || null,
         damage_type,
         damage_description: damage_description || null,
 

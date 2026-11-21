@@ -127,6 +127,7 @@ model Category {
 model Product {
   id                 String                     @id @default(cuid())
   name               String
+  brand              String?
   slug               String                     @unique
   description        String?
   stock              Int                        @default(0)

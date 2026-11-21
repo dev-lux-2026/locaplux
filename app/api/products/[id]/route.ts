@@ -63,6 +63,11 @@ export async function GET(
     pickup_available: product.pickup_available,
     delivery_available: product.delivery_available,
     condition: product.condition,
+    reason: product.reason,
+    reference: product.reference,
+    dimensions: product.dimensions,
+    materials: product.materials,
+    brand: product.brand,
     damage_type: product.damage_type,
     damage_description: product.damage_description,
 

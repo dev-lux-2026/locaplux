@@ -5,9 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { productUpdateSchema } from "@/lib/validation/products";
 import cloudinary from "@/lib/cloudinary";
 
-/* ------------------------------------------------------ */
-/* GET — Récupérer un produit                             */
-/* ------------------------------------------------------ */
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -40,9 +37,6 @@ export async function GET(
   }
 }
 
-/* ------------------------------------------------------ */
-/* PATCH — Modifier un produit                            */
-/* ------------------------------------------------------ */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -107,6 +101,7 @@ export async function PATCH(
         reference: data.reference !== undefined ? data.reference || null : undefined,
         dimensions: data.dimensions !== undefined ? data.dimensions || null : undefined,
         materials: data.materials !== undefined ? data.materials || null : undefined,
+        brand: data.brand !== undefined ? data.brand || null : undefined,
 
         damage_type: data.damage_type ?? undefined,
         damage_description: data.damage_description ?? undefined,
@@ -120,9 +115,6 @@ export async function PATCH(
   }
 }
 
-/* ------------------------------------------------------ */
-/* DELETE — Supprimer un produit + images Cloudinary      */
-/* ------------------------------------------------------ */
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
