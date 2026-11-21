@@ -41,7 +41,7 @@ export async function GET(
 }
 
 /* ------------------------------------------------------ */
-/* PATCH — Modifier un produit                             */
+/* PATCH — Modifier un produit                            */
 /* ------------------------------------------------------ */
 export async function PATCH(
   req: Request,
@@ -102,6 +102,12 @@ export async function PATCH(
         stock: data.stock ?? undefined,
         images: data.images ?? undefined,
 
+        condition: data.condition !== undefined ? data.condition || "new" : undefined,
+        reason: data.reason !== undefined ? data.reason || null : undefined,
+        reference: data.reference !== undefined ? data.reference || null : undefined,
+        dimensions: data.dimensions !== undefined ? data.dimensions || null : undefined,
+        materials: data.materials !== undefined ? data.materials || null : undefined,
+
         damage_type: data.damage_type ?? undefined,
         damage_description: data.damage_description ?? undefined,
       },
@@ -115,7 +121,7 @@ export async function PATCH(
 }
 
 /* ------------------------------------------------------ */
-/* DELETE — Supprimer un produit + images Cloudinary       */
+/* DELETE — Supprimer un produit + images Cloudinary      */
 /* ------------------------------------------------------ */
 export async function DELETE(
   req: Request,

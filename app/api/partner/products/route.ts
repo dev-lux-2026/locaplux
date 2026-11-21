@@ -7,7 +7,7 @@ import prisma from "@/lib/prisma";
 import { productCreateSchema } from "@/lib/validation/products";
 
 /* ------------------------------------------------------ */
-/* GET — Récupérer les produits du partenaire             */
+/* GET — Récupérer les produits du partenaire              */
 /* ------------------------------------------------------ */
 export async function GET(req: Request) {
   try {
@@ -37,6 +37,11 @@ export async function GET(req: Request) {
       prix_achat: p.prix_achat,
 
       stock: p.stock,
+      condition: p.condition,
+      reason: p.reason,
+      reference: p.reference,
+      dimensions: p.dimensions,
+      materials: p.materials,
       damage_type: p.damage_type,
       damage_description: p.damage_description,
 
@@ -94,6 +99,11 @@ export async function POST(req: Request) {
       prix_achat,
       stock,
       images,
+      condition,
+      reason,
+      reference,
+      dimensions,
+      materials,
       damage_type,
       damage_description,
       categoryId,
@@ -134,11 +144,14 @@ export async function POST(req: Request) {
         stock,
         images,
 
-        condition: "new",
+        condition: condition ? condition : "new",
+        reason: reason || null,
+        reference: reference || null,
+        dimensions: dimensions || null,
+        materials: materials || null,
         damage_type,
         damage_description: damage_description || null,
 
-        // ⭐ FIX : Prisma n'accepte PAS categoryId dans create()
         ...(categoryId
           ? { category: { connect: { id: categoryId } } }
           : {}),

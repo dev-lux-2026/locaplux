@@ -142,6 +142,10 @@ model Product {
   prix_locaplux      Int?
   prix_achat         Int?
   condition          String?                    @default("new")
+  reason             String?
+  reference          String?
+  dimensions         String?
+  materials          String?
   damage_type        String?
   damage_description String?
   pickup_available   Boolean?                   @default(true)

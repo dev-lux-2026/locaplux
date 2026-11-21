@@ -10,6 +10,9 @@ export const damageTypeEnum = z.enum([
   "other",
 ]);
 
+const optionalText = (max = 500) =>
+  z.string().max(max).nullable().optional().or(z.literal(""));
+
 export const productCreateSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères"),
 
@@ -27,6 +30,13 @@ export const productCreateSchema = z.object({
 
   images: z.array(z.string().url("URL d'image invalide")).min(1, "Au moins une image est requise"),
 
+  // Nouveaux champs alignés avec la page produit
+  condition: optionalText(100),
+  reason: optionalText(500),
+  reference: optionalText(120),
+  dimensions: optionalText(200),
+  materials: optionalText(250),
+
   damage_type: damageTypeEnum,
   damage_description: z.string().max(500, "La description du dommage est trop longue").nullable().optional(),
 
@@ -36,7 +46,7 @@ export const productCreateSchema = z.object({
 
   imageTags: z.array(z.string()).optional(),
 
-  // ⭐ NOUVEAU : Retrait / Livraison
+  // Retrait / Livraison
   pickup_available: z.boolean().optional(),
   delivery_available: z.boolean().optional(),
 });
@@ -54,6 +64,12 @@ export const productUpdateSchema = z.object({
   stock: z.number().int().min(0).optional(),
 
   images: z.array(z.string().url()).min(1).optional(),
+
+  condition: optionalText(100),
+  reason: optionalText(500),
+  reference: optionalText(120),
+  dimensions: optionalText(200),
+  materials: optionalText(250),
 
   damage_type: damageTypeEnum.optional(),
   damage_description: z.string().max(500).nullable().optional(),

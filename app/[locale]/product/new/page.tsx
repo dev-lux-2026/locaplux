@@ -20,6 +20,11 @@ export default function NewProductPage() {
     prix_locaplux: "",
     prix_achat: "",
     stock: "",
+    condition: "new",
+    reason: "",
+    reference: "",
+    dimensions: "",
+    materials: "",
     damage_type: "no_damage",
     damage_description: "",
     images: [] as string[],
@@ -52,7 +57,7 @@ export default function NewProductPage() {
   }, []);
 
   /* ------------------------------------------------------ */
-  /* AUTO-DETECTION IA TEXTE                                  */
+  /* AUTO-DETECTION IA TEXTE                                 */
   /* ------------------------------------------------------ */
   const [autoCategory, setAutoCategory] = useState<any>(null);
   const [debug, setDebug] = useState<any>(null);
@@ -305,6 +310,83 @@ export default function NewProductPage() {
                   className="w-full h-32 px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                 />
               </div>
+
+              {/* POURQUOI CE PRIX */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Pourquoi ce prix ? (optionnel)
+                </label>
+                <input
+                  type="text"
+                  name="reason"
+                  placeholder="Ex. : Produit de showroom, fin de série, déstockage…"
+                  value={product.reason}
+                  onChange={(e) =>
+                    setProduct({ ...product, reason: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* CARACTÉRISTIQUES */}
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Caractéristiques
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* RÉFÉRENCE */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Référence
+                </label>
+                <input
+                  type="text"
+                  name="reference"
+                  placeholder="Ex. : REF-2026-01"
+                  value={product.reference}
+                  onChange={(e) =>
+                    setProduct({ ...product, reference: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* DIMENSIONS */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Dimensions
+                </label>
+                <input
+                  type="text"
+                  name="dimensions"
+                  placeholder="Ex. : 200 × 90 × 75 cm"
+                  value={product.dimensions}
+                  onChange={(e) =>
+                    setProduct({ ...product, dimensions: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* MATÉRIAUX */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Matériaux
+                </label>
+                <input
+                  type="text"
+                  name="materials"
+                  placeholder="Ex. : Chêne massif, tissu lin"
+                  value={product.materials}
+                  onChange={(e) =>
+                    setProduct({ ...product, materials: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+                />
+              </div>
             </div>
           </section>
 
@@ -442,7 +524,7 @@ export default function NewProductPage() {
             </div>
           </section>
 
-          {/* PRIX / STOCK / DOMMAGES */}
+          {/* PRIX / STOCK / ÉTAT / DOMMAGES */}
           <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Prix, Stock & État
@@ -508,6 +590,26 @@ export default function NewProductPage() {
                   className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                 />
               </div>
+            </div>
+
+            {/* ÉTAT DU PRODUIT */}
+            <div>
+              <label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+                État du produit
+              </label>
+
+              <select
+                value={product.condition}
+                onChange={(e) =>
+                  setProduct({ ...product, condition: e.target.value })
+                }
+                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[#1A1A1C] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
+              >
+                <option value="new">Neuf</option>
+                <option value="like_new">Comme neuf / Showroom</option>
+                <option value="good">Bon état</option>
+                <option value="fair">État correct</option>
+              </select>
             </div>
 
             {/* DOMMAGES */}
