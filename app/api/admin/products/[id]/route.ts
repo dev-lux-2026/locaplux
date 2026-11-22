@@ -4,12 +4,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { logAdminAction } from "@/app/api/admin/log";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await context.params;
 
   const product = await prisma.product.findUnique({
     where: { id },
@@ -18,6 +19,7 @@ export async function GET(
       name: true,
       description: true,
       categoryId: true,
+      partnerId: true,
 
       prix_normal: true,
       prix_locaplux: true,
@@ -62,7 +64,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -70,7 +72,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     const body = await req.json();
     const { categoryId } = body ?? {};
 
@@ -97,6 +99,7 @@ export async function PATCH(
         name: true,
         description: true,
         categoryId: true,
+        partnerId: true,
         prix_normal: true,
         prix_locaplux: true,
         prix_achat: true,
@@ -125,36 +128,15 @@ export async function PATCH(
       },
     });
 
-    // Enregistrement dans l'historique admin (si le modèle existe dans Prisma)
-    const adminId = session.user?.id || "admin";
     const oldCat = existing.category?.name || "Aucune";
     const newCat = updated.category?.name || "Aucune";
-    const comment = `Catégorie modifiée : ${oldCat} → ${newCat}`;
 
-    try {
-      const pAny = prisma as any;
-      if (pAny.productValidationHistory?.create) {
-        await pAny.productValidationHistory.create({
-          data: {
-            productId: id,
-            adminId,
-            action: "category_updated",
-            comment,
-          },
-        });
-      } else if (pAny.adminLog?.create) {
-        await pAny.adminLog.create({
-          data: {
-            productId: id,
-            adminId,
-            action: "category_updated",
-            comment,
-          },
-        });
-      }
-    } catch (logErr) {
-      console.error("Erreur création log admin catégorie:", logErr);
-    }
+    await logAdminAction({
+      adminId: "", // remplacé automatiquement par NextAuth
+      partnerId: existing.partnerId,
+      action: "product_category_update",
+      comment: `[Produit #${id}] Catégorie modifiée : ${oldCat} → ${newCat}`,
+    });
 
     return NextResponse.json(updated);
   } catch (error) {

@@ -4,11 +4,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await context.params;
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -27,14 +27,12 @@ export async function GET(
 
     const logs = await prisma.adminLog.findMany({
       where: {
-        AND: [
-          { partnerId: product.partnerId },
-          {
-            OR: [
-              { action: { startsWith: "product:" } },
-              { comment: { contains: id } },
-            ],
-          },
+        partnerId: product.partnerId,
+        OR: [
+          { action: "product_category_update" },
+          { action: "product_status_update" },
+          { action: { startsWith: "product:" } },
+          { comment: { contains: id } },
         ],
       },
       orderBy: {
