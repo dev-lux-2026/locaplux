@@ -12,11 +12,19 @@ type PublicPartner = {
   id: string;
   publicName: string | null;
   company: string | null;
+  street: string | null;
+  number: string | null;
+  postal: string | null;
   city: string | null;
   country: string | null;
+  phonePrefix: string | null;
+  phone: string | null;
+  website: string | null;
   description: string | null;
   avatar: string | null;
   bannerUrl: string | null;
+  folderUrl: string | null;
+  folderUpdatedAt: string | null;
   createdAt: string;
   status: string;
   averageResponseTime?: number | null; // en minutes
@@ -107,6 +115,16 @@ export default function PublicPartnerPage() {
   const averageResponseTime = partner.averageResponseTime ?? null;
   const isVeryResponsive =
     averageResponseTime !== null && averageResponseTime <= 120;
+
+  const fullAddress = [
+    [partner.street, partner.number].filter(Boolean).join(" "),
+    [partner.postal, partner.city].filter(Boolean).join(" "),
+    partner.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const fullPhone = [partner.phonePrefix, partner.phone].filter(Boolean).join(" ");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0B0C] text-gray-900 dark:text-white">
@@ -308,13 +326,52 @@ export default function PublicPartnerPage() {
               </Link>
             </section>
 
-            {/* SÉCURITÉ */}
-            <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-5 shadow-sm text-xs text-gray-500 dark:text-gray-400 space-y-2">
-              <p>
-                Les coordonnées directes ne sont pas affichées pour garantir la
-                sécurité des partenaires et des acheteurs.
-              </p>
-            </section>
+            {/* COORDONNÉES & FOLDER */}
+            {(fullAddress || fullPhone || partner.website || partner.folderUrl) && (
+              <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
+                <h2 className="text-lg font-semibold">Coordonnées & Folder</h2>
+
+                <div className="space-y-2.5 text-sm text-gray-700 dark:text-gray-300">
+                  {fullAddress && <p>{fullAddress}</p>}
+
+                  {fullPhone && <p>{fullPhone}</p>}
+
+                  {partner.website && (
+                    <p>
+                      <a
+                        href={
+                          /^https?:\/\//i.test(partner.website.trim())
+                            ? partner.website.trim()
+                            : `https://${partner.website.trim()}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline break-all"
+                      >
+                        {partner.website}
+                      </a>
+                    </p>
+                  )}
+                </div>
+
+                {partner.folderUrl && (
+                  <div className="pt-3 border-t border-gray-200 dark:border-white/10">
+                    <a
+                      href={
+                        /^https?:\/\//i.test(partner.folderUrl.trim())
+                          ? partner.folderUrl.trim()
+                          : `https://${partner.folderUrl.trim()}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-xl bg-black dark:bg-white text-white dark:text-black text-sm font-medium hover:bg-gray-900 dark:hover:bg-gray-200 transition"
+                    >
+                      Voir le folder
+                    </a>
+                  </div>
+                )}
+              </section>
+            )}
 
           </aside>
         </div>

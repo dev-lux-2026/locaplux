@@ -64,6 +64,21 @@ export async function PATCH(req: Request) {
       city: data.city,
       country: data.country,
 
+      // Présentation, visuels & folder
+      ...(data.description !== undefined
+        ? { description: data.description || null }
+        : {}),
+      ...(data.avatar !== undefined ? { avatar: data.avatar || null } : {}),
+      ...(data.bannerUrl !== undefined
+        ? { bannerUrl: data.bannerUrl || null }
+        : {}),
+      ...(data.folderUrl !== undefined
+        ? {
+            folderUrl: data.folderUrl ? String(data.folderUrl).trim() : null,
+            folderUpdatedAt: new Date(),
+          }
+        : {}),
+
       // Paramètres de livraison
       delivery_price_per_km:
         data.delivery_price_per_km !== "" &&

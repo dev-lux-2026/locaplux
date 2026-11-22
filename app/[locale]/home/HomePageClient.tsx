@@ -296,19 +296,19 @@ const params = useParams();
           <div className="flex space-x-6 animate-scroll pause-on-hover">
             {partnersToShow.map((p) => (
               <a
-                key={p.id}
-                href={`/partner/${p.slug}`}
-                className="flex flex-col items-center"
-              >
-                <img
-                  src={p.avatar || "/placeholder.jpg"}
-                  alt={p.publicName}
-                  className="w-20 h-20 rounded-full object-cover shadow-md border border-white/20"
-                />
-                <p className="text-xs mt-2 text-gray-700 dark:text-gray-300 text-center">
-                  {p.publicName}
-                </p>
-              </a>
+  key={p.id}
+  href={`/${locale}/partner/${p.id}`}
+  className="flex flex-col items-center"
+>
+  <img
+    src={p.avatar || "/placeholder.jpg"}
+    alt={p.publicName}
+    className="w-20 h-20 rounded-full object-cover shadow-md border border-white/20"
+  />
+  <p className="text-xs mt-2 text-gray-700 dark:text-gray-300 text-center">
+    {p.publicName}
+  </p>
+</a>
             ))}
           </div>
         </section>

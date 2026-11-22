@@ -479,6 +479,72 @@ export default function PartnerAccountPage() {
           </div>
         </section>
 
+        {/* SECTION — Présentation, visuels & folder */}
+        <section className="bg-white border border-gray-200 rounded-2xl p-6 space-y-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Présentation, visuels &amp; folder
+          </h2>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Présentation publique
+            </label>
+            <textarea
+              rows={4}
+              className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
+              placeholder="Présentez votre entreprise, votre activité et vos services..."
+              value={partner.description || ""}
+              onChange={(e) =>
+                setPartner({ ...partner, description: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Logo (URL)
+              </label>
+              <input
+                className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
+                placeholder="https://..."
+                value={partner.avatar || ""}
+                onChange={(e) =>
+                  setPartner({ ...partner, avatar: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Bannière (URL)
+              </label>
+              <input
+                className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
+                placeholder="https://..."
+                value={partner.bannerUrl || ""}
+                onChange={(e) =>
+                  setPartner({ ...partner, bannerUrl: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Folder partenaire (URL)
+            </label>
+            <input
+              className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
+              placeholder="https://..."
+              value={partner.folderUrl || ""}
+              onChange={(e) =>
+                setPartner({ ...partner, folderUrl: e.target.value })
+              }
+            />
+          </div>
+        </section>
+
         {/* ACTIONS */}
         <div className="flex justify-end">
           <button

@@ -13,11 +13,19 @@ export async function GET(
       id: true,
       publicName: true,
       company: true,
+      street: true,
+      number: true,
+      postal: true,
       city: true,
       country: true,
+      phonePrefix: true,
+      phone: true,
+      website: true,
       description: true,
       avatar: true,
       bannerUrl: true,
+      folderUrl: true,
+      folderUpdatedAt: true,
       createdAt: true,
       status: true,
     },
@@ -26,6 +34,13 @@ export async function GET(
   if (!partner) {
     return NextResponse.json(null, { status: 404 });
   }
+
+  if (!["approved", "active"].includes(partner.status)) {
+    return NextResponse.json(null, { status: 404 });
+  }
+
+  return NextResponse.json(partner);
+}
 
   // On n'affiche que les partenaires approuvés / actifs
   if (!["approved", "active"].includes(partner.status)) {
