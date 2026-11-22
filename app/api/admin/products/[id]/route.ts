@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -17,7 +19,6 @@ export async function GET(
       description: true,
       categoryId: true,
 
-      // ✔ Champs existants
       prix_normal: true,
       prix_locaplux: true,
       prix_achat: true,
@@ -75,6 +76,7 @@ export async function PATCH(
 
     const existing = await prisma.product.findUnique({
       where: { id },
+      include: { category: { select: { id: true, name: true } } },
     });
 
     if (!existing) {
@@ -122,6 +124,37 @@ export async function PATCH(
         },
       },
     });
+
+    // Enregistrement dans l'historique admin (si le modèle existe dans Prisma)
+    const adminId = session.user?.id || "admin";
+    const oldCat = existing.category?.name || "Aucune";
+    const newCat = updated.category?.name || "Aucune";
+    const comment = `Catégorie modifiée : ${oldCat} → ${newCat}`;
+
+    try {
+      const pAny = prisma as any;
+      if (pAny.productValidationHistory?.create) {
+        await pAny.productValidationHistory.create({
+          data: {
+            productId: id,
+            adminId,
+            action: "category_updated",
+            comment,
+          },
+        });
+      } else if (pAny.adminLog?.create) {
+        await pAny.adminLog.create({
+          data: {
+            productId: id,
+            adminId,
+            action: "category_updated",
+            comment,
+          },
+        });
+      }
+    } catch (logErr) {
+      console.error("Erreur création log admin catégorie:", logErr);
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
