@@ -6,11 +6,10 @@ import { logAdminAction } from "@/app/api/admin/log";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
-
+    const { id } = await context.params;
     const { status, comment } = await req.json();
 
     if (!status) {
@@ -38,12 +37,13 @@ export async function PATCH(
       ? baseComment
       : `${baseComment} [Produit #${updatedProduct.id}]`;
 
-    await logAdminAction({
-      adminId: "", // ✔ requis par le type, remplacé automatiquement par NextAuth
-      partnerId: updatedProduct.partnerId,
-      action: "product_status_update",
-      comment: finalComment,
-    });
+    if (updatedProduct.partnerId) {
+      await logAdminAction({
+        partnerId: updatedProduct.partnerId,
+        action: "product_status_update",
+        comment: finalComment,
+      });
+    }
 
     return NextResponse.json({
       success: true,

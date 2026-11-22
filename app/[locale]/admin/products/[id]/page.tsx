@@ -90,12 +90,17 @@ export default function AdminProductDetail() {
 
     const data = await res.json();
 
-    if (res.ok) {
+   if (res.ok) {
       setProduct((prev: any) => ({
         ...prev,
         ...data,
       }));
       setToast({ message: "Catégorie mise à jour", type: "success" });
+
+      const l = await fetch(`/api/admin/products/${id}/logs`).then((r) =>
+        r.json()
+      );
+      setLogs(Array.isArray(l) ? l : []);
     } else {
       setToast({
         message: data?.error || "Erreur lors de la mise à jour de la catégorie",

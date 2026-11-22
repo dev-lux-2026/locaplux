@@ -131,12 +131,13 @@ export async function PATCH(
     const oldCat = existing.category?.name || "Aucune";
     const newCat = updated.category?.name || "Aucune";
 
-    await logAdminAction({
-      adminId: "", // remplacé automatiquement par NextAuth
-      partnerId: existing.partnerId,
-      action: "product_category_update",
-      comment: `[Produit #${id}] Catégorie modifiée : ${oldCat} → ${newCat}`,
-    });
+    if (existing.partnerId) {
+      await logAdminAction({
+        partnerId: existing.partnerId,
+        action: "product_category_update",
+        comment: `[Produit #${id}] Catégorie modifiée : ${oldCat} → ${newCat}`,
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
