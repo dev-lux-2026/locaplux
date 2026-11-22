@@ -133,6 +133,7 @@ export async function PATCH(
 
     if (existing.partnerId) {
       await logAdminAction({
+        adminId: "",
         partnerId: existing.partnerId,
         action: "product_category_update",
         comment: `[Produit #${id}] Catégorie modifiée : ${oldCat} → ${newCat}`,

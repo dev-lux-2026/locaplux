@@ -39,6 +39,7 @@ export async function PATCH(
 
     if (updatedProduct.partnerId) {
       await logAdminAction({
+        adminId: "",
         partnerId: updatedProduct.partnerId,
         action: "product_status_update",
         comment: finalComment,
