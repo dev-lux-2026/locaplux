@@ -11,6 +11,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   const nav = [
     { href: "/admin", label: "Dashboard" },
+    { href: "/admin/users", label: "Utilisateurs" },
     { href: "/admin/partners", label: "Partenaires" },
     { href: "/admin/products", label: "Produits" },
     { href: "/admin/orders", label: "Commandes" },
