@@ -314,7 +314,7 @@ export default function HomePageClient(
 
       <Container>
         <section className="mt-4 mb-12">
-          <SectionTitle title={t("featuredPartners")} />
+          <SectionTitle>{t("featuredPartners")}</SectionTitle>
 
           <div className="mt-6 flex items-center space-x-6 overflow-x-auto pb-2">
             {partnersToShow.map((p) => {
