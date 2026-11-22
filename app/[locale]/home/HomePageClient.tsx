@@ -26,9 +26,10 @@ interface Product {
 
 interface Partner {
   id: string;
-  slug: string;
+  slug?: string | null;
   publicName: string;
-  avatar?: string;
+  company?: string | null;
+  avatar?: string | null;
 }
 
 export default function HomePageClient(
@@ -36,7 +37,7 @@ export default function HomePageClient(
 ) {
   const { data: session, status } = useSession();
   const t = useTranslations("Home");
-const params = useParams(); 
+  const params = useParams();
   const locale = params?.locale || "fr";
 
   const [isPaused, setIsPaused] = useState(false);
@@ -77,19 +78,19 @@ const params = useParams();
       id: "p1",
       slug: "partner-demo-1",
       publicName: "Partenaire Démo 1",
-      avatar: "/images/partner1.jpg",
+      avatar: null,
     },
     {
       id: "p2",
       slug: "partner-demo-2",
       publicName: "Partenaire Démo 2",
-      avatar: "/images/partner2.jpg",
+      avatar: null,
     },
     {
       id: "p3",
       slug: "partner-demo-3",
       publicName: "Partenaire Démo 3",
-      avatar: "/images/partner3.jpg",
+      avatar: null,
     },
   ];
 
@@ -115,8 +116,10 @@ const params = useParams();
       .then((data) => setFeaturedPartners(Array.isArray(data) ? data : []));
   }, []);
 
-  const productsToShow = featuredProducts.length > 0 ? featuredProducts : demoFeaturedProducts;
-  const partnersToShow = featuredPartners.length > 0 ? featuredPartners : demoFeaturedPartners;
+  const productsToShow =
+    featuredProducts.length > 0 ? featuredProducts : demoFeaturedProducts;
+  const partnersToShow =
+    featuredPartners.length > 0 ? featuredPartners : demoFeaturedPartners;
 
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -280,233 +283,177 @@ const params = useParams();
               >
                 {i === carouselIndex && (
                   <span
-                    className="absolute left-0 top-0 h-full bg-white dark:bg-black"
+                    className="block h-full bg-white dark:bg-black"
                     style={{
                       width: "100%",
-                      animation: "progressFill 4s linear forwards",
+                      animation: isPaused ? "none" : "progressBar 4s linear",
                     }}
                   />
                 )}
               </button>
             ))}
           </div>
-        </section>
 
-        <section className="mt-4 overflow-hidden">
-          <div className="flex space-x-6 animate-scroll pause-on-hover">
-            {partnersToShow.map((p) => (
+          <button
+            onClick={goToPrev}
+            aria-label="Slide précédent"
+            className="hidden md:flex items-center justify-center w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md transition absolute top-1/2 -translate-y-1/2 left-4 z-20"
+          >
+            ‹
+          </button>
+
+          <button
+            onClick={goToNext}
+            aria-label="Slide suivant"
+            className="hidden md:flex items-center justify-center w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md transition absolute top-1/2 -translate-y-1/2 right-4 z-20"
+          >
+            ›
+          </button>
+        </section>
+      </Container>
+
+      <Container>
+        <section className="mt-4 mb-12">
+          <SectionTitle title={t("featuredPartners")} />
+
+          <div className="mt-6 flex items-center space-x-6 overflow-x-auto pb-2">
+            {partnersToShow.map((p) => {
+              const label = p.publicName || p.company || "Partenaire Locaplux";
+              const initial = label.trim().charAt(0).toUpperCase() || "P";
+
+              return (
+                <a
+                  key={p.id}
+                  href={`/${locale}/partner/${p.id}`}
+                  className="flex flex-col items-center shrink-0 group"
+                >
+                  {p.avatar ? (
+                    <img
+                      src={p.avatar}
+                      alt={label}
+                      className="w-20 h-20 rounded-full object-cover shadow-md border border-white/20 group-hover:scale-105 transition"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center bg-[#1A3A5F] text-white text-xl font-semibold shadow-md border border-white/20 group-hover:scale-105 transition">
+                      {initial}
+                    </div>
+                  )}
+
+                  <p className="text-xs mt-2 text-gray-700 dark:text-gray-300 text-center max-w-[96px] truncate">
+                    {label}
+                  </p>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      </Container>
+
+      <Container>
+        <section className="mb-16">
+          <SectionTitle title={t("categories")} />
+
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {categories.map((cat) => (
               <a
-  key={p.id}
-  href={`/${locale}/partner/${p.id}`}
-  className="flex flex-col items-center"
->
-  <img
-    src={p.avatar || "/placeholder.jpg"}
-    alt={p.publicName}
-    className="w-20 h-20 rounded-full object-cover shadow-md border border-white/20"
-  />
-  <p className="text-xs mt-2 text-gray-700 dark:text-gray-300 text-center">
-    {p.publicName}
-  </p>
-</a>
+                key={cat.id}
+                href={`/${locale}/category/${cat.id}`}
+                className="flex flex-col items-center p-4 rounded-2xl bg-white dark:bg-[#141416] border border-gray-200/70 dark:border-white/10 hover:shadow-md transition"
+              >
+                <img
+                  src={cat.image || "/placeholder.jpg"}
+                  alt={cat.name}
+                  className="w-16 h-16 object-contain"
+                />
+                <span className="mt-3 text-sm font-medium text-center">
+                  {cat.name}
+                </span>
+              </a>
             ))}
           </div>
         </section>
       </Container>
 
       <Container>
-        <SectionTitle>{t("categories")}</SectionTitle>
+        <section className="mb-16">
+          <SectionTitle title={t("popularProducts")} />
 
-        <div
-          className="
-            grid 
-            grid-cols-3 
-            sm:grid-cols-4 
-            md:grid-cols-6 
-            lg:grid-cols-8 
-            xl:grid-cols-10 
-            gap-4
-          "
-        >
-          {categories.map((cat) => (
-            <a
-              key={cat.id}
-              href={`/categories/${cat.id}`}
-              className="
-                flex flex-col items-center p-3 rounded-xl
-                bg-white dark:bg-[#18181A]
-                border border-gray-200 dark:border-white/10
-                hover:shadow-lg hover:-translate-y-1 dark:hover:bg-white/5
-                transition cursor-pointer
-              "
-            >
-              <img
-                src={cat.image || "/placeholder.jpg"}
-                alt={cat.name}
-                className="w-16 h-16 object-cover rounded-lg"
-              />
-
-              <p className="text-xs mt-2 text-gray-700 dark:text-gray-300 text-center font-medium">
-                {cat.name}
-              </p>
-            </a>
-          ))}
-        </div>
-      </Container>
-
-      <Container>
-        <SectionTitle>{t("popularProducts")}</SectionTitle>
-
-        <div
-          className="
-          grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 
-          gap-6
-        "
-        >
-          {popularProducts.map((p) => (
-            <a
-              key={p.id}
-              href={`/${locale}/product/${p.id}`}
-              className="
-                border border-gray-200 dark:border-white/10 
-                rounded-xl p-4 shadow-sm 
-                bg-white dark:bg-[#18181A] 
-                hover:shadow-xl hover:-translate-y-1 dark:hover:bg-white/5 
-                transition cursor-pointer
-              "
-            >
-              <img
-                src={p.images?.[0] || "/placeholder.jpg"}
-                alt={p.name}
-                className="w-full h-44 object-cover rounded-lg mb-3"
-              />
-
-              <p className="font-semibold text-black dark:text-white text-sm">
-                {p.name}
-              </p>
-
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {p.description?.slice(0, 50)}...
-              </p>
-
-              <p className="text-[#1A3A5F] dark:text-[#D4AF37] font-semibold mt-3 text-sm">
-                {p.prix_locaplux} €
-              </p>
-            </a>
-          ))}
-        </div>
-      </Container>
-
-      <Container>
-        <SectionTitle>{t("newProducts")}</SectionTitle>
-
-        <div
-          className="
-          grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 
-          gap-6
-        "
-        >
-          {latestProducts.map((p) => (
-            <a
-              key={p.id}
-              href={`/${locale}/product/${p.id}`}
-              className="
-                border border-gray-200 dark:border-white/10 
-                rounded-xl p-4 shadow-sm 
-                bg-white dark:bg-[#18181A] 
-                hover:shadow-xl hover:-translate-y-1 dark:hover:bg-white/5 
-                transition cursor-pointer
-              "
-            >
-              <img
-                src={p.images?.[0] || "/placeholder.jpg"}
-                alt={p.name}
-                className="w-full h-44 object-cover rounded-lg mb-3"
-              />
-
-              <p className="font-semibold text-black dark:text-white text-sm">
-                {p.name}
-              </p>
-
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {p.description?.slice(0, 50)}...
-              </p>
-
-              <p className="text-[#1A3A5F] dark:text-[#D4AF37] font-semibold mt-3 text-sm">
-                {p.prix_locaplux} €
-              </p>
-            </a>
-          ))}
-        </div>
-      </Container>
-
-      <Container>
-        <section className="py-16">
-          <div className="grid md:grid-cols-3 gap-10 text-center">
-            <div>
-              <h3 className="text-xl font-semibold">{t("advSecurityTitle")}</h3>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                {t("advSecurityText")}
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold">{t("advLocalTitle")}</h3>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                {t("advLocalText")}
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold">{t("advSupportTitle")}</h3>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                {t("advSupportText")}
-              </p>
-            </div>
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {popularProducts.map((prod) => (
+              <a
+                key={prod.id}
+                href={`/${locale}/product/${prod.id}`}
+                className="group rounded-2xl overflow-hidden bg-white dark:bg-[#141416] border border-gray-200/70 dark:border-white/10 shadow-sm hover:shadow-lg transition"
+              >
+                <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-[#1C1C1F]">
+                  <img
+                    src={prod.images?.[0] || "/placeholder.jpg"}
+                    alt={prod.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-sm truncate">{prod.name}</h3>
+                  {prod.prix_locaplux !== undefined && (
+                    <p className="mt-1 text-sm font-semibold">
+                      {prod.prix_locaplux} €
+                    </p>
+                  )}
+                </div>
+              </a>
+            ))}
           </div>
         </section>
       </Container>
 
-      <section className="bg-neutral-100 dark:bg-[#18181A] py-20 mt-10">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-semibold">{t("partnerTitle")}</h2>
-          <p className="mt-3 text-neutral-600 dark:text-neutral-400">
-            {t("partnerSubtitle")}
-          </p>
+      <Container>
+        <section className="mb-16">
+          <SectionTitle title={t("latestProducts")} />
 
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {latestProducts.map((prod) => (
+              <a
+                key={prod.id}
+                href={`/${locale}/product/${prod.id}`}
+                className="group rounded-2xl overflow-hidden bg-white dark:bg-[#141416] border border-gray-200/70 dark:border-white/10 shadow-sm hover:shadow-lg transition"
+              >
+                <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-[#1C1C1F]">
+                  <img
+                    src={prod.images?.[0] || "/placeholder.jpg"}
+                    alt={prod.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-sm truncate">{prod.name}</h3>
+                  {prod.prix_locaplux !== undefined && (
+                    <p className="mt-1 text-sm font-semibold">
+                      {prod.prix_locaplux} €
+                    </p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      </Container>
+
+      <Container>
+        <section className="mb-20 rounded-2xl bg-gray-100 dark:bg-[#141416] border border-gray-200/70 dark:border-white/10 p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <h2 className="text-2xl font-semibold">{t("becomePartnerTitle")}</h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-xl">
+              {t("becomePartnerSubtitle")}
+            </p>
+          </div>
           <a
-            href="/register/partner"
-            className="mt-6 inline-block px-6 py-3 rounded-lg bg-black text-white hover:bg-neutral-800 transition"
+            href={`/${locale}/partner/apply`}
+            className="px-6 py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black text-sm font-medium hover:opacity-90 transition shrink-0"
           >
-            {t("partnerCTA")}
+            {t("becomePartnerCta")}
           </a>
-        </div>
-      </section>
-
-      <footer
-        className="mt-20 py-10 
-                         bg-gray-100 dark:bg-[#18181A] 
-                         text-center text-gray-600 dark:text-gray-400"
-      >
-        <p>
-          © {new Date().getFullYear()} Locaplux — {t("rights")}
-        </p>
-      </footer>
-
-      <style jsx global>{`
-        @keyframes progressFill {
-          from {
-            width: 0%;
-          }
-          to {
-            width: 100%;
-          }
-        }
-
-        .pause-on-hover:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+        </section>
+      </Container>
     </div>
   );
 }

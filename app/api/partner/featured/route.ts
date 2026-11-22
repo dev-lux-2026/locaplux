@@ -6,10 +6,22 @@ export async function GET(req: Request) {
   try {
     const partners = await prisma.user.findMany({
       where: {
-        role: "partner",          // partenaire PRO
-        status: "approved",       // validé par Locaplux
-        publicName: { not: null },
-        avatar: { not: null },    // logo obligatoire
+        role: "partner",
+        status: { in: ["approved", "active"] },
+        AND: [
+          {
+            OR: [
+              { publicName: { not: null } },
+              { company: { not: null } },
+            ],
+          },
+          {
+            NOT: [
+              { publicName: "" },
+              { company: "" },
+            ],
+          },
+        ],
       },
       select: {
         id: true,
@@ -26,7 +38,14 @@ export async function GET(req: Request) {
       take: 20,
     });
 
-    return NextResponse.json(partners);
+    const formatted = partners
+      .map((p) => ({
+        ...p,
+        publicName: (p.publicName || p.company || "").trim(),
+      }))
+      .filter((p) => p.publicName.length > 0);
+
+    return NextResponse.json(formatted);
   } catch (error) {
     console.error("Erreur featured partners:", error);
     return NextResponse.json(
