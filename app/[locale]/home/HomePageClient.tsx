@@ -351,7 +351,7 @@ export default function HomePageClient(
 
       <Container>
         <section className="mb-16">
-          <SectionTitle title={t("categories")} />
+          <SectionTitle>{t("categories")}</SectionTitle>
 
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {categories.map((cat) => (
@@ -376,7 +376,7 @@ export default function HomePageClient(
 
       <Container>
         <section className="mb-16">
-          <SectionTitle title={t("popularProducts")} />
+          <SectionTitle>{t("popularProducts")}</SectionTitle>
 
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {popularProducts.map((prod) => (
@@ -408,7 +408,7 @@ export default function HomePageClient(
 
       <Container>
         <section className="mb-16">
-          <SectionTitle title={t("latestProducts")} />
+          <SectionTitle>{t("latestProducts")}</SectionTitle>
 
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {latestProducts.map((prod) => (
