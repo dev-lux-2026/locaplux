@@ -75,6 +75,7 @@ export async function POST(
     .single();
 
   if (error) {
+    console.error("Erreur POST /api/partner/[id]/reviews :", error);
     return NextResponse.json(
       { error: "Erreur lors de l’enregistrement de l’avis." },
       { status: 500 }
@@ -88,10 +89,21 @@ export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Variables Supabase manquantes pour /api/partner/[id]/reviews");
+    return NextResponse.json({
+      reviews: [],
+      averageRating: null,
+      count: 0,
+    });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { data, error } = await supabase
     .from("partner_reviews")
@@ -101,20 +113,26 @@ export async function GET(
     .limit(20);
 
   if (error) {
+    console.error("Erreur GET /api/partner/[id]/reviews :", error);
     return NextResponse.json(
       { error: "Erreur lors du chargement des avis." },
       { status: 500 }
     );
   }
 
+  const rows = Array.isArray(data) ? data : [];
+  const validRatings = rows
+    .map((r) => Number(r.rating))
+    .filter((n) => Number.isFinite(n));
+
   const avg =
-    data.length > 0
-      ? data.reduce((sum, r) => sum + r.rating, 0) / data.length
+    validRatings.length > 0
+      ? validRatings.reduce((sum, n) => sum + n, 0) / validRatings.length
       : null;
 
   return NextResponse.json({
-    reviews: data,
+    reviews: rows,
     averageRating: avg,
-    count: data.length,
+    count: rows.length,
   });
 }
