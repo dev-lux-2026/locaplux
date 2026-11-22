@@ -2,7 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Toast from '../components/Toast';
+import Toast from "../components/Toast";
+
+function getPartnerDisplayName(partner: any): string {
+  if (!partner) return "—";
+  const fullName = [partner.firstName, partner.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return (
+    partner.publicName ||
+    partner.company ||
+    partner.name ||
+    fullName ||
+    "—"
+  );
+}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -15,7 +30,7 @@ export default function AdminProductsPage() {
     fetch("/api/admin/products/list")
       .then((res) => res.json())
       .then((data) => {
-        setProducts(data);
+        setProducts(Array.isArray(data) ? data : []);
         setLoading(false);
       });
   }, []);
@@ -56,154 +71,162 @@ export default function AdminProductsPage() {
           </thead>
 
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">
-                  {product.images?.[0] ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-200 rounded" />
-                  )}
-                </td>
+            {products.map((product) => {
+              const price = product.prix_locaplux ?? product.prix_normal ?? product.price;
 
-                <td className="p-3 font-medium">{product.name}</td>
+              return (
+                <tr key={product.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3">
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-200 rounded" />
+                    )}
+                  </td>
 
-                <td className="p-3">
-                  {product.partner?.name || "—"}
-                  <br />
-                  <span className="text-sm text-gray-500">
-                    {product.partner?.email}
-                  </span>
-                </td>
+                  <td className="p-3 font-medium">{product.name}</td>
 
-                <td className="p-3">{product.category?.name || "—"}</td>
+                  <td className="p-3">
+                    {getPartnerDisplayName(product.partner)}
+                    <br />
+                    <span className="text-sm text-gray-500">
+                      {product.partner?.email}
+                    </span>
+                  </td>
 
-                <td className="p-3">{product.price} €</td>
+                  <td className="p-3">{product.category?.name || "—"}</td>
 
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded text-sm ${statusColors[product.status]}`}
-                  >
-                    {product.status}
-                  </span>
-                </td>
+                  <td className="p-3 whitespace-nowrap">
+                    {price !== null && price !== undefined && price !== ""
+                      ? `${price} €`
+                      : "—"}
+                  </td>
 
-                <td className="p-3 space-x-3">
-                  <Link
-                    href={`/admin/products/${product.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Voir
-                  </Link>
-
-                  {product.status !== "approved" && (
-                    <button
-                      className="text-green-600 hover:underline"
-                      onClick={async () => {
-                        await fetch(
-                          `/api/admin/products/${product.id}/status`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              status: "approved",
-                              adminId: "system",
-                            }),
-                          }
-                        );
-
-                        setToast({
-                          message: "Produit approuvé",
-                          type: "success",
-                        });
-
-                        setProducts((prev) =>
-                          prev.map((p) =>
-                            p.id === product.id
-                              ? { ...p, status: "approved" }
-                              : p
-                          )
-                        );
-                      }}
+                  <td className="p-3">
+                    <span
+                      className={`px-2 py-1 rounded text-sm ${statusColors[product.status]}`}
                     >
-                      Approuver
-                    </button>
-                  )}
+                      {product.status}
+                    </span>
+                  </td>
 
-                  {product.status !== "rejected" && (
-                    <button
-                      className="text-red-600 hover:underline"
-                      onClick={async () => {
-                        await fetch(
-                          `/api/admin/products/${product.id}/status`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              status: "rejected",
-                              adminId: "system",
-                            }),
-                          }
-                        );
-
-                        setToast({
-                          message: "Produit rejeté",
-                          type: "success",
-                        });
-
-                        setProducts((prev) =>
-                          prev.map((p) =>
-                            p.id === product.id
-                              ? { ...p, status: "rejected" }
-                              : p
-                          )
-                        );
-                      }}
+                  <td className="p-3 space-x-3">
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      className="text-blue-600 hover:underline"
                     >
-                      Rejeter
-                    </button>
-                  )}
+                      Voir
+                    </Link>
 
-                  {product.status !== "disabled" && (
-                    <button
-                      className="text-yellow-600 hover:underline"
-                      onClick={async () => {
-                        await fetch(
-                          `/api/admin/products/${product.id}/status`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              status: "disabled",
-                              adminId: "system",
-                            }),
-                          }
-                        );
+                    {product.status !== "approved" && (
+                      <button
+                        className="text-green-600 hover:underline"
+                        onClick={async () => {
+                          await fetch(
+                            `/api/admin/products/${product.id}/status`,
+                            {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                status: "approved",
+                                adminId: "system",
+                              }),
+                            }
+                          );
 
-                        setToast({
-                          message: "Produit désactivé",
-                          type: "success",
-                        });
+                          setToast({
+                            message: "Produit approuvé",
+                            type: "success",
+                          });
 
-                        setProducts((prev) =>
-                          prev.map((p) =>
-                            p.id === product.id
-                              ? { ...p, status: "disabled" }
-                              : p
-                          )
-                        );
-                      }}
-                    >
-                      Désactiver
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p.id === product.id
+                                ? { ...p, status: "approved" }
+                                : p
+                            )
+                          );
+                        }}
+                      >
+                        Approuver
+                      </button>
+                    )}
+
+                    {product.status !== "rejected" && (
+                      <button
+                        className="text-red-600 hover:underline"
+                        onClick={async () => {
+                          await fetch(
+                            `/api/admin/products/${product.id}/status`,
+                            {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                status: "rejected",
+                                adminId: "system",
+                              }),
+                            }
+                          );
+
+                          setToast({
+                            message: "Produit rejeté",
+                            type: "success",
+                          });
+
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p.id === product.id
+                                ? { ...p, status: "rejected" }
+                                : p
+                            )
+                          );
+                        }}
+                      >
+                        Rejeter
+                      </button>
+                    )}
+
+                    {product.status !== "disabled" && (
+                      <button
+                        className="text-yellow-600 hover:underline"
+                        onClick={async () => {
+                          await fetch(
+                            `/api/admin/products/${product.id}/status`,
+                            {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                status: "disabled",
+                                adminId: "system",
+                              }),
+                            }
+                          );
+
+                          setToast({
+                            message: "Produit désactivé",
+                            type: "success",
+                          });
+
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p.id === product.id
+                                ? { ...p, status: "disabled" }
+                                : p
+                            )
+                          );
+                        }}
+                      >
+                        Désactiver
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

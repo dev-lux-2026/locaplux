@@ -3,13 +3,32 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Toast from '../../components/Toast';
+import Toast from "../../components/Toast";
+
+function getPartnerDisplayName(partner: any): string {
+  if (!partner) return "—";
+  const fullName = [partner.firstName, partner.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return (
+    partner.publicName ||
+    partner.company ||
+    partner.name ||
+    fullName ||
+    "—"
+  );
+}
 
 export default function AdminProductDetail() {
   const params = useParams();
   const id = params?.id as string | undefined;
 
   const [product, setProduct] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [savingCategory, setSavingCategory] = useState(false);
+
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -23,8 +42,23 @@ export default function AdminProductDetail() {
     if (!id) return;
 
     async function load() {
-      const p = await fetch(`/api/admin/products/${id}`).then((r) => r.json());
+      const [pRes, cRes] = await Promise.all([
+        fetch(`/api/admin/products/${id}`),
+        fetch(`/api/categories`),
+      ]);
+
+      const p = await pRes.json();
       setProduct(p);
+      setSelectedCategoryId(
+        p?.categoryId ? String(p.categoryId) : p?.category?.id ? String(p.category.id) : ""
+      );
+
+      if (cRes.ok) {
+        const cData = await cRes.json();
+        const list = Array.isArray(cData) ? cData : cData?.categories ?? [];
+        setCategories(Array.isArray(list) ? list : []);
+      }
+
       setLoading(false);
     }
 
@@ -32,13 +66,45 @@ export default function AdminProductDetail() {
       const l = await fetch(`/api/admin/products/${id}/logs`).then((r) =>
         r.json()
       );
-      setLogs(l);
+      setLogs(Array.isArray(l) ? l : []);
       setLogsLoading(false);
     }
 
     load();
     loadLogs();
   }, [id]);
+
+  async function handleSaveCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+
+    setSavingCategory(true);
+
+    const res = await fetch(`/api/admin/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: selectedCategoryId || null,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setProduct((prev: any) => ({
+        ...prev,
+        ...data,
+      }));
+      setToast({ message: "Catégorie mise à jour", type: "success" });
+    } else {
+      setToast({
+        message: data?.error || "Erreur lors de la mise à jour de la catégorie",
+        type: "error",
+      });
+    }
+
+    setSavingCategory(false);
+  }
 
   async function updateStatus(newStatus: string) {
     setProcessing(true);
@@ -56,11 +122,10 @@ export default function AdminProductDetail() {
       setToast({ message: "Statut mis à jour", type: "success" });
       setProduct((prev: any) => ({ ...prev, status: newStatus }));
 
-      // On recharge les logs après action
       const l = await fetch(`/api/admin/products/${id}/logs`).then((r) =>
         r.json()
       );
-      setLogs(l);
+      setLogs(Array.isArray(l) ? l : []);
     } else {
       setToast({ message: "Erreur lors de la mise à jour", type: "error" });
     }
@@ -77,6 +142,9 @@ export default function AdminProductDetail() {
     rejected: "bg-red-200 text-red-800",
     disabled: "bg-yellow-100 text-yellow-700",
   };
+
+  const price = product.prix_locaplux ?? product.prix_normal ?? product.price;
+  const partnerName = getPartnerDisplayName(product.partner);
 
   return (
     <div className="max-w-4xl mx-auto py-10 space-y-8">
@@ -108,7 +176,15 @@ export default function AdminProductDetail() {
         </p>
 
         <p>
-          <span className="font-semibold">Prix :</span> {product.price} €
+          <span className="font-semibold">Prix :</span>{" "}
+          {price !== null && price !== undefined && price !== ""
+            ? `${price} €`
+            : "—"}
+          {product.prix_normal ? (
+            <span className="ml-2 text-sm text-gray-500">
+              (Prix normal : {product.prix_normal} €)
+            </span>
+          ) : null}
         </p>
 
         <p>
@@ -121,8 +197,8 @@ export default function AdminProductDetail() {
         </p>
 
         <p>
-          <span className="font-semibold">Partenaire :</span>{" "}
-          {product.partner?.name || "—"} ({product.partner?.email || "—"})
+          <span className="font-semibold">Partenaire :</span> {partnerName} (
+          {product.partner?.email || "—"})
         </p>
 
         <p>
@@ -133,6 +209,37 @@ export default function AdminProductDetail() {
             {product.status}
           </span>
         </p>
+      </div>
+
+      {/* Modifier la catégorie */}
+      <div className="bg-white p-6 shadow rounded space-y-4">
+        <h2 className="text-xl font-semibold">Catégorie</h2>
+
+        <form
+          onSubmit={handleSaveCategory}
+          className="flex flex-wrap items-center gap-3"
+        >
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            className="px-3 py-2 border rounded bg-white text-gray-900 min-w-[240px]"
+          >
+            <option value="">— Sans catégorie —</option>
+            {categories.map((cat: any) => (
+              <option key={cat.id} value={String(cat.id)}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            disabled={savingCategory}
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
+          >
+            {savingCategory ? "Enregistrement..." : "Enregistrer la catégorie"}
+          </button>
+        </form>
       </div>
 
       {/* Images */}
