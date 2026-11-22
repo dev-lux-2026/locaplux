@@ -57,17 +57,48 @@ export default function PublicPartnerPage() {
     async function load() {
       try {
         const partnerRes = await fetch(`/api/public/partner/${id}`);
-        const partnerData = await partnerRes.json();
-        setPartner(partnerData);
+        if (partnerRes.ok) {
+          const partnerData = await partnerRes.json();
+          setPartner(partnerData || null);
+        } else {
+          setPartner(null);
+        }
 
         const reviewRes = await fetch(`/api/partner/${id}/reviews`);
-        const reviewData = await reviewRes.json();
+        if (reviewRes.ok) {
+          const reviewData = await reviewRes.json();
+          const list = Array.isArray(reviewData?.reviews)
+            ? reviewData.reviews
+            : [];
+          const rawAvg =
+            typeof reviewData?.averageRating === "number"
+              ? reviewData.averageRating
+              : reviewData?.averageRating !== null &&
+                reviewData?.averageRating !== undefined &&
+                reviewData?.averageRating !== ""
+              ? Number(reviewData.averageRating)
+              : null;
+          const validAvg =
+            rawAvg !== null && Number.isFinite(rawAvg) ? rawAvg : null;
+          const rawCount =
+            typeof reviewData?.count === "number"
+              ? reviewData.count
+              : Number(reviewData?.count);
+          const validCount = Number.isFinite(rawCount) ? rawCount : list.length;
 
-        setReviews(reviewData.reviews || []);
-        setAverage(reviewData.averageRating);
-        setCount(reviewData.count);
+          setReviews(list);
+          setAverage(validAvg);
+          setCount(validCount);
+        } else {
+          setReviews([]);
+          setAverage(null);
+          setCount(0);
+        }
       } catch (err) {
         console.error("Erreur chargement partenaire :", err);
+        setReviews([]);
+        setAverage(null);
+        setCount(0);
       }
 
       setLoading(false);
