@@ -1,31 +1,55 @@
-export const dynamic = "force-dynamic";
-import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-// ✔️ Next.js 15 : params doit être awaited
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
+export async function logAdminAction({
+  partnerId,
+  action,
+  comment = null,
+}: {
+  partnerId: string;
+  action: string;
+  comment?: string | null;
+}) {
+  try {
+    const session = await getServerSession(authOptions);
 
-  const logs = await prisma.adminLog.findMany({
-    where: { partnerId: id }, // ✔️ Filtrage correct
-    orderBy: { createdAt: "desc" },
-    include: {
-      admin: { select: { publicName: true, email: true } },
-      partner: { select: { publicName: true, email: true } },
-    },
-  });
+    const rawId = session?.user?.id;
+    const rawEmail = session?.user?.email;
 
-  const formatted = logs.map((log) => ({
-    id: log.id,
-    action: log.action,
-    description: log.comment || null,
-    type: "partner",
-    createdAt: log.createdAt,
-    user: log.admin?.publicName || log.admin?.email || "Administrateur",
-  }));
+    let adminUser: { id: string } | null = null;
 
-  return NextResponse.json(formatted);
+    if (rawId) {
+      adminUser = await prisma.user.findUnique({
+        where: { id: String(rawId) },
+        select: { id: true },
+      });
+    }
+
+    if (!adminUser && rawEmail) {
+      adminUser = await prisma.user.findUnique({
+        where: { email: String(rawEmail) },
+        select: { id: true },
+      });
+    }
+
+    if (!adminUser?.id) {
+      console.warn(
+        "Admin log skipped: no matching User found in DB for session",
+        { id: rawId, email: rawEmail }
+      );
+      return;
+    }
+
+    await prisma.adminLog.create({
+      data: {
+        adminId: adminUser.id,
+        partnerId,
+        action,
+        comment,
+      },
+    });
+  } catch (err) {
+    console.error("Admin log error:", err);
+  }
 }
