@@ -1,55 +1,31 @@
-import prisma from "@/lib/prisma";
+export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-export async function logAdminAction({
-  partnerId,
-  action,
-  comment = null,
-}: {
-  partnerId: string;
-  action: string;
-  comment?: string | null;
-}) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
-    const rawId = session?.user?.id;
-    const rawEmail = session?.user?.email;
-
-    let adminUser: { id: string } | null = null;
-
-    if (rawId) {
-      adminUser = await prisma.user.findUnique({
-        where: { id: String(rawId) },
-        select: { id: true },
-      });
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!adminUser && rawEmail) {
-      adminUser = await prisma.user.findUnique({
-        where: { email: String(rawEmail) },
-        select: { id: true },
-      });
-    }
-
-    if (!adminUser?.id) {
-      console.warn(
-        "Admin log skipped: no matching User found in DB for session",
-        { id: rawId, email: rawEmail }
-      );
-      return;
-    }
-
-    await prisma.adminLog.create({
-      data: {
-        adminId: adminUser.id,
-        partnerId,
-        action,
-        comment,
+    const logs = await prisma.adminLog.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        admin: { select: { publicName: true, email: true } },
+        partner: { select: { publicName: true, email: true } },
       },
     });
-  } catch (err) {
-    console.error("Admin log error:", err);
+
+    return NextResponse.json(logs);
+  } catch (error) {
+    console.error("GET /api/admin/logs error:", error);
+    return NextResponse.json(
+      { error: "Erreur serveur" },
+      { status: 500 }
+    );
   }
 }
