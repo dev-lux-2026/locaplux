@@ -3,10 +3,15 @@
 import { useEffect, useState } from "react";
 import Toast from "@/app/components/Toast";
 
+type UploadField = "avatar" | "bannerUrl" | "folderUrl";
+
 export default function PartnerAccountPage() {
   const [partner, setPartner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<UploadField | null>(
+    null
+  );
   const [toast, setToast] = useState<any>(null);
 
   useEffect(() => {
@@ -17,6 +22,67 @@ export default function PartnerAccountPage() {
         setLoading(false);
       });
   }, []);
+
+  async function uploadToCloudinary(file: File, field: UploadField) {
+    setUploadingField(field);
+
+    try {
+      const signRes = await fetch("/api/cloudinary/sign");
+      if (!signRes.ok) {
+        throw new Error("Signature Cloudinary impossible");
+      }
+
+      const { timestamp, signature, cloudName, apiKey } = await signRes.json();
+
+      if (!cloudName || !apiKey || !signature || !timestamp) {
+        throw new Error("Configuration Cloudinary incomplète");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      formData.append("folder", "locaplux");
+
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData.secure_url) {
+        throw new Error(uploadData?.error?.message || "Échec de l'envoi");
+      }
+
+      setPartner((prev: any) => ({
+        ...prev,
+        [field]: uploadData.secure_url,
+      }));
+
+      setToast({
+        message:
+          field === "avatar"
+            ? "Logo téléchargé. Pensez à enregistrer vos modifications."
+            : field === "bannerUrl"
+            ? "Bannière téléchargée. Pensez à enregistrer vos modifications."
+            : "Folder téléchargé. Pensez à enregistrer vos modifications.",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Erreur upload Cloudinary :", error);
+      setToast({
+        message: "Erreur lors du téléchargement du fichier",
+        type: "error",
+      });
+    } finally {
+      setUploadingField(null);
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -71,6 +137,8 @@ export default function PartnerAccountPage() {
     });
 
     if (res.ok) {
+      const updated = await res.json();
+      setPartner(updated);
       setToast({ message: "Informations mises à jour", type: "success" });
     } else {
       setToast({ message: "Erreur lors de la sauvegarde", type: "error" });
@@ -500,14 +568,42 @@ export default function PartnerAccountPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Logo (URL)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* LOGO */}
+            <div className="space-y-3 border border-gray-200 rounded-xl p-4">
+              <label className="block text-xs font-medium text-gray-700">
+                Logo (image ou URL)
               </label>
+
+              {partner.avatar && (
+                <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={partner.avatar}
+                    alt="Aperçu logo"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               <input
-                className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                disabled={uploadingField === "avatar"}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadToCloudinary(file, "avatar");
+                  e.target.value = "";
+                }}
+                className="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-800 hover:file:bg-gray-200"
+              />
+
+              {uploadingField === "avatar" && (
+                <p className="text-xs text-gray-500">Téléchargement du logo…</p>
+              )}
+
+              <input
+                className="border border-gray-300 p-2 rounded-lg w-full text-xs"
+                placeholder="Ou collez une URL d'image (https://...)"
                 value={partner.avatar || ""}
                 onChange={(e) =>
                   setPartner({ ...partner, avatar: e.target.value })
@@ -515,13 +611,43 @@ export default function PartnerAccountPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Bannière (URL)
+            {/* BANNIÈRE */}
+            <div className="space-y-3 border border-gray-200 rounded-xl p-4">
+              <label className="block text-xs font-medium text-gray-700">
+                Bannière de couverture (image ou URL)
               </label>
+
+              {partner.bannerUrl && (
+                <div className="w-full h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={partner.bannerUrl}
+                    alt="Aperçu bannière"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
               <input
-                className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                disabled={uploadingField === "bannerUrl"}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadToCloudinary(file, "bannerUrl");
+                  e.target.value = "";
+                }}
+                className="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-800 hover:file:bg-gray-200"
+              />
+
+              {uploadingField === "bannerUrl" && (
+                <p className="text-xs text-gray-500">
+                  Téléchargement de la bannière…
+                </p>
+              )}
+
+              <input
+                className="border border-gray-300 p-2 rounded-lg w-full text-xs"
+                placeholder="Ou collez une URL d'image (https://...)"
                 value={partner.bannerUrl || ""}
                 onChange={(e) =>
                   setPartner({ ...partner, bannerUrl: e.target.value })
@@ -530,13 +656,33 @@ export default function PartnerAccountPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Folder partenaire (URL)
+          {/* FOLDER */}
+          <div className="space-y-3 border border-gray-200 rounded-xl p-4">
+            <label className="block text-xs font-medium text-gray-700">
+              Folder partenaire (PDF / document ou lien)
             </label>
+
+            <input
+              type="file"
+              accept=".pdf,image/*,.doc,.docx"
+              disabled={uploadingField === "folderUrl"}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadToCloudinary(file, "folderUrl");
+                e.target.value = "";
+              }}
+              className="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-800 hover:file:bg-gray-200"
+            />
+
+            {uploadingField === "folderUrl" && (
+              <p className="text-xs text-gray-500">
+                Téléchargement du folder…
+              </p>
+            )}
+
             <input
               className="border border-gray-300 p-2.5 rounded-lg w-full text-sm"
-              placeholder="https://..."
+              placeholder="Ou collez le lien du folder (https://...)"
               value={partner.folderUrl || ""}
               onChange={(e) =>
                 setPartner({ ...partner, folderUrl: e.target.value })
@@ -549,7 +695,7 @@ export default function PartnerAccountPage() {
         <div className="flex justify-end">
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || uploadingField !== null}
             className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-900 transition disabled:opacity-50"
           >
             {saving ? "Enregistrement…" : "Enregistrer les modifications"}
