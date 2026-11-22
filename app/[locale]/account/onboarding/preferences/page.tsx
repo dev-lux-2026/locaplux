@@ -7,64 +7,47 @@ import OnboardingProgress from "@/components/OnboardingProgress";
 
 export default function OnboardingPreferencesPage() {
   const router = useRouter();
-  const { locale } = useParams(); // ← locale dynamique
+  const { locale } = useParams();
 
   const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
-  const [loadingEmail, setLoadingEmail] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
-   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSubmitting(true);
 
-    const res = await fetch("/api/onboarding/preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // ✅ On envoie le format exact attendu par l'API (l'objet preferences)
-      body: JSON.stringify({ 
-        preferences: { 
-          preferredLanguage 
-        } 
-      }),
-    });
+    try {
+      const res = await fetch("/api/onboarding/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preferences: {
+            preferredLanguage,
+          },
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      toast.error(data.error || "Erreur lors de l'enregistrement");
-      return;
+      if (!res.ok) {
+        toast.error(data.error || "Erreur lors de l'enregistrement");
+        return;
+      }
+
+      toast.success("Préférences enregistrées !");
+      router.push(`/${locale}/home`);
+    } finally {
+      setSubmitting(false);
     }
-
-    toast.success("Préférences enregistrées !");
-
-    // 🔥 Redirection localisée fonctionnelle
-    router.push(`/${locale}/home`);
-  }
-
-  async function sendVerificationEmail() {
-    setLoadingEmail(true);
-
-    const res = await fetch("/api/auth/send-verification-email", {
-      method: "POST",
-    });
-
-    setLoadingEmail(false);
-
-    if (!res.ok) {
-      toast.error("Impossible d'envoyer l'email");
-      return;
-    }
-
-    toast.success("Email de validation envoyé !");
   }
 
   return (
     <div className="max-w-md mx-auto py-10">
-
       <OnboardingProgress step={3} />
 
       <h1 className="text-3xl font-bold mb-6">Vos préférences</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-
         <div className="space-y-3">
           <label className="font-medium">Langue préférée</label>
 
@@ -81,24 +64,9 @@ export default function OnboardingPreferencesPage() {
           </select>
         </div>
 
-        <button className="btn-primary w-full" type="submit">
-          Terminer
+        <button className="btn-primary w-full" type="submit" disabled={submitting}>
+          {submitting ? "Enregistrement..." : "Terminer"}
         </button>
-
-        <div className="pt-4 border-t">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
-            Pour sécuriser votre compte, validez votre adresse email.
-          </p>
-
-          <button
-            type="button"
-            onClick={sendVerificationEmail}
-            className="btn-secondary w-full"
-            disabled={loadingEmail}
-          >
-            {loadingEmail ? "Envoi..." : "Envoyer l'email de validation"}
-          </button>
-        </div>
       </form>
     </div>
   );
