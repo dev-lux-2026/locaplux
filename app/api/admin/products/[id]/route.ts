@@ -8,9 +8,9 @@ import { logAdminAction } from "@/app/api/admin/log";
 
 export async function GET(
   _req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = params;
 
   const product = await prisma.product.findUnique({
     where: { id },
@@ -64,7 +64,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -72,7 +72,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await context.params;
+    const { id } = params;
     const body = await req.json();
     const { categoryId } = body ?? {};
 
@@ -141,10 +141,10 @@ export async function PATCH(
     }
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: any) {
     console.error("PATCH /api/admin/products/[id] error:", error);
     return NextResponse.json(
-      { error: "Erreur serveur" },
+      { error: error?.message || "Erreur serveur" },
       { status: 500 }
     );
   }
