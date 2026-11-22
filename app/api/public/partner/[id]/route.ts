@@ -35,13 +35,6 @@ export async function GET(
     return NextResponse.json(null, { status: 404 });
   }
 
-  if (!["approved", "active"].includes(partner.status)) {
-    return NextResponse.json(null, { status: 404 });
-  }
-
-  return NextResponse.json(partner);
-}
-
   // On n'affiche que les partenaires approuvés / actifs
   if (!["approved", "active"].includes(partner.status)) {
     return NextResponse.json(null, { status: 404 });
