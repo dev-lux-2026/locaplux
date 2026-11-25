@@ -8,6 +8,7 @@ interface ProductItem {
   id: string;
   name: string;
   images?: string[];
+  prix_locaplux?: number;
 }
 
 export default function HomeConnected({
@@ -21,30 +22,25 @@ export default function HomeConnected({
 
   const locale = params?.locale || "fr";
   const [searchQuery, setSearchQuery] = useState("");
-  const [randomProductImages, setRandomProductImages] = useState<string[]>([]);
+  const [productsPool, setProductsPool] = useState<ProductItem[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<ProductItem[]>([]);
 
-  const SUGGESTION_ITEMS = useMemo(
+  const fallbackLabels = useMemo(
     () => [
-      { id: 1, label: t("suggestion.fashion") },
-      { id: 2, label: t("suggestion.home") },
-      { id: 3, label: t("suggestion.tech") },
-      { id: 4, label: t("suggestion.collection") },
-      { id: 5, label: t("suggestion.brands") },
-      { id: 6, label: t("suggestion.stock") },
+      t("suggestion.fashion"),
+      t("suggestion.home"),
+      t("suggestion.tech"),
+      t("suggestion.collection"),
+      t("suggestion.brands"),
+      t("suggestion.stock"),
     ],
     [t]
   );
 
-  const [items, setItems] = useState(SUGGESTION_ITEMS);
-
-  useEffect(() => {
-    setItems([...SUGGESTION_ITEMS].sort(() => Math.random() - 0.5));
-  }, [SUGGESTION_ITEMS]);
-
   useEffect(() => {
     let active = true;
 
-    async function loadRandomProducts() {
+    async function loadProducts() {
       try {
         const responses = await Promise.all([
           fetch("/api/products/popular").then((r) => (r.ok ? r.json() : [])),
@@ -52,33 +48,57 @@ export default function HomeConnected({
           fetch("/api/products/featured").then((r) => (r.ok ? r.json() : [])),
         ]);
 
-        const allProducts: ProductItem[] = responses.flatMap((list) =>
+        const merged: ProductItem[] = responses.flatMap((list) =>
           Array.isArray(list) ? list : []
         );
 
-        const uniqueImages = Array.from(
-          new Set(
-            allProducts
-              .map((p) => (Array.isArray(p.images) ? p.images[0] : undefined))
-              .filter((img): img is string => typeof img === "string" && img.trim().length > 0)
-          )
+        const uniqueById = Array.from(
+          new Map(merged.filter((p) => p && p.id && p.name).map((p) => [p.id, p])).values()
         );
 
-        const shuffledImages = uniqueImages.sort(() => Math.random() - 0.5);
+        if (!active || uniqueById.length === 0) return;
 
-        if (active && shuffledImages.length > 0) {
-          setRandomProductImages(shuffledImages);
-        }
+        setProductsPool(uniqueById);
+        const initialPick = [...uniqueById]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 6);
+        setDisplayedProducts(initialPick);
       } catch {
-        // Aucun fallback fixe
+        // Garde l'affichage par défaut en cas d'erreur réseau
       }
     }
 
-    loadRandomProducts();
+    loadProducts();
     return () => {
       active = false;
     };
   }, []);
+
+  // Rotation aléatoire douce de 1 ou 2 cartes toutes les 4,5 secondes
+  useEffect(() => {
+    if (productsPool.length <= 1 || displayedProducts.length === 0) return;
+
+    const timer = setInterval(() => {
+      setDisplayedProducts((prev) => {
+        if (prev.length === 0) return prev;
+        const next = [...prev];
+        const cardIndex = Math.floor(Math.random() * next.length);
+        const candidates = productsPool.filter(
+          (candidate) => !next.some((current) => current.id === candidate.id)
+        );
+        const poolToPickFrom = candidates.length > 0 ? candidates : productsPool;
+        const randomProduct =
+          poolToPickFrom[Math.floor(Math.random() * poolToPickFrom.length)];
+
+        if (randomProduct) {
+          next[cardIndex] = randomProduct;
+        }
+        return next;
+      });
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [productsPool, displayedProducts.length]);
 
   const handleSearch = (customQuery?: string) => {
     const query = (customQuery ?? searchQuery).trim();
@@ -92,6 +112,14 @@ export default function HomeConnected({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSearch();
+    }
+  };
+
+  const handleCardClick = (product?: ProductItem, fallbackLabel?: string) => {
+    if (product?.id) {
+      router.push(`/${locale}/product/${product.id}`);
+    } else if (fallbackLabel) {
+      handleSearch(fallbackLabel);
     }
   };
 
@@ -110,87 +138,87 @@ export default function HomeConnected({
           </p>
         </div>
 
-        {/* SUGGESTIONS */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 relative">
+        {/* BARRE DE RECHERCHE */}
+        <div className="max-w-xl w-full mx-auto bg-white/95 dark:bg-[#18181A]/95 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm px-4 py-3 transition-colors">
+          <p className="text-[13px] text-gray-600 dark:text-gray-400 mb-2">
+            {t("search.label")}
+          </p>
 
-          {items.map((item, idx) => {
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 border border-gray-300 dark:border-white/10 
+                         bg-white dark:bg-[#0B0B0C] 
+                         text-gray-900 dark:text-white 
+                         rounded-md px-3 py-2 text-[14px] 
+                         placeholder-gray-400 dark:placeholder-gray-500
+                         focus:outline-none focus:ring-2 
+                         focus:ring-black dark:focus:ring-white 
+                         focus:border-black dark:focus:border-white"
+              placeholder={t("search.placeholder")}
+            />
+
+            <button
+              onClick={() => handleSearch()}
+              className="px-4 py-2 
+                               bg-black dark:bg-white 
+                               text-white dark:text-black 
+                               text-[13px] rounded-md 
+                               hover:bg-gray-900 dark:hover:bg-gray-200 
+                               transition"
+            >
+              {t("search.button")}
+            </button>
+          </div>
+        </div>
+
+        {/* CARTES DYNAMIQUES (ROTATION ALÉATOIRE DES PRODUITS RÉELS) */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+          {fallbackLabels.map((label, idx) => {
+            const product = displayedProducts[idx];
             const imageUrl =
-              randomProductImages.length > 0
-                ? randomProductImages[idx % randomProductImages.length]
+              Array.isArray(product?.images) && product.images[0]
+                ? product.images[0]
                 : null;
+            const displayTitle = product?.name || label;
 
             return (
               <div
-                key={item.id}
-                onClick={() => handleSearch(item.label)}
-                className="relative h-28 md:h-32 rounded-lg overflow-hidden 
+                key={`${label}-${idx}`}
+                onClick={() => handleCardClick(product, label)}
+                className="relative h-32 md:h-36 rounded-lg overflow-hidden 
                            bg-gray-200 dark:bg-[#1F1F22] group cursor-pointer"
               >
                 {imageUrl && (
                   <img
+                    key={imageUrl}
                     src={imageUrl}
-                    alt={item.label}
+                    alt={displayTitle}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-br from-black/45 to-black/15" />
-                <div className="absolute inset-0 flex items-end p-2">
-                  <span className="text-xs md:text-[13px] text-white font-medium drop-shadow">
-                    {item.label}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-3 flex items-end justify-between gap-2">
+                  <span className="text-xs md:text-[13px] text-white font-medium drop-shadow truncate">
+                    {displayTitle}
                   </span>
+                  {product?.prix_locaplux !== undefined && (
+                    <span className="text-xs text-white/90 font-semibold shrink-0 drop-shadow">
+                      {product.prix_locaplux} €
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
-
-          {/* SEARCH BOX */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-white/95 dark:bg-[#18181A]/95 backdrop-blur-sm 
-                            border border-gray-200 dark:border-white/10 
-                            rounded-xl shadow-lg px-4 py-3 w-full max-w-md 
-                            pointer-events-auto transition-colors">
-              
-              <p className="text-[13px] text-gray-600 dark:text-gray-400 mb-2">
-                {t("search.label")}
-              </p>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="flex-1 border border-gray-300 dark:border-white/10 
-                             bg-white dark:bg-[#0B0B0C] 
-                             text-gray-900 dark:text-white 
-                             rounded-md px-3 py-2 text-[14px] 
-                             placeholder-gray-400 dark:placeholder-gray-500
-                             focus:outline-none focus:ring-2 
-                             focus:ring-black dark:focus:ring-white 
-                             focus:border-black dark:focus:border-white"
-                  placeholder={t("search.placeholder")}
-                />
-
-                <button 
-                  onClick={() => handleSearch()}
-                  className="px-4 py-2 
-                                   bg-black dark:bg-white 
-                                   text-white dark:text-black 
-                                   text-[13px] rounded-md 
-                                   hover:bg-gray-900 dark:hover:bg-gray-200 
-                                   transition"
-                >
-                  {t("search.button")}
-                </button>
-              </div>
-
-            </div>
-          </div>
-
         </div>
+
       </div>
     </section>
   );
