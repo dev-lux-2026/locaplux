@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
+
+interface ProductItem {
+  id: string;
+  name: string;
+  images?: string[];
+}
 
 export default function HomeConnected({
   userName,
@@ -12,40 +18,77 @@ export default function HomeConnected({
   const t = useTranslations("HomeConnected");
   const router = useRouter();
   const params = useParams();
-  
-  // Récupère la langue actuelle de l'URL (fr, en, lu)
-  const locale = params?.locale || "fr";
 
-  // État local pour capturer le texte saisi par l'utilisateur
+  const locale = params?.locale || "fr";
   const [searchQuery, setSearchQuery] = useState("");
+  const [randomProductImages, setRandomProductImages] = useState<string[]>([]);
 
   const SUGGESTION_ITEMS = useMemo(
     () => [
-      { id: 1, label: t("suggestion.fashion"), image: "/images/suggestions/fashion.jpg" },
-      { id: 2, label: t("suggestion.home"), image: "/images/suggestions/home.jpg" },
-      { id: 3, label: t("suggestion.tech"), image: "/images/suggestions/tech.jpg" },
-      { id: 4, label: t("suggestion.collection"), image: "/images/suggestions/collection.jpg" },
-      { id: 5, label: t("suggestion.brands"), image: "/images/suggestions/brands.jpg" },
-      { id: 6, label: t("suggestion.stock"), image: "/images/suggestions/stock.jpg" },
+      { id: 1, label: t("suggestion.fashion"), fallbackImage: "/images/slide1.JPG" },
+      { id: 2, label: t("suggestion.home"), fallbackImage: "/images/slide2.JPG" },
+      { id: 3, label: t("suggestion.tech"), fallbackImage: "/images/slide3.JPG" },
+      { id: 4, label: t("suggestion.collection"), fallbackImage: "/images/slide1.JPG" },
+      { id: 5, label: t("suggestion.brands"), fallbackImage: "/images/slide2.JPG" },
+      { id: 6, label: t("suggestion.stock"), fallbackImage: "/images/slide3.JPG" },
     ],
     [t]
   );
 
-  const shuffled = useMemo(
-    () => [...SUGGESTION_ITEMS].sort(() => Math.random() - 0.5),
-    [SUGGESTION_ITEMS]
-  );
+  const [items, setItems] = useState(SUGGESTION_ITEMS);
 
-  // Fonction pour déclencher la recherche vers la page /search
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push(`/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  useEffect(() => {
+    setItems([...SUGGESTION_ITEMS].sort(() => Math.random() - 0.5));
+  }, [SUGGESTION_ITEMS]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadRandomProducts() {
+      try {
+        const responses = await Promise.all([
+          fetch("/api/products/popular").then((r) => (r.ok ? r.json() : [])),
+          fetch("/api/products/latest").then((r) => (r.ok ? r.json() : [])),
+          fetch("/api/products/featured").then((r) => (r.ok ? r.json() : [])),
+        ]);
+
+        const allProducts: ProductItem[] = responses.flatMap((list) =>
+          Array.isArray(list) ? list : []
+        );
+
+        const uniqueImages = Array.from(
+          new Set(
+            allProducts
+              .map((p) => (Array.isArray(p.images) ? p.images[0] : undefined))
+              .filter((img): img is string => typeof img === "string" && img.trim().length > 0)
+          )
+        );
+
+        const shuffledImages = uniqueImages.sort(() => Math.random() - 0.5);
+
+        if (active && shuffledImages.length > 0) {
+          setRandomProductImages(shuffledImages);
+        }
+      } catch {
+        // Garde les images de repli en cas d'erreur réseau
+      }
+    }
+
+    loadRandomProducts();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSearch = (customQuery?: string) => {
+    const query = (customQuery ?? searchQuery).trim();
+    if (query) {
+      router.push(`/${locale}/search?q=${encodeURIComponent(query)}`);
     } else {
       router.push(`/${locale}/search`);
     }
   };
 
-  // Permet de valider en appuyant sur la touche "Entrée" du clavier
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSearch();
@@ -70,20 +113,40 @@ export default function HomeConnected({
         {/* SUGGESTIONS */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 relative">
 
-          {shuffled.map((item) => (
-            <div
-              key={item.id}
-              className="relative h-28 md:h-32 rounded-lg overflow-hidden 
-                         bg-gray-200 dark:bg-[#1F1F22] group cursor-pointer"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/10" />
-              <div className="absolute inset-0 flex items-end p-2">
-                <span className="text-xs md:text-[13px] text-white font-medium drop-shadow">
-                  {item.label}
-                </span>
+          {items.map((item, idx) => {
+            const imageUrl =
+              randomProductImages.length > 0
+                ? randomProductImages[idx % randomProductImages.length]
+                : item.fallbackImage;
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => handleSearch(item.label)}
+                className="relative h-28 md:h-32 rounded-lg overflow-hidden 
+                           bg-gray-200 dark:bg-[#1F1F22] group cursor-pointer"
+              >
+                <img
+                  src={imageUrl}
+                  alt={item.label}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== window.location.origin + item.fallbackImage) {
+                      e.currentTarget.src = item.fallbackImage;
+                    } else {
+                      e.currentTarget.style.display = "none";
+                    }
+                  }}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-black/45 to-black/15" />
+                <div className="absolute inset-0 flex items-end p-2">
+                  <span className="text-xs md:text-[13px] text-white font-medium drop-shadow">
+                    {item.label}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* SEARCH BOX */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -114,7 +177,7 @@ export default function HomeConnected({
                 />
 
                 <button 
-                  onClick={handleSearch}
+                  onClick={() => handleSearch()}
                   className="px-4 py-2 
                                    bg-black dark:bg-white 
                                    text-white dark:text-black 
