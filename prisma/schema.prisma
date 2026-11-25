@@ -29,6 +29,7 @@ model User {
   folderUrl                  String?
   folderUpdatedAt            DateTime?
   freeProductLimit           Int?                       @default(0)
+  freeBoostCredits           Int                        @default(0)
   freeUntil                  DateTime?
   commissionRate             Float?
   freeDaysLimit              Int?

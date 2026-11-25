@@ -55,21 +55,21 @@ export default function HomePageClient(
       slug: "demo-1",
       name: "Produit Démo 1",
       description: "Description de test pour vérifier le carrousel.",
-      images: ["/images/slide1.jpg"],
+      images: ["/images/slide1.JPG"],
     },
     {
       id: "demo-2",
       slug: "demo-2",
       name: "Produit Démo 2",
       description: "Encore un produit de test.",
-      images: ["/images/slide2.jpg"],
+      images: ["/images/slide2.JPG"],
     },
     {
       id: "demo-3",
       slug: "demo-3",
       name: "Produit Démo 3",
       description: "Troisième produit pour tester le défilement.",
-      images: ["/images/slide3.jpg"],
+      images: ["/images/slide3.JPG"],
     },
   ];
 
@@ -247,11 +247,11 @@ export default function HomePageClient(
           onMouseUp={handleMouseUp}
         >
           <div className="relative h-[300px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden shadow-xl bg-black cursor-grab active:cursor-grabbing">
-            <a href={`/product/${productsToShow[carouselIndex].id}`}>
+            <a href={`/${locale}/product/${productsToShow[carouselIndex].id}`}>
               <img
                 src={
                   productsToShow[carouselIndex].images?.[0] ||
-                  "/placeholder.jpg"
+                  "/images/slide1.JPG"
                 }
                 alt={productsToShow[carouselIndex].name}
                 className="w-full h-full object-cover transition-all duration-700 ease-in-out scale-[1.03]"

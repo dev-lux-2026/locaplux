@@ -6,6 +6,12 @@ import ImageUploader from "@/components/ImageUploader";
 import { QRCodeCanvas } from "qrcode.react";
 import Toast from "../../../components/Toast";
 
+const BOOST_OFFERS = [
+  { duration: 7, price: 29, label: "7 jours" },
+  { duration: 14, price: 49, label: "14 jours" },
+  { duration: 30, price: 79, label: "30 jours" },
+];
+
 export default function NewProductPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
@@ -26,10 +32,14 @@ export default function NewProductPage() {
     damage_type: "no_damage",
     damage_description: "",
     images: [] as string[],
-    categoryId: null as number | null,
+    categoryId: null as string | null,
 
     pickup_available: true,
     delivery_available: false,
+
+    boostEnabled: false,
+    boostMode: "paid" as "credit" | "paid",
+    boostDuration: 7,
   });
 
   const [partner, setPartner] = useState<any>(null);
@@ -41,10 +51,13 @@ export default function NewProductPage() {
 
       setPartner(data);
 
+      const availableCredits = data?.freeBoostCredits ?? 0;
+
       setProduct((prev) => ({
         ...prev,
         pickup_available: data.default_pickup_available ?? true,
         delivery_available: data.default_delivery_available ?? false,
+        boostMode: availableCredits > 0 ? "credit" : "paid",
       }));
     }
 
@@ -152,6 +165,11 @@ export default function NewProductPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<any>(null);
 
+  const freeBoostCredits = partner?.freeBoostCredits ?? 0;
+  const selectedOffer =
+    BOOST_OFFERS.find((o) => o.duration === product.boostDuration) ||
+    BOOST_OFFERS[0];
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -168,10 +186,19 @@ export default function NewProductPage() {
       }),
     });
 
+    const data = await res.json();
     setSaving(false);
 
     if (!res.ok) {
-      setToast({ message: "Erreur lors de la création", type: "error" });
+      setToast({
+        message: data?.error || "Erreur lors de la création",
+        type: "error",
+      });
+      return;
+    }
+
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
       return;
     }
 
@@ -629,6 +656,131 @@ export default function NewProductPage() {
                 />
               )}
             </div>
+          </section>
+
+          {/* MISE EN AVANT (OPTION PAYANTE OU CRÉDIT ADMIN) */}
+          <section className="bg-white dark:bg-[#0F0F10] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Mise en avant sur la page d’accueil
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Affichez ce produit dans le carrousel principal de Locaplux (une fois validé).
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    boostEnabled: !prev.boostEnabled,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                  product.boostEnabled ? "bg-black dark:bg-white" : "bg-gray-300 dark:bg-gray-700"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-black transition ${
+                    product.boostEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {freeBoostCredits > 0 && (
+              <div className="px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 text-xs text-amber-900 dark:text-amber-200">
+                Vous disposez de <strong>{freeBoostCredits}</strong> crédit(s) de mise en avant offert(s) par l’administrateur.
+              </div>
+            )}
+
+            {product.boostEnabled && (
+              <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-white/10">
+                {freeBoostCredits > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProduct((prev) => ({ ...prev, boostMode: "credit" }))
+                      }
+                      className={`p-3 rounded-xl border text-left transition ${
+                        product.boostMode === "credit"
+                          ? "border-black dark:border-white bg-gray-50 dark:bg-white/10"
+                          : "border-gray-200 dark:border-white/10"
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        Utiliser 1 crédit offert
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Gratuit ({freeBoostCredits} restant(s))
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProduct((prev) => ({ ...prev, boostMode: "paid" }))
+                      }
+                      className={`p-3 rounded-xl border text-left transition ${
+                        product.boostMode === "paid"
+                          ? "border-black dark:border-white bg-gray-50 dark:bg-white/10"
+                          : "border-gray-200 dark:border-white/10"
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        Formule payante
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        À partir de {BOOST_OFFERS[0].price} €
+                      </p>
+                    </button>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm text-gray-700 dark:text-gray-300 mb-2 block">
+                    Durée de mise en avant
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {BOOST_OFFERS.map((offer) => (
+                      <button
+                        key={offer.duration}
+                        type="button"
+                        onClick={() =>
+                          setProduct((prev) => ({
+                            ...prev,
+                            boostDuration: offer.duration,
+                          }))
+                        }
+                        className={`p-3 rounded-xl border text-center transition ${
+                          product.boostDuration === offer.duration
+                            ? "border-black dark:border-white bg-gray-50 dark:bg-white/10"
+                            : "border-gray-200 dark:border-white/10"
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {offer.label}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {product.boostMode === "credit" && freeBoostCredits > 0
+                            ? "0 € (crédit)"
+                            : `${offer.price} €`}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {product.boostMode === "paid" && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Option payante sélectionnée : <strong>{selectedOffer.price} €</strong> pour {selectedOffer.label}.
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           <div className="flex justify-end">

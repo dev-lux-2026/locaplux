@@ -48,6 +48,10 @@ export const productCreateSchema = z.object({
 
   pickup_available: z.boolean().optional(),
   delivery_available: z.boolean().optional(),
+
+  boostEnabled: z.boolean().optional(),
+  boostMode: z.enum(["credit", "paid"]).optional(),
+  boostDuration: z.number().int().positive().max(90).optional(),
 });
 
 export const productUpdateSchema = z.object({
