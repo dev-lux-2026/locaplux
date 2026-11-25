@@ -25,12 +25,12 @@ export default function HomeConnected({
 
   const SUGGESTION_ITEMS = useMemo(
     () => [
-      { id: 1, label: t("suggestion.fashion"), fallbackImage: "/images/slide1.JPG" },
-      { id: 2, label: t("suggestion.home"), fallbackImage: "/images/slide2.JPG" },
-      { id: 3, label: t("suggestion.tech"), fallbackImage: "/images/slide3.JPG" },
-      { id: 4, label: t("suggestion.collection"), fallbackImage: "/images/slide1.JPG" },
-      { id: 5, label: t("suggestion.brands"), fallbackImage: "/images/slide2.JPG" },
-      { id: 6, label: t("suggestion.stock"), fallbackImage: "/images/slide3.JPG" },
+      { id: 1, label: t("suggestion.fashion") },
+      { id: 2, label: t("suggestion.home") },
+      { id: 3, label: t("suggestion.tech") },
+      { id: 4, label: t("suggestion.collection") },
+      { id: 5, label: t("suggestion.brands") },
+      { id: 6, label: t("suggestion.stock") },
     ],
     [t]
   );
@@ -70,7 +70,7 @@ export default function HomeConnected({
           setRandomProductImages(shuffledImages);
         }
       } catch {
-        // Garde les images de repli en cas d'erreur réseau
+        // Aucun fallback fixe
       }
     }
 
@@ -117,7 +117,7 @@ export default function HomeConnected({
             const imageUrl =
               randomProductImages.length > 0
                 ? randomProductImages[idx % randomProductImages.length]
-                : item.fallbackImage;
+                : null;
 
             return (
               <div
@@ -126,18 +126,16 @@ export default function HomeConnected({
                 className="relative h-28 md:h-32 rounded-lg overflow-hidden 
                            bg-gray-200 dark:bg-[#1F1F22] group cursor-pointer"
               >
-                <img
-                  src={imageUrl}
-                  alt={item.label}
-                  onError={(e) => {
-                    if (e.currentTarget.src !== window.location.origin + item.fallbackImage) {
-                      e.currentTarget.src = item.fallbackImage;
-                    } else {
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt={item.label}
+                    onError={(e) => {
                       e.currentTarget.style.display = "none";
-                    }
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                />
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/45 to-black/15" />
                 <div className="absolute inset-0 flex items-end p-2">
                   <span className="text-xs md:text-[13px] text-white font-medium drop-shadow">
